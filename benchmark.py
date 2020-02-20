@@ -11,6 +11,9 @@ MONGODB_URL = "mongodb://localhost:27017/"
 MINUTE = 60  # number of seconds in minutes
 SINGLE_SCENARIO_TIMEOUT = 5 * MINUTE
 
+# TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
+SOLVER_TO_STRING = {ID: 'ID', 'VI': 'VI'}
+
 
 def bechmark_main():
     # Experiment configuration
@@ -20,8 +23,9 @@ def bechmark_main():
         # 'room-64-64-16'
     ]
     possible_n_agents = [
-        2,
-        3,
+        1,
+        # 2,
+        # 3,
     ]
     possible_fail_prob = [
         0,
@@ -38,20 +42,32 @@ def bechmark_main():
     date_str = datetime.datetime.now().strftime("%m-%d-%Y_%H:%M")
     db = client[f'id-room-benchmark_{date_str}']
 
+    # insert a collection with the experiement parameters
+    parameters_data = \
+        {
+            'possible_maps': possible_maps,
+            'possible_n_agents': possible_n_agents,
+            'possible_fail_prob': possible_fail_prob,
+            'possible_solvers': possible_solvers,
+        }
+    db['parameters'].insert_one(parameters_data)
+
+    # TODO: do this with itertools
     for map in possible_maps:
         for fail_prob in possible_fail_prob:
             for n_agents in possible_n_agents:
                 for scen_id in range(1, 26):
                     for solver in possible_solvers:
-                        print(f'starting scen {scen_id} on map {map}')
 
                         instance_data = {
                             'map': map,
                             'scen_id': scen_id,
                             'fail_prob': fail_prob,
                             'n_agents': n_agents,
-                            'solver':solver.__name__
+                            'solver': solver.__name__
                         }
+                        configuration_string = '_'.join([f'{key}:{value}' for key, value in instance_data.items()])
+                        print(f'starting {configuration_string}')
 
                         # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
                         try:
@@ -76,8 +92,8 @@ def bechmark_main():
                         if 'end_reason' not in instance_data:
                             instance_data['end_reason'] = 'done'
 
-                        configuration_string = '_'.join([f'{key}:{value}' for key,value in instance_data.items()])
-                        db[configuration_string].insert_one(instance_data)
+                        # Insert stats about this instance to the DB
+                        db['results'].insert_one(instance_data)
 
 
 if __name__ == '__main__':
