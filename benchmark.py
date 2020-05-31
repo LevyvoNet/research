@@ -7,7 +7,10 @@ from gym_mapf.envs.utils import create_mapf_env
 from gym_mapf.solvers import (ID,
                               value_iteration_planning,
                               prioritized_value_iteration_planning,
-                              policy_iteration)
+                              policy_iteration,
+                              better_policy_iteration)
+from gym_mapf.solvers.policy import Policy
+from gym_mapf.solvers.utils import render_states
 
 MONGODB_URL = "mongodb://localhost:27017/"
 # MONGODB_URL = 'mongodb+srv://LevyvoNet:<password>@mapf-benchmarks-yczd5.gcp.mongodb.net/test?retryWrites=true&w=majority'
@@ -136,27 +139,69 @@ def env_transitions_calc_benchmark():
     print(f'env.nS={env.nS}, env.nA={env.nA}, x={x}')
 
 
+def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
+    total_reward = 0
+    for i in range(n_episodes):
+        policy.env.reset()
+        done = False
+        steps = 0
+        while not done and steps < max_steps:
+            new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
+            total_reward += reward
+            steps += 1
+            if reward == policy.env.reward_of_clash and done:
+                print("clash happened, entering debug mode")
+                import ipdb
+                ipdb.set_trace()
+
+    return total_reward / n_episodes
+
+
+def play_single_episode(policy: Policy):
+    done = False
+    policy.env.reset()
+    total_reward = 0
+    while not done:
+        _, r, done, _ = policy.env.step(policy.act(policy.env.s))
+        policy.env.render()
+        total_reward += r
+
+    print(f'got reward of {total_reward}')
+
+
 def compare_solvers():
     fail_prob = 0.1
 
-    env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    print("value iteration")
-    vi_V, vi_policy = solve_and_measure_time(env, value_iteration_planning)
+    # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+    # print("value iteration")
+    # vi_policy = solve_and_measure_time(env, value_iteration_planning)
 
     env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
     print("policy iteration")
-    pi_V, pi_policy = solve_and_measure_time(env, policy_iteration)
+    pi_policy = solve_and_measure_time(env, policy_iteration)
+
+    env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+    print("better policy iteration")
+    better_pi_policy = solve_and_measure_time(env, better_policy_iteration)
+
+    # import ipdb
+    # ipdb.set_trace()
+
+    # pi_policy_reward = evaluate_policy(pi_policy, 100, 100)
+    better_pi_policy_reward = evaluate_policy(better_pi_policy, 100, 100)
+    # print(f"policy iteration reward {pi_policy_reward}")
+    print(f"better policy iteration reward {better_pi_policy_reward}")
 
     # make sure pi has reason
-    from gym_mapf.solvers.utils import render_states
-    from gym_mapf.envs.mapf_env import integer_action_to_vector
-    controversial_states = [s for s in range(env.nS) if vi_policy(s) != pi_policy[s]]
-    print(f"There are {len(controversial_states)} controversial states")
-    for s in controversial_states:
-        print(f"controversial state {s}")
-        render_states(env, [s])
-        print(f"VI says {integer_action_to_vector(vi_policy(s), env.n_agents)}")
-        print(f"PI says {integer_action_to_vector(pi_policy[s], env.n_agents)}")
+    # from gym_mapf.solvers.utils import render_states
+    # from gym_mapf.envs.mapf_env import integer_action_to_vector
+    # controversial_states = [s for s in range(env.nS) if better_pi_policy.act(s) != pi_policy.act(s)]
+    # print(f"There are {len(controversial_states)} controversial states")
+    # for s in controversial_states:
+    #     print(f"controversial state {s}")
+    #     render_states(env, [s])
+    #     print(f"better PI says {integer_action_to_vector(better_pi_policy.act(s), env.n_agents)}")
+    #     print(f"PI says {integer_action_to_vector(pi_policy.act(s), env.n_agents)}")
 
 
 if __name__ == '__main__':
