@@ -4,13 +4,16 @@ import stopit
 import time
 
 from gym_mapf.envs.utils import create_mapf_env
+from gym_mapf.envs.mapf_env import MapfEnv
 from gym_mapf.solvers import (ID,
-                              value_iteration_planning,
-                              prioritized_value_iteration_planning,
-                              policy_iteration,
-                              better_policy_iteration)
-from gym_mapf.solvers.policy import Policy
-from gym_mapf.solvers.utils import render_states
+                              ValueIterationPlanner,
+                              PrioritizedValueIterationPlanner,
+                              PolicyIterationPlanner,
+                              RtdpPlanner)
+from gym_mapf.solvers.vi import prioritized_value_iteration
+from gym_mapf.solvers.utils import render_states, Policy
+from gym_mapf.envs.utils import get_local_view
+from gym_mapf.solvers.rtdp import manhattan_heuristic, prioritized_value_iteration_heuristic
 
 MONGODB_URL = "mongodb://localhost:27017/"
 # MONGODB_URL = 'mongodb+srv://LevyvoNet:<password>@mapf-benchmarks-yczd5.gcp.mongodb.net/test?retryWrites=true&w=majority'
@@ -19,8 +22,7 @@ SINGLE_SCENARIO_TIMEOUT = 1 * SECONDS_IN_MINUTE
 
 # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
 SOLVER_TO_STRING = {ID: 'ID',
-                    value_iteration_planning: 'VI',
-                    prioritized_value_iteration_planning: 'prioritized_VI'}
+                    ValueIterationPlanner: 'VI'}
 
 
 def benchmark_main():
@@ -31,14 +33,14 @@ def benchmark_main():
         # 'room-64-64-16'
     ]
     possible_n_agents = [
-        # 1,
+        1,
         2,
-        # 3,
+        3,
     ]
     possible_fail_prob = [
-        # 0,
+        0,
         0.1,
-        # 0.2,
+        0.2,
     ]
     possible_solvers = [
         ID,
@@ -103,12 +105,13 @@ def benchmark_main():
                         db['results'].insert_one(instance_data)
 
 
-def solve_and_measure_time(env, solver):
+def solve_and_measure_time(env, planner, **kwargs):
     start = time.time()
-    ret = solver(env, **{'info': {}})
-    print('took {} seconds'.format(time.time() - start))
+    kwargs.update({'info': {}})
+    ret = planner.plan(env, **kwargs)
+    total_time = time.time() - start
 
-    return ret
+    return ret, total_time
 
 
 def env_transitions_calc_benchmark():
@@ -164,45 +167,36 @@ def play_single_episode(policy: Policy):
     while not done:
         _, r, done, _ = policy.env.step(policy.act(policy.env.s))
         policy.env.render()
+        time.sleep(1)
         total_reward += r
 
     print(f'got reward of {total_reward}')
 
 
-def compare_solvers():
+def compare_planners(planners):
     fail_prob = 0.1
 
-    # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    # print("value iteration")
-    # vi_policy = solve_and_measure_time(env, value_iteration_planning)
+    data = {}
+    for planner_name, planner in planners:
+        env = create_mapf_env('room-32-32-4', 2, 2, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
+        policy, total_time = solve_and_measure_time(env, planner)
+        reward = evaluate_policy(policy, 100, 1000)
+        data[planner_name] = {'total_time': total_time,
+                              'reward': reward}
 
-    env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    print("policy iteration")
-    pi_policy = solve_and_measure_time(env, policy_iteration)
+    # get some sense about the best options available
+    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_v = [prioritized_value_iteration(local_env, {}, 1.0) for local_env in local_envs]
+    for i in range(env.n_agents):
+        print(f"starting state value for agent {i} is {local_v[i][local_envs[i].s]}")
 
-    env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    print("better policy iteration")
-    better_pi_policy = solve_and_measure_time(env, better_policy_iteration)
-
-    # import ipdb
-    # ipdb.set_trace()
-
-    # pi_policy_reward = evaluate_policy(pi_policy, 100, 100)
-    better_pi_policy_reward = evaluate_policy(better_pi_policy, 100, 100)
-    # print(f"policy iteration reward {pi_policy_reward}")
-    print(f"better policy iteration reward {better_pi_policy_reward}")
-
-    # make sure pi has reason
-    # from gym_mapf.solvers.utils import render_states
-    # from gym_mapf.envs.mapf_env import integer_action_to_vector
-    # controversial_states = [s for s in range(env.nS) if better_pi_policy.act(s) != pi_policy.act(s)]
-    # print(f"There are {len(controversial_states)} controversial states")
-    # for s in controversial_states:
-    #     print(f"controversial state {s}")
-    #     render_states(env, [s])
-    #     print(f"better PI says {integer_action_to_vector(better_pi_policy.act(s), env.n_agents)}")
-    #     print(f"PI says {integer_action_to_vector(pi_policy.act(s), env.n_agents)}")
+    for planner_name in data:
+        print(f"{planner_name}: {data[planner_name]['total_time']} seconds, {data[planner_name]['reward']} score")
 
 
 if __name__ == '__main__':
-    compare_solvers()
+    compare_planners([
+        # ("prioritized value iteration", PrioritizedValueIterationPlanner(1.0)),
+        ("RTDP with PVI heuristic", RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0)),
+        # ("RTDP with manhattan heuristic", RtdpPlanner(manhattan_heuristic, 100, 1.0)),
+    ])
