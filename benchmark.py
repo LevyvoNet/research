@@ -19,7 +19,7 @@ ONLINE_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp
 # MONGODB_URL = 'mongodb+srv://LevyvoNet:<password>@mapf-benchmarks-yczd5.gcp.mongodb.net/test?retryWrites=true&w=majority'
 SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
-SCENES_PER_MAP_COUNT = 2
+SCENES_PER_MAP_COUNT = 25
 
 
 def benchmark_main():
@@ -40,15 +40,16 @@ def benchmark_main():
         0.2,
     ]
 
-    id_planner = IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
+    def get_id_planner():
+        return IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
 
-    possible_solvers = [
-        id_planner,
+    possible_solvers_creators = [
+        get_id_planner,
         # VI,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
-    SOLVER_TO_STRING = {id_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))'}
+    SOLVER_TO_STRING = {get_id_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))'}
 
     # Set the DB stuff for the current experiment
     client = pymongo.MongoClient(ONLINE_MONGODB_URL)
@@ -62,7 +63,7 @@ def benchmark_main():
             'possible_maps': possible_maps,
             'possible_n_agents': possible_n_agents,
             'possible_fail_prob': possible_fail_prob,
-            'possible_solvers': [SOLVER_TO_STRING[solver] for solver in possible_solvers],
+            'possible_solvers': [SOLVER_TO_STRING[solver] for solver in possible_solvers_creators],
         }
     db[date_str].insert_one(parameters_data)
 
@@ -71,14 +72,14 @@ def benchmark_main():
         for fail_prob in possible_fail_prob:
             for n_agents in possible_n_agents:
                 for scen_id in range(1, SCENES_PER_MAP_COUNT + 1):
-                    for planner in possible_solvers:
+                    for planner_creator in possible_solvers_creators:
                         instance_data = {
                             'type': 'instance_data',
                             'map': map,
                             'scen_id': scen_id,
                             'fail_prob': fail_prob,
                             'n_agents': n_agents,
-                            'solver': SOLVER_TO_STRING[planner]
+                            'solver': SOLVER_TO_STRING[planner_creator]
                         }
                         configuration_string = '_'.join([f'{key}:{value}' for key, value in instance_data.items()])
                         print(f'starting {configuration_string}')
@@ -95,7 +96,10 @@ def benchmark_main():
                         with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
                             try:
                                 start = time.time()
-                                planner.plan(env, instance_data['solver_data'])
+                                planner = planner_creator()
+                                policy = planner.plan(env, instance_data['solver_data'])
+                                reward = evaluate_policy(policy, 100, 1000)
+                                instance_data['reward'] = reward
                             except stopit.utils.TimeoutException:
                                 print(f'scen {scen_id} on map {map} got timeout')
                                 instance_data['end_reason'] = 'timeout'
