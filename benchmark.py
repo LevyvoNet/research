@@ -52,7 +52,7 @@ def benchmark_main():
 
     # Set the DB stuff for the current experiment
     client = pymongo.MongoClient(ONLINE_MONGODB_URL)
-    date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
+    date_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime("%Y-%m-%d_%H:%M")
     db = client[f'uncertain_mapf_benchmarks']
 
     # insert a collection with the experiement parameters
