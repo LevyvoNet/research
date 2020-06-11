@@ -110,7 +110,7 @@ def benchmark_main():
                         for i in range(env.n_agents):
                             pvi_planner = PrioritizedValueIterationPlanner(1.0)
                             local_env = get_local_view(env, [i])
-                            policy = pvi_planner.plan(local_env)
+                            policy = pvi_planner.plan(local_env, {})
                             local_env.reset()
                             self_agent_reward = policy.v[local_env.s]
                             instance_data['self_agent_reward'][i] = self_agent_reward
