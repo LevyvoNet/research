@@ -26,13 +26,13 @@ def benchmark_main():
     # Experiment configuration
     possible_maps = [
         'room-32-32-4',
-        # 'room-64-64-8',
-        # 'room-64-64-16'
+        'room-64-64-8',
+        'room-64-64-16'
     ]
     possible_n_agents = [
         1,
         2,
-        # 3,
+        3,
     ]
     possible_fail_prob = [
         0,
