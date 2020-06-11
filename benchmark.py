@@ -106,6 +106,15 @@ def benchmark_main():
                         if 'end_reason' not in instance_data:
                             instance_data['end_reason'] = 'done'
 
+                        instance_data['self_agent_reward'] = {}
+                        for i in range(env.n_agents):
+                            pvi_planner = PrioritizedValueIterationPlanner(1.0)
+                            local_env = get_local_view(env, [i])
+                            policy = pvi_planner.plan(local_env)
+                            local_env.reset()
+                            self_agent_reward = policy.v[local_env.s]
+                            instance_data['self_agent_reward'][i] = self_agent_reward
+
                         # Insert stats about this instance to the DB
                         db[date_str].insert_one(instance_data)
 
