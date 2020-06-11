@@ -5,24 +5,21 @@ import time
 
 from gym_mapf.envs.utils import create_mapf_env
 from gym_mapf.envs.mapf_env import MapfEnv
-from gym_mapf.solvers import (ID,
+from gym_mapf.solvers import (IdPlanner,
                               ValueIterationPlanner,
                               PrioritizedValueIterationPlanner,
                               PolicyIterationPlanner,
                               RtdpPlanner)
-from gym_mapf.solvers.vi import prioritized_value_iteration
 from gym_mapf.solvers.utils import render_states, Policy
 from gym_mapf.envs.utils import get_local_view
 from gym_mapf.solvers.rtdp import manhattan_heuristic, prioritized_value_iteration_heuristic
 
 MONGODB_URL = "mongodb://localhost:27017/"
+ONLINE_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp.mongodb.net/test"
 # MONGODB_URL = 'mongodb+srv://LevyvoNet:<password>@mapf-benchmarks-yczd5.gcp.mongodb.net/test?retryWrites=true&w=majority'
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 1 * SECONDS_IN_MINUTE
-
-# TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
-SOLVER_TO_STRING = {ID: 'ID',
-                    ValueIterationPlanner: 'VI'}
+SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
+SCENES_PER_MAP_COUNT = 2
 
 
 def benchmark_main():
@@ -35,52 +32,60 @@ def benchmark_main():
     possible_n_agents = [
         1,
         2,
-        3,
+        # 3,
     ]
     possible_fail_prob = [
         0,
         0.1,
         0.2,
     ]
+
+    id_planner = IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
+
     possible_solvers = [
-        ID,
+        id_planner,
         # VI,
     ]
 
+    # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
+    SOLVER_TO_STRING = {id_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))'}
+
     # Set the DB stuff for the current experiment
-    client = pymongo.MongoClient(MONGODB_URL)
-    date_str = datetime.datetime.now().strftime("%m-%d-%Y_%H:%M")
-    db = client[f'id-room-benchmark_{date_str}']
+    client = pymongo.MongoClient(ONLINE_MONGODB_URL)
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
+    db = client[f'uncertain_mapf_benchmarks']
 
     # insert a collection with the experiement parameters
     parameters_data = \
         {
+            'type': 'parameters',
             'possible_maps': possible_maps,
             'possible_n_agents': possible_n_agents,
             'possible_fail_prob': possible_fail_prob,
             'possible_solvers': [SOLVER_TO_STRING[solver] for solver in possible_solvers],
         }
-    db['parameters'].insert_one(parameters_data)
+    db[date_str].insert_one(parameters_data)
 
     # TODO: do this with itertools
     for map in possible_maps:
         for fail_prob in possible_fail_prob:
             for n_agents in possible_n_agents:
-                for scen_id in range(1, 26):
-                    for solver in possible_solvers:
+                for scen_id in range(1, SCENES_PER_MAP_COUNT + 1):
+                    for planner in possible_solvers:
                         instance_data = {
+                            'type': 'instance_data',
                             'map': map,
                             'scen_id': scen_id,
                             'fail_prob': fail_prob,
                             'n_agents': n_agents,
-                            'solver': solver.__name__
+                            'solver': SOLVER_TO_STRING[planner]
                         }
                         configuration_string = '_'.join([f'{key}:{value}' for key, value in instance_data.items()])
                         print(f'starting {configuration_string}')
 
                         # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
                         try:
-                            env = create_mapf_env(map, scen_id, n_agents, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+                            env = create_mapf_env(map, scen_id, n_agents, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
                         except KeyError:
                             print('{} is invalid'.format(scen_id))
                             continue
@@ -90,7 +95,7 @@ def benchmark_main():
                         with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
                             try:
                                 start = time.time()
-                                solver(env, **{'info': instance_data['solver_data']})
+                                planner.plan(env, instance_data['solver_data'])
                             except stopit.utils.TimeoutException:
                                 print(f'scen {scen_id} on map {map} got timeout')
                                 instance_data['end_reason'] = 'timeout'
@@ -102,7 +107,7 @@ def benchmark_main():
                             instance_data['end_reason'] = 'done'
 
                         # Insert stats about this instance to the DB
-                        db['results'].insert_one(instance_data)
+                        db[date_str].insert_one(instance_data)
 
 
 def solve_and_measure_time(env, planner, **kwargs):
@@ -174,11 +179,11 @@ def play_single_episode(policy: Policy):
 
 
 def compare_planners(planners):
-    fail_prob = 0.1
+    fail_prob = 0.2
 
     data = {}
     for planner_name, planner in planners:
-        env = create_mapf_env('room-32-32-4', 2, 2, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 1, 2, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
         policy, total_time = solve_and_measure_time(env, planner)
         reward = evaluate_policy(policy, 100, 1000)
         data[planner_name] = {'total_time': total_time,
@@ -186,7 +191,7 @@ def compare_planners(planners):
 
     # get some sense about the best options available
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_v = [prioritized_value_iteration(local_env, {}, 1.0) for local_env in local_envs]
+    local_v = [(PrioritizedValueIterationPlanner(1.0).plan(local_env, {}).v) for local_env in local_envs]
     for i in range(env.n_agents):
         print(f"starting state value for agent {i} is {local_v[i][local_envs[i].s]}")
 
@@ -195,8 +200,11 @@ def compare_planners(planners):
 
 
 if __name__ == '__main__':
-    compare_planners([
-        # ("prioritized value iteration", PrioritizedValueIterationPlanner(1.0)),
-        ("RTDP with PVI heuristic", RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0)),
-        # ("RTDP with manhattan heuristic", RtdpPlanner(manhattan_heuristic, 100, 1.0)),
-    ])
+    # compare_planners([
+    #     # ("prioritized value iteration", PrioritizedValueIterationPlanner(1.0)),
+    #     # ("ID(RTDP(pvi, 100, 1.0))", IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))),
+    #     ("RTDP(pvi, 100, 1.0)",RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0)),
+    #     # ("RTDP with manhattan heuristic", RtdpPlanner(manhattan_heuristic, 100, 1.0)),
+    # ])
+
+    benchmark_main()
