@@ -98,8 +98,9 @@ def benchmark_main():
                                 start = time.time()
                                 planner = planner_creator()
                                 policy = planner.plan(env, instance_data['solver_data'])
-                                reward = evaluate_policy(policy, 100, 1000)
-                                instance_data['reward'] = reward
+                                reward, clashed = evaluate_policy(policy, 100, 1000)
+                                instance_data['average_reward'] = reward
+                                instance_data['clashed'] = clashed
                             except stopit.utils.TimeoutException:
                                 print(f'scen {scen_id} on map {map} got timeout')
                                 instance_data['end_reason'] = 'timeout'
@@ -162,6 +163,7 @@ def env_transitions_calc_benchmark():
 
 def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
     total_reward = 0
+    clashed = False
     for i in range(n_episodes):
         policy.env.reset()
         done = False
@@ -171,11 +173,12 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
             total_reward += reward
             steps += 1
             if reward == policy.env.reward_of_clash and done:
-                print("clash happened, entering debug mode")
-                import ipdb
-                ipdb.set_trace()
+                print("clash happened!!!")
+                clashed = False
+                # import ipdb
+                # ipdb.set_trace()
 
-    return total_reward / n_episodes
+    return total_reward / n_episodes, clashed
 
 
 def play_single_episode(policy: Policy):
