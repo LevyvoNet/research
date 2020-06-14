@@ -174,9 +174,7 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
             steps += 1
             if reward == policy.env.reward_of_clash and done:
                 print("clash happened!!!")
-                clashed = False
-                # import ipdb
-                # ipdb.set_trace()
+                clashed = True
 
     return total_reward / n_episodes, clashed
 
