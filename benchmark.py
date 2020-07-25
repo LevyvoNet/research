@@ -45,7 +45,7 @@ def benchmark_main():
         return IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
 
     def get_id_lrtdp_planner():
-        return IdPlanner(LrtdpPlanner(prioritized_value_iteration_heuristic, 1000, 1.0, 0.00001))
+        return IdPlanner(LrtdpPlanner(prioritized_value_iteration_heuristic, 200, 1.0, 0.001))
 
     possible_solvers_creators = [
         get_id_lrtdp_planner,
