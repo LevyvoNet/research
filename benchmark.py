@@ -9,8 +9,9 @@ from gym_mapf.solvers import (IdPlanner,
                               ValueIterationPlanner,
                               PrioritizedValueIterationPlanner,
                               PolicyIterationPlanner,
-                              RtdpPlanner)
-from gym_mapf.solvers.utils import render_states, Policy
+                              RtdpPlanner,
+                              LrtdpPlanner)
+from gym_mapf.solvers.utils import render_states, Policy, evaluate_policy
 from gym_mapf.envs.utils import get_local_view
 from gym_mapf.solvers.rtdp import manhattan_heuristic, prioritized_value_iteration_heuristic
 
@@ -40,16 +41,19 @@ def benchmark_main():
         0.2,
     ]
 
-    def get_id_planner():
+    def get_id_rtdp_planner():
         return IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
 
+    def get_id_lrtdp_planner():
+        return IdPlanner(LrtdpPlanner(prioritized_value_iteration_heuristic, 1000, 1.0, 0.00001))
+
     possible_solvers_creators = [
-        get_id_planner,
-        # VI,
+        get_id_lrtdp_planner,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
-    SOLVER_TO_STRING = {get_id_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))'}
+    SOLVER_TO_STRING = {get_id_rtdp_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))',
+                        get_id_lrtdp_planner: 'ID(LRTDP(pvi_heuristic, 1000, 1.0, 0.00001'}
 
     # Set the DB stuff for the current experiment
     client = pymongo.MongoClient(ONLINE_MONGODB_URL)
@@ -159,24 +163,6 @@ def env_transitions_calc_benchmark():
 
     print(f'naive for loop took {time.time() - start} seconds')
     print(f'env.nS={env.nS}, env.nA={env.nA}, x={x}')
-
-
-def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
-    total_reward = 0
-    clashed = False
-    for i in range(n_episodes):
-        policy.env.reset()
-        done = False
-        steps = 0
-        while not done and steps < max_steps:
-            new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
-            total_reward += reward
-            steps += 1
-            if reward == policy.env.reward_of_clash and done:
-                print("clash happened!!!")
-                clashed = True
-
-    return total_reward / n_episodes, clashed
 
 
 def play_single_episode(policy: Policy):
