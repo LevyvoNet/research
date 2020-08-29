@@ -2,15 +2,19 @@ import pymongo
 import datetime
 import stopit
 import time
+from functools import partial
 
 from gym_mapf.envs.utils import create_mapf_env
 from gym_mapf.envs.mapf_env import MapfEnv
-from gym_mapf.solvers import (IdPlanner,
-                              ValueIterationPlanner,
-                              PrioritizedValueIterationPlanner,
-                              PolicyIterationPlanner,
-                              RtdpPlanner,
-                              LrtdpPlanner)
+from gym_mapf.solvers import (id,
+                              value_iteration,
+                              prioritized_value_iteration,
+                              policy_iteration,
+                              rtdp,
+                              stop_when_no_improvement_between_batches_rtdp,
+                              fixed_iterations_count_rtdp,
+                              lrtdp
+                              )
 from gym_mapf.solvers.utils import render_states, Policy, evaluate_policy
 from gym_mapf.envs.utils import get_local_view
 from gym_mapf.solvers.rtdp import manhattan_heuristic, prioritized_value_iteration_heuristic
@@ -41,19 +45,23 @@ def benchmark_main():
         0.2,
     ]
 
+    # Planner creator functions
     def get_id_rtdp_planner():
-        return IdPlanner(RtdpPlanner(prioritized_value_iteration_heuristic, 100, 1.0))
-
-    def get_id_lrtdp_planner():
-        return IdPlanner(LrtdpPlanner(prioritized_value_iteration_heuristic, 200, 1.0, 0.001))
+        low_level_planner = partial(stop_when_no_improvement_between_batches_rtdp,
+                                    partial(prioritized_value_iteration_heuristic, 1.0),
+                                    1.0,
+                                    100,
+                                    10000)
+        return partial(id, low_level_planner)
 
     possible_solvers_creators = [
-        get_id_lrtdp_planner,
+        get_id_rtdp_planner,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
-    SOLVER_TO_STRING = {get_id_rtdp_planner: 'ID(RTDP(pvi_heuristic, 100, 1.0))',
-                        get_id_lrtdp_planner: 'ID(LRTDP(pvi_heuristic, 1000, 1.0, 0.00001'}
+    SOLVER_TO_STRING = {
+        get_id_rtdp_planner: 'ID(RTDP(heuristic=pvi_heuristic, gamma=1.0, batch_size=100, max_iterations=10000))'
+    }
 
     # Set the DB stuff for the current experiment
     client = pymongo.MongoClient(ONLINE_MONGODB_URL)
@@ -90,7 +98,7 @@ def benchmark_main():
 
                         # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
                         try:
-                            env = create_mapf_env(map, scen_id, n_agents, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
+                            env = create_mapf_env(map, scen_id, n_agents, fail_prob / 2, fail_prob / 2, -1000, -1, -1)
                         except KeyError:
                             print('{} is invalid'.format(scen_id))
                             continue
@@ -101,7 +109,7 @@ def benchmark_main():
                             try:
                                 start = time.time()
                                 planner = planner_creator()
-                                policy = planner.plan(env, instance_data['solver_data'])
+                                policy = planner(env, instance_data['solver_data'])
                                 reward, clashed = evaluate_policy(policy, 100, 1000)
                                 instance_data['average_reward'] = reward
                                 instance_data['clashed'] = clashed
@@ -117,9 +125,9 @@ def benchmark_main():
 
                         instance_data['self_agent_reward'] = []
                         for i in range(env.n_agents):
-                            pvi_planner = PrioritizedValueIterationPlanner(1.0)
+                            pvi_plan_func = partial(prioritized_value_iteration, 1.0)
                             local_env = get_local_view(env, [i])
-                            policy = pvi_planner.plan(local_env, {})
+                            policy = pvi_plan_func(local_env, {})
                             local_env.reset()
                             self_agent_reward = policy.v[local_env.s]
                             instance_data['self_agent_reward'].append(self_agent_reward)
@@ -191,7 +199,7 @@ def compare_planners(planners):
 
     # get some sense about the best options available
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_v = [(PrioritizedValueIterationPlanner(1.0).plan(local_env, {}).v) for local_env in local_envs]
+    local_v = [(partial(prioritized_value_iteration, 1.0)(local_env, {}).v) for local_env in local_envs]
     for i in range(env.n_agents):
         print(f"starting state value for agent {i} is {local_v[i][local_envs[i].s]}")
 
