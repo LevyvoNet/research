@@ -30,18 +30,18 @@ SCENES_PER_MAP_COUNT = 25
 def benchmark_main():
     # Experiment configuration
     possible_maps = [
-        #'room-32-32-4',
+        # 'room-32-32-4',
         # 'room-64-64-8',
         # 'room-64-64-16',
-        'empty-8-8',
+        # 'empty-8-8',
         'empty-16-16',
         'empty-32-32',
         'empty-48-48',
     ]
     possible_n_agents = [
-        #1,
-        #2,
-        #3,
+        1,
+        2,
+        3,
         4,
         5,
         6,
@@ -49,7 +49,9 @@ def benchmark_main():
     ]
     possible_fail_prob = [
         0,
+        0.05,
         0.1,
+        0.15,
         0.2,
     ]
 
@@ -81,7 +83,15 @@ def benchmark_main():
     date_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime("%Y-%m-%d_%H:%M")
     db = client[f'uncertain_mapf_benchmarks']
 
-    # insert a collection with the experiement parameters
+    # Calculate how much instances we are expecting for sanity check (won't be exactly the same because of bad scenarios)
+    expected_documents_number = len(possible_maps) * \
+                                len(possible_n_agents) * \
+                                len(possible_fail_prob) * \
+                                len(possible_solvers_creators) * \
+                                SCENES_PER_MAP_COUNT + \
+                                1  # +1 for the experiment metadata document
+
+    # insert a collection with the experiment parameters
     parameters_data = \
         {
             'type': 'parameters',
@@ -89,6 +99,7 @@ def benchmark_main():
             'possible_n_agents': possible_n_agents,
             'possible_fail_prob': possible_fail_prob,
             'possible_solvers': [SOLVER_TO_STRING[solver] for solver in possible_solvers_creators],
+            'expected_documents_number': expected_documents_number
         }
     db[date_str].insert_one(parameters_data)
 
