@@ -30,14 +30,22 @@ SCENES_PER_MAP_COUNT = 25
 def benchmark_main():
     # Experiment configuration
     possible_maps = [
-        'room-32-32-4',
+        #'room-32-32-4',
         # 'room-64-64-8',
-        # 'room-64-64-16'
+        # 'room-64-64-16',
+        'empty-8-8',
+        'empty-16-16',
+        'empty-32-32',
+        'empty-48-48',
     ]
     possible_n_agents = [
-        1,
-        2,
-        3,
+        #1,
+        #2,
+        #3,
+        4,
+        5,
+        6,
+        7,
     ]
     possible_fail_prob = [
         0,
@@ -54,13 +62,18 @@ def benchmark_main():
                                     10000)
         return partial(id, low_level_planner)
 
+    def get_id_vi_planner():
+        return partial(id, partial(value_iteration, 1.0))
+
     possible_solvers_creators = [
         get_id_rtdp_planner,
+        get_id_vi_planner,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
     SOLVER_TO_STRING = {
-        get_id_rtdp_planner: 'ID(RTDP(heuristic=pvi_heuristic, gamma=1.0, batch_size=100, max_iterations=10000))'
+        get_id_rtdp_planner: 'ID(RTDP(heuristic=pvi_heuristic, gamma=1.0, batch_size=100, max_iterations=10000))',
+        get_id_vi_planner: 'ID(VI(gamma=1.0))'
     }
 
     # Set the DB stuff for the current experiment
