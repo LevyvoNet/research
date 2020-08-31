@@ -34,8 +34,8 @@ def benchmark_main():
         # 'room-64-64-8',
         # 'room-64-64-16',
         # 'empty-8-8',
-        'empty-16-16',
-        'empty-32-32',
+        # 'empty-16-16',
+        # 'empty-32-32',
         'empty-48-48',
     ]
     possible_n_agents = [
@@ -67,15 +67,20 @@ def benchmark_main():
     def get_id_vi_planner():
         return partial(id, partial(value_iteration, 1.0))
 
+    def get_vi_planner():
+        return partial(value_iteration, 1.0)
+
     possible_solvers_creators = [
         get_id_rtdp_planner,
         get_id_vi_planner,
+        get_vi_planner,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
     SOLVER_TO_STRING = {
         get_id_rtdp_planner: 'ID(RTDP(heuristic=pvi_heuristic, gamma=1.0, batch_size=100, max_iterations=10000))',
-        get_id_vi_planner: 'ID(VI(gamma=1.0))'
+        get_id_vi_planner: 'ID(VI(gamma=1.0))',
+        get_vi_planner: VI(gamma=1.0),
     }
 
     # Set the DB stuff for the current experiment
