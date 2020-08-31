@@ -80,7 +80,7 @@ def benchmark_main():
     SOLVER_TO_STRING = {
         get_id_rtdp_planner: 'ID(RTDP(heuristic=pvi_heuristic, gamma=1.0, batch_size=100, max_iterations=10000))',
         get_id_vi_planner: 'ID(VI(gamma=1.0))',
-        get_vi_planner: VI(gamma=1.0),
+        get_vi_planner: 'VI(gamma=1.0)',
     }
 
     # Set the DB stuff for the current experiment
