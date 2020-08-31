@@ -33,26 +33,18 @@ def benchmark_main():
         # 'room-32-32-4',
         # 'room-64-64-8',
         # 'room-64-64-16',
-        # 'empty-8-8',
+        'empty-8-8',
         # 'empty-16-16',
         # 'empty-32-32',
-        'empty-48-48',
+        # 'empty-48-48',
     ]
-    possible_n_agents = [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-    ]
+    possible_n_agents = range(1, 6)
     possible_fail_prob = [
-        0,
-        0.05,
+        # 0,
+        # 0.05,
         0.1,
-        0.15,
-        0.2,
+        # 0.15,
+        # 0.2,
     ]
 
     # Planner creator functions
@@ -72,8 +64,8 @@ def benchmark_main():
 
     possible_solvers_creators = [
         get_id_rtdp_planner,
-        get_id_vi_planner,
-        get_vi_planner,
+        # get_id_vi_planner,
+        # get_vi_planner,
     ]
 
     # TODO: someday the solvers will have parameters and will need to be classes with implemented __repr__,__str__
