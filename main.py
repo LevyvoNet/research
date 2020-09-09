@@ -5,6 +5,7 @@ import time
 import stopit
 from collections import namedtuple
 from functools import partial, reduce
+from pathos.multiprocessing import ProcessPool
 
 from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
@@ -28,7 +29,6 @@ CLOUD_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp.
 DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***********************************************
-N_PROCESSES = 1
 SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 20
@@ -59,7 +59,7 @@ POSSIBLE_MAPS = [
     # 'empty-32-32',
     # 'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 3))
+POSSIBLE_N_AGENTS = list(range(1, 5))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
@@ -70,7 +70,7 @@ POSSIBLE_FAIL_PROB = [
     # 0.4
 ]
 
-SCENES_PER_MAP_COUNT = 5
+SCENES_PER_MAP_COUNT = 3
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 local_pvi_heuristic_describer = FunctionDescriber(
@@ -151,7 +151,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
-        env = create_mapf_env(map,
+        env = create_mapf_env(instance.map,
                               instance.scen_id,
                               instance.n_agents,
                               instance.fail_prob / 2,
@@ -190,7 +190,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
         local_env = get_local_view(env, [i])
         policy = pvi_plan_func(local_env, {})
         local_env.reset()
-        self_agent_reward = policy.v[local_env.s]
+        self_agent_reward = float(policy.v[local_env.s])
         instance_data['self_agent_reward'].append(self_agent_reward)
 
     # Insert stats about this instance to the DB
@@ -202,15 +202,15 @@ def main():
     date_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime("%Y-%m-%d_%H:%M")
 
     # start logger process
-    logger_q = multiprocessing.Queue()
+    logger_q = multiprocessing.Manager().Queue()
     logger_process, log_func = start_logger_process(date_str, logger_q)
 
+    log_func(INFO, f'Expecting about {EXPECTED_N_INSTANCES} documents in the collection in the end. '
+                   f'This might be a little bit lower because of invalid environments')
+
     # start db process
-    db_q = multiprocessing.Queue()
-    db_process, insert_to_db_func = start_db_process(CLOUD_MONGODB_URL,
-                                                     DB_NAME,
-                                                     date_str,
-                                                     db_q)
+    db_q = multiprocessing.Manager().Queue()
+    db_process, insert_to_db_func = start_db_process(CLOUD_MONGODB_URL, DB_NAME, date_str, db_q, log_func)
 
     # define the solving function
     def solve_instances(instances):
@@ -219,15 +219,30 @@ def main():
 
         return True
 
+    start = time.time()
+
     # Solve batches of instances processes from the pool
-    with multiprocessing.Pool(N_PROCESSES) as pool:
+    with ProcessPool() as pool:
+        log_func(INFO, f'Number of CPUs is {pool.ncpus}')
         pool.map(solve_instances, instances_chunks_generator(CHUNK_SIZE))
 
+    log_func(INFO, f'Total processing time is {time.time() - start} seconds')
+    # TODO: delete this code block
+    #  for debug purpose only, this enables me to debug in the main process.
+    # for instances_chunk in instances_chunks_generator(CHUNK_SIZE):
+    #     solve_instances(instances_chunk)
+
     # Wait for the db and logger queues to be empty
-    while any([logger_q.not_empty,
-               db_q.not_empty]):
+    while any([
+        not logger_q.empty(),
+        not db_q.empty()]
+    ):
         time.sleep(1)
 
     # Now terminate infinite processes
     logger_process.terminate()
     db_process.terminate()
+
+
+if __name__ == '__main__':
+    main()

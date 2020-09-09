@@ -17,7 +17,7 @@ def init_logger(date_str: str) -> logging.Logger:
     fh.setLevel(logging.DEBUG)
     # create console handler with a higher log level, for debug purpose
     ch = logging.StreamHandler()
-    ch.setLevel(logging.ERROR)
+    ch.setLevel(logging.INFO)
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
@@ -29,12 +29,12 @@ def init_logger(date_str: str) -> logging.Logger:
     return logger
 
 
-def log_func(q: multiprocessing.Queue, severity: str, message: str):
+def log_func(q: multiprocessing.Manager().Queue, severity: str, message: str):
     """Export a function for users in order to send messages to log"""
     q.put((severity, message))
 
 
-def write_to_log_loop(date_str: str, q: multiprocessing.Queue):
+def write_to_log_loop(date_str: str, q: multiprocessing.Manager().Queue):
     logger = init_logger(date_str)
 
     # fetch messages from queue and write to the log
@@ -45,7 +45,7 @@ def write_to_log_loop(date_str: str, q: multiprocessing.Queue):
         getattr(logger, severity)(message)
 
 
-def start_logger_process(date_str: str, q: multiprocessing.Queue) -> [multiprocessing.Process,
+def start_logger_process(date_str: str, q: multiprocessing.Manager().Queue) -> [multiprocessing.Process,
                                                                       Callable[[str, str], None]]:
     """Start the log process
 
