@@ -2,7 +2,11 @@ import pymongo
 import datetime
 import stopit
 import time
+import logging
 from functools import partial
+from collections import namedtuple
+from multiprocessing import Pool, Queue
+from typing import Callable
 
 from gym_mapf.envs.utils import create_mapf_env
 from gym_mapf.envs.mapf_env import MapfEnv
@@ -26,19 +30,27 @@ SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
 SCENES_PER_MAP_COUNT = 25
 
+InstanceData = namedtuple('InstanceData', [
+    'map',
+    'scne_id',
+    'fail_prob',
+    'n_agents',
+    'solver'
+])
+
 
 def benchmark_main():
     # Experiment configuration
     possible_maps = [
-        # 'room-32-32-4',
-        # 'room-64-64-8',
-        # 'room-64-64-16',
-        'empty-8-8',
-        # 'empty-16-16',
-        # 'empty-32-32',
-        # 'empty-48-48',
+        'room-32-32-4',
+        'room-64-64-8',
+        'room-64-64-16',
+        # 'empty-8-8',
+        'empty-16-16',
+        'empty-32-32',
+        'empty-48-48',
     ]
-    possible_n_agents = range(1, 6)
+    possible_n_agents = list(range(1, 4))
     possible_fail_prob = [
         # 0,
         # 0.05,
@@ -131,9 +143,11 @@ def benchmark_main():
                                 start = time.time()
                                 planner = planner_creator()
                                 policy = planner(env, instance_data['solver_data'])
-                                reward, clashed = evaluate_policy(policy, 100, 1000)
-                                instance_data['average_reward'] = reward
-                                instance_data['clashed'] = clashed
+                                if policy is not None:
+                                    # policy might be None if the problem is too big for the solver
+                                    reward, clashed = evaluate_policy(policy, 100, 1000)
+                                    instance_data['average_reward'] = reward
+                                    instance_data['clashed'] = clashed
                             except stopit.utils.TimeoutException:
                                 print(f'scen {scen_id} on map {map} got timeout')
                                 instance_data['end_reason'] = 'timeout'
@@ -157,75 +171,70 @@ def benchmark_main():
                         db[date_str].insert_one(instance_data)
 
 
-def solve_and_measure_time(env, planner, **kwargs):
-    start = time.time()
-    kwargs.update({'info': {}})
-    ret = planner.plan(env, **kwargs)
-    total_time = time.time() - start
-
-    return ret, total_time
+def solve_single_instance(q: Queue, instance_data: InstanceData):
+    """Solve a single instance and insert the results to the queue"""
+    pass
 
 
-def env_transitions_calc_benchmark():
-    fail_prob = 0.1
-    # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    # env = create_mapf_env('room-32-32-4', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    # test_time_for_env(env, value_iteration_planning)
-
-    # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    # env = create_mapf_env('room-32-32-4', 2, 1, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    # prioritized_v = test_time_for_env(env, prioritized_value_iteration_planning)
-
-    # env = create_mapf_env('room-32-32-4', 2, 1, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
-    start = time.time()
-    for s in range(env.nS):
-        for a in range(env.nA):
-            x = env.P[s][a]
-    print(f'env for loop took {time.time() - start} seconds')
-
-    start = time.time()
-    x = 0
-    for _ in range(env.nS):
-        for _ in range(env.nA):
-            x += 1
-
-    print(f'naive for loop took {time.time() - start} seconds')
-    print(f'env.nS={env.nS}, env.nA={env.nA}, x={x}')
 
 
-def play_single_episode(policy: Policy):
-    done = False
-    policy.env.reset()
-    total_reward = 0
-    while not done:
-        _, r, done, _ = policy.env.step(policy.act(policy.env.s))
-        policy.env.render()
-        time.sleep(1)
-        total_reward += r
 
-    print(f'got reward of {total_reward}')
-
-
-def compare_planners(planners):
-    fail_prob = 0.2
-
-    data = {}
-    for planner_name, planner in planners:
-        env = create_mapf_env('room-32-32-4', 1, 2, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
-        policy, total_time = solve_and_measure_time(env, planner)
-        reward = evaluate_policy(policy, 100, 1000)
-        data[planner_name] = {'total_time': total_time,
-                              'reward': reward}
-
-    # get some sense about the best options available
-    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_v = [(partial(prioritized_value_iteration, 1.0)(local_env, {}).v) for local_env in local_envs]
-    for i in range(env.n_agents):
-        print(f"starting state value for agent {i} is {local_v[i][local_envs[i].s]}")
-
-    for planner_name in data:
-        print(f"{planner_name}: {data[planner_name]['total_time']} seconds, {data[planner_name]['reward']} score")
+# def solve_and_measure_time(env, planner, **kwargs):
+#     start = time.time()
+#     kwargs.update({'info': {}})
+#     ret = planner.plan(env, **kwargs)
+#     total_time = time.time() - start
+#
+#     return ret, total_time
+#
+#
+# def env_transitions_calc_benchmark():
+#     fail_prob = 0.1
+#     # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     # env = create_mapf_env('room-32-32-4', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     # test_time_for_env(env, value_iteration_planning)
+#
+#     # env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     # env = create_mapf_env('room-32-32-4', 2, 1, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     # prioritized_v = test_time_for_env(env, prioritized_value_iteration_planning)
+#
+#     # env = create_mapf_env('room-32-32-4', 2, 1, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     env = create_mapf_env('empty-8-8', 2, 2, fail_prob / 2, fail_prob / 2, -1, 1, -0.0001)
+#     start = time.time()
+#     for s in range(env.nS):
+#         for a in range(env.nA):
+#             x = env.P[s][a]
+#     print(f'env for loop took {time.time() - start} seconds')
+#
+#     start = time.time()
+#     x = 0
+#     for _ in range(env.nS):
+#         for _ in range(env.nA):
+#             x += 1
+#
+#     print(f'naive for loop took {time.time() - start} seconds')
+#     print(f'env.nS={env.nS}, env.nA={env.nA}, x={x}')
+#
+#
+# def compare_planners(planners):
+#     fail_prob = 0.2
+#
+#     data = {}
+#     for planner_name, planner in planners:
+#         env = create_mapf_env('room-32-32-4', 1, 2, fail_prob / 2, fail_prob / 2, -1000, 0, -1)
+#         policy, total_time = solve_and_measure_time(env, planner)
+#         reward = evaluate_policy(policy, 100, 1000)
+#         data[planner_name] = {'total_time': total_time,
+#                               'reward': reward}
+#
+#     # get some sense about the best options available
+#     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+#     local_v = [(partial(prioritized_value_iteration, 1.0)(local_env, {}).v) for local_env in local_envs]
+#     for i in range(env.n_agents):
+#         print(f"starting state value for agent {i} is {local_v[i][local_envs[i].s]}")
+#
+#     for planner_name in data:
+#         print(f"{planner_name}: {data[planner_name]['total_time']} seconds, {data[planner_name]['reward']} score")
 
 
 if __name__ == '__main__':
