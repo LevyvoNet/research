@@ -59,7 +59,7 @@ POSSIBLE_MAPS = [
     'empty-32-32',
     'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 4))
+POSSIBLE_N_AGENTS = list(range(1, 5))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
@@ -75,6 +75,10 @@ POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 local_pvi_heuristic_describer = FunctionDescriber(
     description='local_view_pvi_heuristic(gamma=1.0)',
     func=partial(local_views_prioritized_value_iteration_heuristic, 1.0))
+
+vi_describer = FunctionDescriber(
+    description='value_iteration(gamma=1.0)',
+    func=parital(value_iteration, 1.0)
 
 rtdp_stop_no_improvement_describer = FunctionDescriber(
     description=f'stop_no_improvement_rtdp('
@@ -94,8 +98,10 @@ id_rtdp_describer = FunctionDescriber(
     func=partial(id, rtdp_stop_no_improvement_describer.func)
 )
 
+
 POSSIBLE_SOLVERS = [
     id_rtdp_describer,
+    vi_describer,
 ]
 
 EXPECTED_N_INSTANCES = reduce(lambda x, y: x * len(y),
