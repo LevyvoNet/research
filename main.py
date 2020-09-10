@@ -78,7 +78,7 @@ local_pvi_heuristic_describer = FunctionDescriber(
 
 vi_describer = FunctionDescriber(
     description='value_iteration(gamma=1.0)',
-    func=parital(value_iteration, 1.0)
+    func=partial(value_iteration, 1.0))
 
 rtdp_stop_no_improvement_describer = FunctionDescriber(
     description=f'stop_no_improvement_rtdp('
@@ -98,10 +98,9 @@ id_rtdp_describer = FunctionDescriber(
     func=partial(id, rtdp_stop_no_improvement_describer.func)
 )
 
-
 POSSIBLE_SOLVERS = [
     id_rtdp_describer,
-    vi_describer,
+    # vi_describer,
 ]
 
 EXPECTED_N_INSTANCES = reduce(lambda x, y: x * len(y),
