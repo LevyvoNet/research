@@ -100,6 +100,7 @@ id_rtdp_describer = FunctionDescriber(
 
 POSSIBLE_SOLVERS = [
     id_rtdp_describer,
+    rtdp_stop_no_improvement_describer,
     # vi_describer,
 ]
 
@@ -164,7 +165,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
                               -1,
                               -1)
     except KeyError:
-        log_func(ERROR, '{} is invalid'.format(instance.scen_id))
+        log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
         return
 
     # Run the solver
