@@ -23,17 +23,17 @@ from gym_mapf.solvers import (id,
                               lrtdp
                               )
 
-# *************** DB parameters ****************************************************
+# *************** DB parameters ********************************************************************************
 MONGODB_URL = "mongodb://localhost:27017/"
 CLOUD_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp.mongodb.net/test"
 DB_NAME = 'uncertain_mapf_benchmarks'
 
-# *************** Running parameters ***********************************************
+# *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
-CHUNK_SIZE = 20
+CHUNK_SIZE = 25  # How many instances to solve in a single process
 
-# *************** 'Structs' definitions ********************************************
+# *************** 'Structs' definitions ************************************************************************
 FunctionDescriber = namedtuple('Solver', [
     'description',
     'func'
@@ -48,29 +48,28 @@ InstanceData = namedtuple('InstanceData', [
     'plan_func',
 ])
 
-# ************* Experiment parameters **********************************************
+# ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    # 'room-32-32-4',
+    'room-32-32-4',
     # 'room-64-64-8',
     # 'room-64-64-16',
     'empty-8-8',
     'empty-16-16',
-    # 'empty-32-32',
-    # 'empty-48-48',
+    'empty-32-32',
+    'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 5))
+POSSIBLE_N_AGENTS = list(range(1, 4))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
     0,
-    # 0.1,
-    # 0.2,
-    # 0.3,
-    # 0.4
+    0.1,
+    0.2,
+    0.3,
 ]
 
-SCENES_PER_MAP_COUNT = 3
+SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 local_pvi_heuristic_describer = FunctionDescriber(
@@ -147,7 +146,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
     }
     configuration_string = '_'.join([f'{key}:{value}'
                                      for key, value in instance_data.items()])
-    log_func(INFO, f'starting {configuration_string}')
+    log_func(DEBUG, f'starting {configuration_string}')
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
@@ -210,7 +209,12 @@ def main():
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
-    db_process, insert_to_db_func = start_db_process(CLOUD_MONGODB_URL, DB_NAME, date_str, db_q, log_func)
+    db_process, insert_to_db_func = start_db_process(CLOUD_MONGODB_URL,
+                                                     DB_NAME,
+                                                     date_str,
+                                                     db_q,
+                                                     log_func,
+                                                     EXPECTED_N_INSTANCES)
 
     # define the solving function
     def solve_instances(instances):
@@ -219,25 +223,17 @@ def main():
 
         return True
 
-    start = time.time()
-
     # Solve batches of instances processes from the pool
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
         pool.map(solve_instances, instances_chunks_generator(CHUNK_SIZE))
-
-    log_func(INFO, f'Total processing time is {time.time() - start} seconds')
-    # TODO: delete this code block
-    #  for debug purpose only, this enables me to debug in the main process.
-    # for instances_chunk in instances_chunks_generator(CHUNK_SIZE):
-    #     solve_instances(instances_chunk)
 
     # Wait for the db and logger queues to be empty
     while any([
         not logger_q.empty(),
         not db_q.empty()]
     ):
-        time.sleep(1)
+        time.sleep(5)
 
     # Now terminate infinite processes
     logger_process.terminate()
