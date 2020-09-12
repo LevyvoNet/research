@@ -32,7 +32,7 @@ DB_NAME = 'uncertain_mapf_benchmarks'
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
-CHUNK_SIZE = 25  # How many instances to solve in a single process
+CHUNK_SIZE = 3  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
 FunctionDescriber = namedtuple('Solver', [
@@ -52,25 +52,25 @@ InstanceData = namedtuple('InstanceData', [
 # ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    'room-32-32-4',
+    # 'room-32-32-4',
     # 'room-64-64-8',
     # 'room-64-64-16',
     'empty-8-8',
     'empty-16-16',
-    'empty-32-32',
-    'empty-48-48',
+    # 'empty-32-32',
+    # 'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 5))
+POSSIBLE_N_AGENTS = list(range(1, 3))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
     0,
-    0.1,
-    0.2,
-    0.3,
+    # 0.1,
+    # 0.2,
+    # 0.3,
 ]
 
-SCENES_PER_MAP_COUNT = 25
+SCENES_PER_MAP_COUNT = 3
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 local_pvi_heuristic_describer = FunctionDescriber(
@@ -181,7 +181,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
                 instance_data['average_reward'] = reward
                 instance_data['clashed'] = clashed
         except stopit.utils.TimeoutException:
-            log_func(INFO, f'scen {instance.scen_id} on map {map} got timeout')
+            log_func(DEBUG, f'scen {instance.scen_id} on map {instance.map} with solver {instance.solver} got timeout')
             instance_data['end_reason'] = 'timeout'
 
         end = time.time()

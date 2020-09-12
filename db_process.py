@@ -28,7 +28,7 @@ def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
         # This is a best effort.
         try:
             if n_solved % 10 == 0:
-                done_ratio = round(n_solved / n_total_instances, 1)
+                done_ratio = round(n_solved / n_total_instances, 4)
                 minutes_from_beginning = round((time.time() - t0) / 60, 2)
 
                 log_func(INFO,
