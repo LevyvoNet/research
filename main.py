@@ -7,6 +7,7 @@ from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
 
+from db_providers import init_mongodb_collection, init_tiny_mongo_collection
 from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
 
@@ -184,7 +185,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
             instance_data['end_reason'] = 'timeout'
 
         end = time.time()
-        instance_data['total_time'] = end - start
+        instance_data['total_time'] = round(end - start, 2)
 
     if 'end_reason' not in instance_data:
         instance_data['end_reason'] = 'done'
@@ -215,9 +216,9 @@ def main():
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
-    db_process, insert_to_db_func = start_db_process(CLOUD_MONGODB_URL,
-                                                     DB_NAME,
-                                                     date_str,
+    # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, date_str)
+    init_collection_func = partial(init_tiny_mongo_collection, 'results_db', DB_NAME, date_str)
+    db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
                                                      EXPECTED_N_INSTANCES)
@@ -240,6 +241,10 @@ def main():
         not db_q.empty()]
     ):
         time.sleep(5)
+
+    # This is a patch bug fix - wait until the last instance data is inserted to DB
+    # TODO: find a better way
+    time.sleep(2)
 
     # Now terminate infinite processes
     logger_process.terminate()

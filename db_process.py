@@ -1,29 +1,18 @@
-import pymongo
 import multiprocessing
 import functools
 import time
+from typing import Callable
 
 from logger_process import INFO
 
 
-def init_mongo_collection(url: str, db_name: str, date_str: str):
-    """Create a db inside remote mongoDB server which its name is the current time"""
-    client = pymongo.MongoClient(url)
-    db = client[db_name]
-
-    return db[date_str]
-
-
-def insert_to_db_loop(url: str,
-                      db_name: str,
-                      date_str: str,
+def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
                       q: multiprocessing.Manager().Queue,
                       log_func,
                       n_total_instances: int):
     """Insert results from queue to remote mongo database"""
     # First, get a DB connection
-    collection = init_mongo_collection(url, db_name, date_str)
-    log_func(INFO, f'initialized collection {date_str}')
+    collection = init_json_collection(log_func)
 
     # Set counter of solved problems and start measure time
     n_solved = 0
@@ -55,16 +44,12 @@ def insert_to_db_func(q: multiprocessing.Manager().Queue, instance_data):
     q.put(instance_data)
 
 
-def start_db_process(url: str,
-                     db_name: str,
-                     date_str: str,
+def start_db_process(init_json_collection: Callable[[Callable], object],
                      q: multiprocessing.Manager().Queue,
                      log_func,
                      n_total_instances):
     p = multiprocessing.Process(target=insert_to_db_loop,
-                                args=(url,
-                                      db_name,
-                                      date_str,
+                                args=(init_json_collection,
                                       q,
                                       log_func,
                                       n_total_instances))
