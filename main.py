@@ -84,7 +84,7 @@ POSSIBLE_MAPS = [
     'empty-32-32',
     'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 25))
+POSSIBLE_N_AGENTS = list(range(1, 5))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
@@ -263,13 +263,6 @@ def main():
                 return True
 
             remain_instances = list(filter(was_not_solved, all_instances))
-
-            # Sanity check
-            if len(remain_instances) + len(already_solved_instances) != TOTAL_INSTANCES_COUNT:
-                raise RuntimeWarning(f'{len(already_solved_instances)} already solved,'
-                                     f'{len(remain_instances)} remain while there are '
-                                     f'{TOTAL_INSTANCES_COUNT} total instances.'
-                                     f'Something is wrong! check your experiment parameters')
 
             # Create instances generator with remaining instances only
             instances_chunks = instances_chunks_generator(remain_instances, CHUNK_SIZE)
