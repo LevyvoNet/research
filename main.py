@@ -31,9 +31,6 @@ import db_providers.tinymongo_db_provider as db_provider
 # import db_providers.pymongo_db_provider as db_provider
 
 # *************** DB parameters ********************************************************************************
-MONGODB_URL = "mongodb://localhost:27017/"
-CLOUD_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp.mongodb.net/test"
-TINYMONGO_FOLDER_NAME = 'results_db'
 DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
@@ -87,7 +84,7 @@ POSSIBLE_MAPS = [
     'empty-32-32',
     'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 5))
+POSSIBLE_N_AGENTS = list(range(1, 25))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
@@ -144,8 +141,10 @@ TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
 
 
 def instances_chunks_generator(instances: Iterable, chunk_size: int):
+    local_instances = iter(instances)
+
     while True:
-        chunk = list(itertools.islice(instances, chunk_size))
+        chunk = list(itertools.islice(local_instances, chunk_size))
         if len(chunk) < chunk_size:
             break
 
@@ -248,7 +247,7 @@ def main():
     else:
         # We need to resume to an existing experiment
         collection_name = args['resume']
-        with db_provider.get_client(TINYMONGO_FOLDER_NAME) as client:
+        with db_provider.get_client(db_provider.CONNECT_STR) as client:
             collection = client[DB_NAME][collection_name]
             # Save queries (might be to free remote DB)
             already_solved_instances = list(collection.find())
@@ -280,20 +279,20 @@ def main():
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    if args['resume'] is not None:
+    if args['resume'] is None:
+        expected_instances_count = TOTAL_INSTANCES_COUNT
+        log_func(INFO, f'Expecting about {expected_instances_count} documents in the collection in the end. '
+                       f'This might be a little bit lower because of invalid environments')
+    else:
         expected_instances_count = len(remain_instances)
         log_func(INFO, f'Resuming {collection_name}. {expected_instances_count} instances remaining.'
                        f'Expecting about {TOTAL_INSTANCES_COUNT} in the end.'
                        f'his might be a little bit lower because of invalid environments.')
-    else:
-        expected_instances_count = TOTAL_INSTANCES_COUNT
-        log_func(INFO, f'Expecting about {expected_instances_count} documents in the collection in the end. '
-                       f'This might be a little bit lower because of invalid environments')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
     # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, collection_name)
-    init_collection_func = partial(db_provider.init_collection, TINYMONGO_FOLDER_NAME, DB_NAME, collection_name)
+    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR, DB_NAME, collection_name)
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
