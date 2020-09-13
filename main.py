@@ -4,6 +4,7 @@ import multiprocessing
 import itertools
 import time
 import stopit
+from typing import Iterable
 from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
@@ -142,13 +143,24 @@ TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
                                1)
 
 
-def instances_chunks_generator(chunk_size: int):
+def instances_chunks_generator(instances: Iterable, chunk_size: int):
+    while True:
+        chunk = list(itertools.islice(instances, chunk_size))
+        if len(chunk) < chunk_size:
+            break
+
+        yield chunk
+
+    yield chunk
+
+
+def full_instances_chunks_generator(chunk_size: int):
     products = itertools.product(POSSIBLE_MAPS,
                                  POSSIBLE_N_AGENTS,
                                  POSSIBLE_FAIL_PROB,
                                  POSSIBLE_SCEN_IDS,
                                  POSSIBLE_SOLVERS)
-    instances = map(
+    all_instances = map(
         lambda comb: InstanceMetaData(comb[0],
                                       comb[3],
                                       comb[2],
@@ -158,14 +170,7 @@ def instances_chunks_generator(chunk_size: int):
         , products
     )
 
-    while True:
-        chunk = list(itertools.islice(instances, chunk_size))
-        if len(chunk) < chunk_size:
-            break
-
-        yield chunk
-
-    yield chunk
+    return instances_chunks_generator(all_instances, chunk_size)
 
 
 def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaData):
@@ -236,14 +241,19 @@ def main():
 
     # Initialize the experiment data - what is the collection and what are the instances to solve. This depends
     # On the --resume parameter for the script.
-    if args['resume'] is not None:
+    if args['resume'] is None:
+        collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
+            "%Y-%m-%d_%H:%M")
+        instances_chunks = full_instances_chunks_generator(CHUNK_SIZE)
+    else:
+        # We need to resume to an existing experiment
         collection_name = args['resume']
         with db_provider.get_client(TINYMONGO_FOLDER_NAME) as client:
             collection = client[DB_NAME][collection_name]
             # Save queries (might be to free remote DB)
             already_solved_instances = list(collection.find())
             all_instances = [instance
-                             for chunk in instances_chunks_generator(CHUNK_SIZE)
+                             for chunk in full_instances_chunks_generator(CHUNK_SIZE)
                              for instance in chunk]
 
             def was_not_solved(instance):
@@ -254,17 +264,16 @@ def main():
                 return True
 
             remain_instances = list(filter(was_not_solved, all_instances))
-            instances_chunks = itertools.islice(remain_instances, CHUNK_SIZE)
 
+            # Sanity check
             if len(remain_instances) + len(already_solved_instances) != TOTAL_INSTANCES_COUNT:
                 raise RuntimeWarning(f'{len(already_solved_instances)} already solved,'
                                      f'{len(remain_instances)} remain while there are '
                                      f'{TOTAL_INSTANCES_COUNT} total instances.'
                                      f'Something is wrong! check your experiment parameters')
-    else:
-        collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
-            "%Y-%m-%d_%H:%M")
-        instances_chunks = instances_chunks_generator(CHUNK_SIZE)
+
+            # Create instances generator with remaining instances only
+            instances_chunks = instances_chunks_generator(remain_instances, CHUNK_SIZE)
 
     # start logger process
     logger_q = multiprocessing.Manager().Queue()
@@ -296,6 +305,9 @@ def main():
             solve_single_instance(log_func, insert_to_db_func, instance)
 
         return True
+
+    import ipdb
+    ipdb.set_trace()
 
     # Solve batches of instances processes from the pool
     with ProcessPool() as pool:
