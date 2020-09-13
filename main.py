@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import multiprocessing
 import itertools
@@ -7,7 +8,6 @@ from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
 
-from db_providers import init_mongodb_collection, init_tiny_mongo_collection
 from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
 
@@ -24,15 +24,21 @@ from gym_mapf.solvers import (id,
                               lrtdp
                               )
 
+# *************** Dependency Injection *************************************************************************
+import db_providers.tinymongo_db_provider as db_provider
+
+# import db_providers.pymongo_db_provider as db_provider
+
 # *************** DB parameters ********************************************************************************
 MONGODB_URL = "mongodb://localhost:27017/"
 CLOUD_MONGODB_URL = "mongodb+srv://mapf_benchmark:mapf_benchmark@mapf-g2l6q.gcp.mongodb.net/test"
+TINYMONGO_FOLDER_NAME = 'results_db'
 DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
 SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
-CHUNK_SIZE = 3  # How many instances to solve in a single process
+CHUNK_SIZE = 10  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
 FunctionDescriber = namedtuple('Solver', [
@@ -40,7 +46,7 @@ FunctionDescriber = namedtuple('Solver', [
     'func'
 ])
 
-InstanceData = namedtuple('InstanceData', [
+InstanceMetaData = namedtuple('InstanceMetaData', [
     'map',
     'scen_id',
     'fail_prob',
@@ -49,28 +55,48 @@ InstanceData = namedtuple('InstanceData', [
     'plan_func',
 ])
 
+
+def id_query(instance):
+    if type(instance) == InstanceMetaData:
+        return {
+            'map': instance.map,
+            'scen_id': instance.scen_id,
+            'fail_prob': instance.fail_prob,
+            'n_agents': instance.n_agents,
+            'solver': instance.solver
+        }
+    else:
+        return {
+            'map': instance['map'],
+            'scen_id': instance['scen_id'],
+            'fail_prob': instance['fail_prob'],
+            'n_agents': instance['n_agents'],
+            'solver': instance['solver']
+        }
+
+
 # ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    # 'room-32-32-4',
+    'room-32-32-4',
     # 'room-64-64-8',
     # 'room-64-64-16',
     'empty-8-8',
     'empty-16-16',
-    # 'empty-32-32',
-    # 'empty-48-48',
+    'empty-32-32',
+    'empty-48-48',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 3))
+POSSIBLE_N_AGENTS = list(range(1, 5))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
     0,
-    # 0.1,
-    # 0.2,
-    # 0.3,
+    0.1,
+    0.2,
+    0.3,
 ]
 
-SCENES_PER_MAP_COUNT = 3
+SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 local_pvi_heuristic_describer = FunctionDescriber(
@@ -105,15 +131,15 @@ POSSIBLE_SOLVERS = [
     # vi_describer,
 ]
 
-EXPECTED_N_INSTANCES = reduce(lambda x, y: x * len(y),
-                              [
-                                  POSSIBLE_MAPS,
-                                  POSSIBLE_N_AGENTS,
-                                  POSSIBLE_FAIL_PROB,
-                                  POSSIBLE_SCEN_IDS,
-                                  POSSIBLE_SOLVERS,
-                              ],
-                              1)
+TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
+                               [
+                                   POSSIBLE_MAPS,
+                                   POSSIBLE_N_AGENTS,
+                                   POSSIBLE_FAIL_PROB,
+                                   POSSIBLE_SCEN_IDS,
+                                   POSSIBLE_SOLVERS,
+                               ],
+                               1)
 
 
 def instances_chunks_generator(chunk_size: int):
@@ -123,12 +149,12 @@ def instances_chunks_generator(chunk_size: int):
                                  POSSIBLE_SCEN_IDS,
                                  POSSIBLE_SOLVERS)
     instances = map(
-        lambda comb: InstanceData(comb[0],
-                                  comb[3],
-                                  comb[2],
-                                  comb[1],
-                                  comb[4].description,
-                                  comb[4].func)
+        lambda comb: InstanceMetaData(comb[0],
+                                      comb[3],
+                                      comb[2],
+                                      comb[1],
+                                      comb[4].description,
+                                      comb[4].func)
         , products
     )
 
@@ -142,7 +168,7 @@ def instances_chunks_generator(chunk_size: int):
     yield chunk
 
 
-def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
+def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaData):
     instance_data = {
         'type': 'instance_data',
         'map': instance.map,
@@ -204,24 +230,68 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceData):
 
 
 def main():
-    # initialize experiment data
-    date_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime("%Y-%m-%d_%H:%M")
+    parser = argparse.ArgumentParser(description='Description of your program')
+    parser.add_argument('-r', '--resume', help='Resume existing experiment', required=False)
+    args = vars(parser.parse_args())
+
+    # Initialize the experiment data - what is the collection and what are the instances to solve. This depends
+    # On the --resume parameter for the script.
+    if args['resume'] is not None:
+        collection_name = args['resume']
+        with db_provider.get_client(TINYMONGO_FOLDER_NAME) as client:
+            collection = client[DB_NAME][collection_name]
+            # Save queries (might be to free remote DB)
+            already_solved_instances = list(collection.find())
+            all_instances = [instance
+                             for chunk in instances_chunks_generator(CHUNK_SIZE)
+                             for instance in chunk]
+
+            def was_not_solved(instance):
+                for solved_instance in already_solved_instances:
+                    if id_query(instance) == id_query(solved_instance):
+                        return False
+
+                return True
+
+            remain_instances = list(filter(was_not_solved, all_instances))
+            instances_chunks = itertools.islice(remain_instances, CHUNK_SIZE)
+
+            if len(remain_instances) + len(already_solved_instances) != TOTAL_INSTANCES_COUNT:
+                raise RuntimeWarning(f'{len(already_solved_instances)} already solved,'
+                                     f'{len(remain_instances)} remain while there are '
+                                     f'{TOTAL_INSTANCES_COUNT} total instances.'
+                                     f'Something is wrong! check your experiment parameters')
+            import ipdb
+            ipdb.set_trace()
+            print('hello')
+    else:
+        collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
+            "%Y-%m-%d_%H:%M")
+        instances_chunks = instances_chunks_generator(CHUNK_SIZE)
 
     # start logger process
     logger_q = multiprocessing.Manager().Queue()
-    logger_process, log_func = start_logger_process(date_str, logger_q)
+    logger_process, log_func = start_logger_process(collection_name, logger_q)
 
-    log_func(INFO, f'Expecting about {EXPECTED_N_INSTANCES} documents in the collection in the end. '
-                   f'This might be a little bit lower because of invalid environments')
+    # Log about the experiment starting
+    if args['resume'] is not None:
+        expected_instances_count = len(remain_instances)
+        log_func(INFO, f'Resuming {collection_name}. {expected_instances_count} instances remaining.'
+                       f'Expecting about {TOTAL_INSTANCES_COUNT} in the end.'
+                       f'his might be a little bit lower because of invalid environments.')
+    else:
+        expected_instances_count = TOTAL_INSTANCES_COUNT
+        log_func(INFO, f'Expecting about {expected_instances_count} documents in the collection in the end. '
+                       f'This might be a little bit lower because of invalid environments')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
-    # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, date_str)
-    init_collection_func = partial(init_tiny_mongo_collection, 'results_db', DB_NAME, date_str)
+    # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, collection_name)
+    init_collection_func = partial(db_provider.init_collection, TINYMONGO_FOLDER_NAME, DB_NAME, collection_name)
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
-                                                     EXPECTED_N_INSTANCES)
+                                                     expected_instances_count)
 
     # define the solving function
     def solve_instances(instances):
@@ -233,7 +303,7 @@ def main():
     # Solve batches of instances processes from the pool
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
-        pool.map(solve_instances, instances_chunks_generator(CHUNK_SIZE))
+        pool.map(solve_instances, instances_chunks)
 
     # Wait for the db and logger queues to be empty
     while any([
