@@ -306,9 +306,6 @@ def main():
 
         return True
 
-    import ipdb
-    ipdb.set_trace()
-
     # Solve batches of instances processes from the pool
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
