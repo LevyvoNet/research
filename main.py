@@ -261,9 +261,6 @@ def main():
                                      f'{len(remain_instances)} remain while there are '
                                      f'{TOTAL_INSTANCES_COUNT} total instances.'
                                      f'Something is wrong! check your experiment parameters')
-            import ipdb
-            ipdb.set_trace()
-            print('hello')
     else:
         collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
             "%Y-%m-%d_%H:%M")
