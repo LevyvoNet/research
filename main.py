@@ -35,8 +35,9 @@ DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 10 # 5 * SECONDS_IN_MINUTE
-CHUNK_SIZE = 10  # How many instances to solve in a single process
+SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
+CHUNK_SIZE = 25  # How many instances to solve in a single process
+NODES_COUNT = 4 # Number of nodes for process pool
 
 # *************** 'Structs' definitions ************************************************************************
 FunctionDescriber = namedtuple('Solver', [
@@ -187,7 +188,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
-        print(f'creating env {configuration_string}')
+        log_func(DEBUG, f'creating env {configuration_string}')
         env = create_mapf_env(instance.map,
                               instance.scen_id,
                               instance.n_agents,
@@ -200,16 +201,16 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
         return
 
-    print(f'done creating {configuration_string}')
+    log_func(DEBUG, f'done creating {configuration_string}')
 
     # Run the solver
     instance_data.update({'solver_data': {}})
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
         try:
             start = time.time()
-            print('start planning')
+            log_func(DEBUG, f'start planning {configuration_string}')
             policy = instance.plan_func(env, instance_data['solver_data'])
-            print('done planning')
+            log_func(DEBUG, f'done planning {configuration_string}')
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
                 reward, clashed = evaluate_policy(policy, 100, 1000)
@@ -226,6 +227,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         instance_data['end_reason'] = 'done'
 
     instance_data['self_agent_reward'] = []
+    log_func(DEBUG, f'starting solving independent agents for {configuration_string}')
     for i in range(env.n_agents):
         pvi_plan_func = partial(prioritized_value_iteration, 1.0)
         local_env = get_local_view(env, [i])
@@ -233,10 +235,12 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         local_env.reset()
         self_agent_reward = float(policy.v[local_env.s])
         instance_data['self_agent_reward'].append(self_agent_reward)
+        log_func(DEBUG, f'done solving independent agent {i} for {configuration_string}')
 
-    print('done, inserting to DB')
+    log_func(DEBUG, f'inserting {configuration_string} to DB')
     # Insert stats about this instance to the DB
     insert_to_db_func(instance_data)
+    log_func(DEBUG, f'done {configuration_string}')
 
 
 def main():
@@ -291,7 +295,8 @@ def main():
     # start db process
     db_q = multiprocessing.Manager().Queue()
     # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, collection_name)
-    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR + '_new', DB_NAME, collection_name)
+    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR, DB_NAME,
+                                   collection_name)
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
@@ -308,6 +313,9 @@ def main():
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
         pool.map(solve_instances, instances_chunks)
+
+    # for chunk in instances_chunks:
+    #     solve_instances(chunk)
 
     # Wait for the db and logger queues to be empty
     while any([
