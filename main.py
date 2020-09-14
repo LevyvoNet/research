@@ -35,7 +35,7 @@ DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
+SINGLE_SCENARIO_TIMEOUT = 10 # 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 10  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
@@ -204,7 +204,9 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
         try:
             start = time.time()
+            print('start planning')
             policy = instance.plan_func(env, instance_data['solver_data'])
+            print('done planning')
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
                 reward, clashed = evaluate_policy(policy, 100, 1000)
@@ -229,6 +231,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         self_agent_reward = float(policy.v[local_env.s])
         instance_data['self_agent_reward'].append(self_agent_reward)
 
+    print('done, inserting to DB')
     # Insert stats about this instance to the DB
     insert_to_db_func(instance_data)
 
@@ -285,7 +288,7 @@ def main():
     # start db process
     db_q = multiprocessing.Manager().Queue()
     # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, collection_name)
-    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR, DB_NAME, collection_name)
+    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR + '_new', DB_NAME, collection_name)
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
