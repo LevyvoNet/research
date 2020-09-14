@@ -1,4 +1,6 @@
 import argparse
+import os
+import json
 import datetime
 import multiprocessing
 import itertools
@@ -35,7 +37,7 @@ DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 10 # 5 * SECONDS_IN_MINUTE
+SINGLE_SCENARIO_TIMEOUT = 10  # 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 10  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
@@ -239,63 +241,100 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
     insert_to_db_func(instance_data)
 
 
+def dump_leftovers(collection_name):
+    print(f'dumping leftovers of collection {collection_name}')
+
+    with db_provider.get_client(db_provider.CONNECT_STR) as client:
+        collection = client[DB_NAME][collection_name]
+    # Save queries (might be to free remote DB)
+    already_solved_instances = list(collection.find())
+    all_instances = [instance
+                     for chunk in full_instances_chunks_generator(CHUNK_SIZE)
+                     for instance in chunk]
+
+    def was_not_solved(instance):
+        for solved_instance in already_solved_instances:
+            if id_query(instance) == id_query(solved_instance):
+                return False
+
+        return True
+
+    remain_instances = list(filter(was_not_solved, all_instances))
+
+    # Convert to JSON and write to file
+    file_name = f'{collection_name}_leftovers.json'
+    json_instances = [id_query(instance) for instance in remain_instances]
+    with open(file_name, 'w') as f:
+        f.write(json.dumps({collection_name: json_instances}))
+
+    print(f'done dumping leftovers of collection {collection_name}')
+    return file_name
+
+
+def get_collection_name_and_instances_from_file(file_name):
+    print(f'loading instances from {file_name}')
+    with open(file_name, 'r') as f:
+        json_obj = json.loads(f.read())
+
+    collection_name = next(iter(json_obj.keys()))
+    leftover_instances = []
+    for instance_dict in json_obj[collection_name]:
+        solver = list(filter(lambda x: x.description == instance_dict['solver'], POSSIBLE_SOLVERS))[0]
+        leftover_instances.append(InstanceMetaData(map=instance_dict['map'],
+                                                   scen_id=instance_dict['scen_id'],
+                                                   fail_prob=instance_dict['fail_prob'],
+                                                   n_agents=instance_dict['n_agents'],
+                                                   solver=solver.description,
+                                                   plan_func=solver.func))
+
+    # Set the generator for the required instances
+    instances_chunks = instances_chunks_generator(leftover_instances, CHUNK_SIZE)
+
+    return collection_name, instances_chunks, len(leftover_instances)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Description of your program')
-    parser.add_argument('-r', '--resume', help='Resume existing experiment', required=False)
+    parser.add_argument('--resume', help='Resume existing experiment', required=False)
+    parser.add_argument('--from-file', help='Resume existing experiment', required=False)
+    parser.add_argument('--dump-leftovers', help='Resume existing experiment', required=False)
     args = vars(parser.parse_args())
 
-    # Initialize the experiment data - what is the collection and what are the instances to solve. This depends
-    # On the --resume parameter for the script.
-    if args['resume'] is None:
+    if args['resume'] is not None:
+        file_name = dump_leftovers(args['resume'])
+        os.system(f'python main.py --from-file {file_name}')
+
+    if args['dump_leftovers'] is not None:
+        dump_leftovers(args['dump_leftovers'])
+        return
+
+    if args['from_file'] is not None:
+        # Get collection name and instances
+        collection_name, instances_chunks, instances_count = get_collection_name_and_instances_from_file(
+            args['from_file'])
+    else:
         collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
             "%Y-%m-%d_%H:%M")
         instances_chunks = full_instances_chunks_generator(CHUNK_SIZE)
-    else:
-        # We need to resume to an existing experiment
-        collection_name = args['resume']
-        with db_provider.get_client(db_provider.CONNECT_STR) as client:
-            collection = client[DB_NAME][collection_name]
-            # Save queries (might be to free remote DB)
-            already_solved_instances = list(collection.find())
-            all_instances = [instance
-                             for chunk in full_instances_chunks_generator(CHUNK_SIZE)
-                             for instance in chunk]
-
-            def was_not_solved(instance):
-                for solved_instance in already_solved_instances:
-                    if id_query(instance) == id_query(solved_instance):
-                        return False
-
-                return True
-
-            remain_instances = list(filter(was_not_solved, all_instances))
-
-            # Create instances generator with remaining instances only
-            instances_chunks = instances_chunks_generator(remain_instances, CHUNK_SIZE)
+        instances_count = TOTAL_INSTANCES_COUNT
 
     # start logger process
     logger_q = multiprocessing.Manager().Queue()
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    if args['resume'] is None:
-        expected_instances_count = TOTAL_INSTANCES_COUNT
-        log_func(INFO, f'Expecting about {expected_instances_count} documents in the collection in the end. '
-                       f'This might be a little bit lower because of invalid environments')
-    else:
-        expected_instances_count = len(remain_instances)
-        log_func(INFO, f'Resuming {collection_name}. {expected_instances_count} instances remaining.'
-                       f'Expecting about {TOTAL_INSTANCES_COUNT} in the end.'
-                       f'his might be a little bit lower because of invalid environments.')
+    log_func(INFO, f'Running {instances_count} instances, expecting eventual {TOTAL_INSTANCES_COUNT}.'
+                   f'This might be a little bit lower because of invalid environments.')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
     # init_collection_func = partial(init_mongodb_collection, CLOUD_MONGODB_URL, DB_NAME, collection_name)
-    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR + '_new', DB_NAME, collection_name)
+    init_collection_func = partial(db_provider.init_collection, db_provider.CONNECT_STR, DB_NAME,
+                                   collection_name)
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
-                                                     expected_instances_count)
+                                                     instances_count)
 
     # define the solving function
     def solve_instances(instances):
