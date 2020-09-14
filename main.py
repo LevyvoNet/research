@@ -187,7 +187,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
-        print('creating env')
+        print(f'creating env {configuration_string}')
         env = create_mapf_env(instance.map,
                               instance.scen_id,
                               instance.n_agents,
@@ -200,7 +200,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
         return
 
-    print('done creation')
+    print(f'done creating {configuration_string}')
 
     # Run the solver
     instance_data.update({'solver_data': {}})
