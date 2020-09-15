@@ -200,6 +200,9 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
                               -1)
     except KeyError:
         log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
+        instance_data.update({'solver_data': {},
+                              'end_reason': 'invalid_env'})
+        insert_to_db_func(instance_data)
         return
 
     log_func(DEBUG, f'done creating {configuration_string}')
@@ -326,8 +329,7 @@ def main():
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    log_func(INFO, f'Running {instances_count} instances, expecting eventual {TOTAL_INSTANCES_COUNT}.'
-                   f'This might be a little bit lower because of invalid environments.')
+    log_func(INFO, f'Running {instances_count} instances, expecting eventual {TOTAL_INSTANCES_COUNT}.')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
@@ -347,12 +349,10 @@ def main():
         return True
 
     # Solve batches of instances processes from the pool
+    # TODO: find another way, the poo.map function acts weird sometimes
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
         pool.map(solve_instances, instances_chunks)
-
-    # for chunk in instances_chunks:
-    #     solve_instances(chunk)
 
     # Wait for the db and logger queues to be empty
     while any([
