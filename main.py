@@ -78,13 +78,13 @@ def id_query(instance):
 # ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    'room-32-32-4',
-    # 'room-64-64-8',
-    # 'room-64-64-16',
-    'empty-8-8',
-    'empty-16-16',
-    'empty-32-32',
-    'empty-48-48',
+    # 'room-32-32-4',
+    'room-64-64-8',
+    'room-64-64-16',
+    # 'empty-8-8',
+    # 'empty-16-16',
+    # 'empty-32-32',
+    # 'empty-48-48',
 ]
 POSSIBLE_N_AGENTS = list(range(1, 5))
 
