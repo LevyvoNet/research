@@ -189,7 +189,6 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
-        log_func(DEBUG, f'creating env {configuration_string}')
         env = create_mapf_env(instance.map,
                               instance.scen_id,
                               instance.n_agents,
@@ -205,16 +204,13 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         insert_to_db_func(instance_data)
         return
 
-    log_func(DEBUG, f'done creating {configuration_string}')
 
     # Run the solver
     instance_data.update({'solver_data': {}})
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
         try:
             start = time.time()
-            log_func(DEBUG, f'start planning {configuration_string}')
             policy = instance.plan_func(env, instance_data['solver_data'])
-            log_func(DEBUG, f'done planning {configuration_string}')
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
                 reward, clashed = evaluate_policy(policy, 100, 1000)
@@ -239,12 +235,10 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         local_env.reset()
         self_agent_reward = float(policy.v[local_env.s])
         instance_data['self_agent_reward'].append(self_agent_reward)
-        log_func(DEBUG, f'done solving independent agent {i} for {configuration_string}')
 
     log_func(DEBUG, f'inserting {configuration_string} to DB')
     # Insert stats about this instance to the DB
     insert_to_db_func(instance_data)
-    log_func(DEBUG, f'done {configuration_string}')
 
 
 def dump_leftovers(collection_name):
