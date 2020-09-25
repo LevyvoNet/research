@@ -47,6 +47,37 @@ def mean_time(instances: pymongo.cursor.Cursor):
         sum += instance['total_time']
 
     if count == 0:
+        return 600
+
+    return sum / count
+
+
+def mean_makespan_bound(instances: pymongo.cursor.Cursor):
+    sum = 0
+    count = 0
+
+    for count, instance in enumerate(filter(lambda ins: ins['end_reason'] == 'done', instances)):
+        makespan = min(instance['self_agent_reward'])
+        sum += makespan
+
+    if count == 0:
+        return 0
+
+    return sum / count
+
+
+def mean_conflict_count(instances: pymongo.cursor.Cursor):
+    sum = 0
+    count = 0
+
+    for count, instance in enumerate(filter(lambda ins: ins['end_reason'] != 'invalid', instances)):
+        conflict_count = len([iteration
+                              for iteration in instance['solver_data']['iterations']
+                              if 'conflict' in iteration])
+
+        sum += conflict_count
+
+    if count == 0:
         return 0
 
     return sum / count
@@ -103,3 +134,5 @@ def row_col_analysis(row_parameter: str,
                                            label=curve_parameter_legend_name[curve_value])
 
                 axs[row_idx, col_idx].legend()
+
+    return fig, axs
