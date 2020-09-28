@@ -25,11 +25,6 @@ class RtdpPolicy(ValueFunctionPolicy):
         self.v_partial_table[s] = value
         return value
 
-    def dump_to_str(self):
-        pass
-
-    def load_from_str(json_str: str) -> object:
-        pass
 
 
 # TODO: Is really important to get a random greedy action (instead of just the first index?).
@@ -218,3 +213,4 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
             break
 
     return policy
+

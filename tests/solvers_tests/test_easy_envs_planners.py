@@ -69,7 +69,7 @@ class EasyEnvironmentsStopWhenNoImprovementRtdpPlannerTest(EasyEnvironmentsPlann
                        20)
 
 
-class GeneralIdPlannerTest(EasyEnvironmentsPlannersTest):
+class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
         low_level_planner = partial(value_iteration, 1.0)
         return partial(id, low_level_planner)

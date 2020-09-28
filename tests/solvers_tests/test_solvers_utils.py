@@ -22,14 +22,6 @@ class DictPolicy(Policy):
     def act(self, s):
         return self.dict_policy[s]
 
-    def dump_to_str(self):
-        return json.dumps({'env': self.env,
-                           'dict_policy': self.dict_policy})
-
-    def load_from_str(json_str: str) -> object:
-        json_obj = json.loads(json_str)
-        return DictPolicy(json_obj['env'], 1.0)
-
 
 class SolversUtilsTests(unittest.TestCase):
     def test_detect_conflict_finds_classical_conflict(self):

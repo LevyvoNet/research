@@ -30,26 +30,6 @@ class Policy(metaclass=ABCMeta):
             int. The best action according to that policy.
         """
 
-    @abstractmethod
-    def dump_to_str(self):
-        """Dump policy parameters to a string in a reproducible way
-
-        Returns:
-            str. string representation of the policy.
-        """
-
-    @staticmethod
-    @abstractmethod
-    def load_from_str(json_str: str) -> object:
-        """Load policy from string
-
-        Args:
-            json_str (str): a string with a string representation dumped by the policy dump_to_json method.
-
-        Returns:
-            Policy. The policy represented by the given string.
-        """
-
 
 class CrossedPolicy(Policy):
     def __init__(self, env, policies, agents_groups):
@@ -77,12 +57,6 @@ class CrossedPolicy(Policy):
         joint_action = vector_action_to_integer(joint_action_vector)
 
         return joint_action
-
-    def dump_to_str(self):
-        return json.dumps([policy.dump_to_str() for policy in self.policies])
-
-    def load_from_str(json_str: str) -> object:
-        raise NotImplementedError()
 
 
 def print_path_to_state(path: dict, state: int, env: MapfEnv):
@@ -275,9 +249,3 @@ class ValueFunctionPolicy(Policy):
         best_action = possible_actions_from_state[np.argmax(q_sa)]
         self.policy_cache[s] = best_action
         return best_action
-
-    def dump_to_str(self):
-        raise NotImplementedError()
-
-    def load_from_str(json_str: str) -> object:
-        raise NotImplementedError()
