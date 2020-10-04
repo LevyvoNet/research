@@ -14,7 +14,7 @@ from research.solvers import (value_iteration,
                               lrtdp,
                               fixed_iterations_count_rtdp,
                               stop_when_no_improvement_between_batches_rtdp)
-from research.solvers.rtdp import manhattan_heuristic, local_views_prioritized_value_iteration_heuristic
+from research.solvers.rtdp import local_views_prioritized_value_iteration_heuristic
 
 
 class EasyEnvironmentsPlannersTest(unittest.TestCase):

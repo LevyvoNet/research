@@ -1,10 +1,9 @@
 import numpy as np
 import time
 import math
-import collections
-from typing import Callable, Dict
+from typing import Callable, Dict, Iterable
 
-from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, integer_action_to_vector
+from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object
 from research.solvers.vi import prioritized_value_iteration
 from research.solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
@@ -26,18 +25,17 @@ class RtdpPolicy(ValueFunctionPolicy):
         return value
 
 
-
 # TODO: Is really important to get a random greedy action (instead of just the first index?).
 #  I wish I could delete this function and just use `policy.act(s)` instead
-def greedy_action(env: MapfEnv, s, v, gamma):
-    action_values = np.zeros(env.nA)
-    for a in range(env.nA):
-        for prob, next_state, reward, done in env.P[s][a]:
-            if reward == env.reward_of_clash and done:
+def greedy_action(policy: RtdpPolicy, s):
+    action_values = np.zeros(policy.env.nA)
+    for a in range(policy.env.nA):
+        for prob, next_state, reward, done in policy.env.P[s][a]:
+            if reward == policy.env.reward_of_clash and done:
                 action_values[a] = -math.inf
                 break
 
-            action_values[a] += prob * (reward + (gamma * v[next_state]))
+            action_values[a] += prob * (reward + (policy.gamma * policy.v[next_state]))
 
     # # for debug
     # for i in range(env.nA):
@@ -45,19 +43,6 @@ def greedy_action(env: MapfEnv, s, v, gamma):
 
     max_value = np.max(action_values)
     return np.random.choice(np.argwhere(action_values == max_value).flatten())
-
-
-def manhattan_heuristic(env: MapfEnv):
-    def heuristic_function(s):
-        locations = env.state_to_locations(s)
-        manhatten_distance = [
-            abs(locations[i][0] - env.agents_goals[i][0]) + abs(locations[i][1] - env.agents_goals[i][1])
-            for i in range(env.n_agents)]
-
-        # MapfEnv reward is Makespan oriented
-        return env.reward_of_goal + env.reward_of_living * max(manhatten_distance)
-
-    return heuristic_function
 
 
 def local_views_prioritized_value_iteration_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
@@ -73,8 +58,8 @@ def local_views_prioritized_value_iteration_heuristic(gamma: float, env: MapfEnv
     return heuristic_function
 
 
-def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float, env: MapfEnv) -> Callable[
-    [int], float]:
+def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
+                                                                   env: MapfEnv) -> Callable[[int], float]:
     deterministic_env = MapfEnv(env.grid,
                                 env.n_agents,
                                 env.agents_starts,
@@ -99,11 +84,16 @@ def bellman_update(policy: RtdpPolicy, s: int, a: int):
     policy.v_partial_table[s] = new_v_s
 
 
-def rtdp_single_iteration(policy: RtdpPolicy, info: Dict):
+def rtdp_single_iteration(policy: RtdpPolicy,
+                          select_action: Callable[[RtdpPolicy, int], int],
+                          update: Callable[[RtdpPolicy, int, int], None],
+                          info: Dict):
     """Run a single iteration of RTDP.
 
     Args:
         policy (RtdpPolicy): the current policy (RTDP is an on-policy algorithm)
+        select_action ((RtdpPolicy, state) -> action): Action selection function
+        update ((RtdpPolicy, state, action) -> None): Update function
         info (Dict): optional for gathering information about the iteration - time, reward, special events, etc.
 
     Returns:
@@ -118,13 +108,13 @@ def rtdp_single_iteration(policy: RtdpPolicy, info: Dict):
     while not done:
         # time.sleep(0.1)
         # policy.env.render()
-        # Choose greedy action (if there are several choose uniformly random)
-        a = greedy_action(policy.env, s, policy.v, policy.gamma)
+        # Choose action action for current state
+        a = select_action(policy, s)
         # a = policy.act(s)
         path.append((s, a))
 
         # Do a bellman update
-        bellman_update(policy, s, a)
+        update(policy, s, a)
 
         # Simulate the step and sample a new state
         s, r, done, _ = policy.env.step(a)
@@ -142,24 +132,12 @@ def rtdp_single_iteration(policy: RtdpPolicy, info: Dict):
     return total_reward
 
 
-def run_iterations_batch(policy: RtdpPolicy, iterations_batch_size: int, info: Dict):
-    info['batch_iterations'] = []
-    for i in range(iterations_batch_size):
-        iter_info = {}
-        info['batch_iterations'].append(iter_info)
-        rtdp_single_iteration(policy, iter_info)
-
-
-def rtdp_iterations_generator(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
-                              gamma: float,
-                              policy: RtdpPolicy,
-                              env: MapfEnv,
-                              info: Dict) -> Policy:
+def rtdp_iterations_generator(policy: RtdpPolicy, select_action, update, info: Dict) -> Iterable:
     info['iterations'] = []
 
     while True:
         info['iterations'].append({})
-        iter_reward = rtdp_single_iteration(policy, info['iterations'][-1])
+        iter_reward = rtdp_single_iteration(policy, select_action, update, info['iterations'][-1])
         yield iter_reward
 
 
@@ -171,7 +149,7 @@ def fixed_iterations_count_rtdp(heuristic_function: Callable[[MapfEnv], Callable
     # initialize V to an upper bound
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
 
-    for iter_count, reward in enumerate(rtdp_iterations_generator(heuristic_function, gamma, policy, env, info),
+    for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
                                         start=1):
         if iter_count >= n_iterations:
             break
@@ -206,11 +184,10 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
 
     # Run RTDP iterations
-    for iter_count, reward in enumerate(rtdp_iterations_generator(heuristic_function, gamma, policy, env, info),
+    for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
                                         start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
         if no_improvement_from_last_batch(policy, iter_count) or iter_count >= max_iterations:
             break
 
     return policy
-
