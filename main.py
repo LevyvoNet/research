@@ -16,7 +16,8 @@ from db_process import start_db_process
 
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
 from research.solvers.utils import evaluate_policy
-from research.solvers.rtdp import local_views_prioritized_value_iteration_heuristic
+from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+                                   local_views_prioritized_value_iteration_sum_heuristic)
 from research.solvers import (id,
                               value_iteration,
                               prioritized_value_iteration,
@@ -99,9 +100,13 @@ POSSIBLE_FAIL_PROB = [
 SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
-local_pvi_heuristic_describer = FunctionDescriber(
-    description='local_view_pvi_heuristic(gamma=1.0)',
-    func=partial(local_views_prioritized_value_iteration_heuristic, 1.0))
+local_min_pvi_heuristic_describer = FunctionDescriber(
+    description='local_view_pvi_min_heuristic(gamma=1.0)',
+    func=partial(local_views_prioritized_value_iteration_min_heuristic, 1.0))
+
+local_sum_pvi_heuristic_describer = FunctionDescriber(
+    description='local_view_pvi_min_heuristic(gamma=1.0)',
+    func=partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0))
 
 vi_describer = FunctionDescriber(
     description='value_iteration(gamma=1.0)',
@@ -109,12 +114,12 @@ vi_describer = FunctionDescriber(
 
 rtdp_stop_no_improvement_describer = FunctionDescriber(
     description=f'stop_no_improvement_rtdp('
-                f'{local_pvi_heuristic_describer.description},'
+                f'{local_min_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
                 f'max_iters=10000)',
     func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_pvi_heuristic_describer.func,
+                 local_min_pvi_heuristic_describer.func,
                  1.0,
                  100,
                  10000)

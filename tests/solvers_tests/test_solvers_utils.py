@@ -10,7 +10,7 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector,
                                     DOWN, RIGHT, LEFT, STAY,
                                     ACTIONS)
-from research.solvers.rtdp import (local_views_prioritized_value_iteration_heuristic,
+from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    fixed_iterations_count_rtdp)
 
 
@@ -138,9 +138,9 @@ class SolversUtilsTests(unittest.TestCase):
     def test_conflict_detected_for_room_scenario_with_crossed_policy(self):
         env = create_mapf_env('room-32-32-4', 1, 2, 0.1, 0.1, -1000, 0, -1)
 
-        policy1 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0, 100,
+        policy1 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0, 100,
                                               get_local_view(env, [0]), {})
-        policy2 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0, 100,
+        policy2 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0, 100,
                                               get_local_view(env, [1]), {})
         crossed_policy = CrossedPolicy(env, [policy1, policy2], [[0], [1]])
 
@@ -156,7 +156,7 @@ class SolversUtilsTests(unittest.TestCase):
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
         plan_func = partial(fixed_iterations_count_rtdp,
-                            partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0,
+                            partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
                             100)
 
         crossed_policy = solve_independently_and_cross(env, [[0, 1], [2]], plan_func, {})
@@ -184,7 +184,7 @@ class SolversUtilsTests(unittest.TestCase):
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
         plan_func = partial(fixed_iterations_count_rtdp,
-                            partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0,
+                            partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
                             100)
         crossed_policy = solve_independently_and_cross(env, [[1], [0, 2]], plan_func, {})
 
@@ -213,7 +213,7 @@ class SolversUtilsTests(unittest.TestCase):
         env = create_mapf_env('room-32-32-4', 9, 2, 0, 0, -1000, 0, -1)
 
         low_level_plan_func = partial(fixed_iterations_count_rtdp,
-                                      partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0,
+                                      partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
                                       100)
 
         policy = solve_independently_and_cross(env,

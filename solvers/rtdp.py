@@ -45,7 +45,7 @@ def greedy_action(policy: RtdpPolicy, s):
     return np.random.choice(np.argwhere(action_values == max_value).flatten())
 
 
-def local_views_prioritized_value_iteration_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
+def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
     local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
 
@@ -54,6 +54,19 @@ def local_views_prioritized_value_iteration_heuristic(gamma: float, env: MapfEnv
         local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
         # at the current, the MapfEnv reward is makespan oriented
         return min([local_v[i][local_states[i]] for i in range(env.n_agents)])
+
+    return heuristic_function
+
+
+def local_views_prioritized_value_iteration_sum_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
+    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
+
+    def heuristic_function(s):
+        locations = env.state_to_locations(s)
+        local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
+        # try something which is more SoC oriented
+        return sum([local_v[i][local_states[i]] for i in range(env.n_agents)])
 
     return heuristic_function
 
@@ -178,7 +191,7 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
         else:
             prev_eval = policy.last_eval
             policy.last_eval = reward
-            return abs(policy.last_eval - prev_eval) / prev_eval <= 0.01
+            return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
 
     # initialize V to an upper bound
     policy = RtdpPolicy(env, gamma, heuristic_function(env))

@@ -9,7 +9,7 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
 from research.solvers import (value_iteration,
                               id,
                               fixed_iterations_count_rtdp)
-from research.solvers.rtdp import local_views_prioritized_value_iteration_heuristic
+from research.solvers.rtdp import local_views_prioritized_value_iteration_min_heuristic
 from research.solvers.utils import solve_independently_and_cross, evaluate_policy
 
 
@@ -76,7 +76,7 @@ class IdTests(unittest.TestCase):
     def test_env_with_switch_conflict_solved_properly(self):
         env = create_mapf_env('room-32-32-4', 9, 2, 0, 0, -1000, 0, -1)
         rtdp_plan_func = partial(fixed_iterations_count_rtdp,
-                                 partial(local_views_prioritized_value_iteration_heuristic, 1.0), 1.0,
+                                 partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
                                  100)
         policy = id(rtdp_plan_func, env, {})
 

@@ -14,7 +14,8 @@ from research.solvers import (value_iteration,
                               lrtdp,
                               fixed_iterations_count_rtdp,
                               stop_when_no_improvement_between_batches_rtdp)
-from research.solvers.rtdp import local_views_prioritized_value_iteration_heuristic
+from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+                                   local_views_prioritized_value_iteration_sum_heuristic)
 
 
 class EasyEnvironmentsPlannersTest(unittest.TestCase):
@@ -55,15 +56,24 @@ class EasyEnvironmentsPolicyIterationPlannerTest(EasyEnvironmentsPlannersTest):
 class EasyEnvironmentsFixedIterationsCountRtdpPlannerTest(EasyEnvironmentsPlannersTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
         return partial(fixed_iterations_count_rtdp,
-                       partial(local_views_prioritized_value_iteration_heuristic, 1.0),
+                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
                        1.0,
                        100)
 
 
-class EasyEnvironmentsStopWhenNoImprovementRtdpPlannerTest(EasyEnvironmentsPlannersTest):
+class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
         return partial(stop_when_no_improvement_between_batches_rtdp,
-                       partial(local_views_prioritized_value_iteration_heuristic, 1.0),
+                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
+                       1.0,
+                       10,
+                       20)
+
+
+class EasyEnvironmentsStopWhenNoImprovementLocalSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        return partial(stop_when_no_improvement_between_batches_rtdp,
+                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
                        1.0,
                        10,
                        20)
