@@ -5,7 +5,7 @@ from functools import partial
 from gym_mapf.tests.utils import measure_time
 from gym_mapf.envs.utils import create_mapf_env, MapfEnv, MapfGrid
 from research.solvers.utils import evaluate_policy, Policy
-from research.solvers import fixed_iterations_count_rtdp, stop_when_no_improvement_between_batches_rtdp
+from research.solvers import fixed_iterations_count_rtdp, stop_when_no_improvement_between_batches_rtdp, ma_rtdp
 from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    deterministic_relaxation_prioritized_value_iteration_heuristic,
                                    local_views_prioritized_value_iteration_sum_heuristic)
@@ -148,6 +148,37 @@ class StopWhenNoImprovementRtdpSumLocalHeuristicPlannerTest(DifficultEnvsPlanner
 
     def print_white_box_data(self, policy: Policy, info: Dict):
         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
+
+class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        self.iters_in_batch = 100
+        self.max_iterations = 500
+
+        return partial(ma_rtdp,
+                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+                       1.0,
+                       self.iters_in_batch,
+                       self.max_iterations)
+
+    def print_white_box_data(self, policy: Policy, info: Dict):
+        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
+
+# class MultiagentMinHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
+#     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+#         self.iters_in_batch = 100
+#         self.max_iterations = 500
+#
+#         return partial(ma_rtdp,
+#                        partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
+#                        1.0,
+#                        self.iters_in_batch,
+#                        self.max_iterations)
+#
+#     def print_white_box_data(self, policy: Policy, info: Dict):
+#         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
 
 # class StopWhenNoImprovementRtdpDeterminsticHeuristicPlannerTest(DifficultEnvsPlannerTest):
 #     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:

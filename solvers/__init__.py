@@ -11,3 +11,4 @@ from .rtdp import (rtdp_iterations_generator,
                    fixed_iterations_count_rtdp,
                    stop_when_no_improvement_between_batches_rtdp)
 from .lrtdp import lrtdp
+from .ma_rtdp import ma_rtdp
