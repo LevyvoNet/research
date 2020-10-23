@@ -18,6 +18,8 @@ from research.solvers import (value_iteration,
 from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    local_views_prioritized_value_iteration_sum_heuristic)
 
+from research.tests.solvers_tests.performance import AbstractPerformanceTest
+
 
 class EasyEnvironmentsPlannersTest(unittest.TestCase):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
@@ -55,93 +57,8 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         self.print_white_box_data(policy, info)
 
 
-class EasyEnvironmentsValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(value_iteration, 1.0)
-
-
-class EasyEnvironmentsPolicyIterationPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(policy_iteration, 1.0)
-
-
-class EasyEnvironmentsFixedIterationsCountRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(fixed_iterations_count_rtdp,
-                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
-                       1.0,
-                       100)
-
-
-class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(stop_when_no_improvement_between_batches_rtdp,
-                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
-                       1.0,
-                       self.iters_in_batch,
-                       self.max_iterations)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
-
-
-class EasyEnvironmentsStopWhenNoImprovementLocalSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(stop_when_no_improvement_between_batches_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       10,
-                       100)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
-
-
-class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        low_level_planner = partial(value_iteration, 1.0)
-        return partial(id, low_level_planner)
-
-
-class EasyEnvironmentsMultiagentSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(ma_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       10,
-                       100)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
-
-
-class EasyEnvironmentsMultiagentMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(ma_rtdp,
-                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
-                       1.0,
-                       10,
-                       100)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
-
-
-# class GeneralLrdtpPlannerTest(EasyEnvironmentsPlannersTest):
-#     def get_planner(self) -> Planner:
-#         return LrtdpPlanner(prioritized_value_iteration_heuristic, 1000, 1.0, 0.00001)
+class EasyTestNo1(AbstractPerformanceTest):
+    solver_describers = []
 
 
 if __name__ == '__main__':

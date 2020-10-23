@@ -11,8 +11,8 @@ from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
 
-from logger_process import start_logger_process, ERROR, INFO, DEBUG
-from db_process import start_db_process
+from research.logger_process import start_logger_process, ERROR, INFO, DEBUG
+from research.db_process import start_db_process
 
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
 from research.solvers.utils import evaluate_policy
@@ -27,9 +27,10 @@ from research.solvers import (id,
                               fixed_iterations_count_rtdp,
                               lrtdp
                               )
+from research.available_solvers import *
 
 # *************** Dependency Injection *************************************************************************
-import db_providers.tinymongo_db_provider as db_provider
+import research.db_providers.tinymongo_db_provider as db_provider
 
 # import db_providers.pymongo_db_provider as db_provider
 
@@ -42,11 +43,6 @@ SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 25  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
-FunctionDescriber = namedtuple('Solver', [
-    'description',
-    'func'
-])
-
 InstanceMetaData = namedtuple('InstanceMetaData', [
     'map',
     'scen_id',
@@ -100,12 +96,13 @@ POSSIBLE_FAIL_PROB = [
 SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
+#TODO: maybe import the descriptions from tests/solvers
 local_min_pvi_heuristic_describer = FunctionDescriber(
     description='local_view_pvi_min_heuristic(gamma=1.0)',
     func=partial(local_views_prioritized_value_iteration_min_heuristic, 1.0))
 
 local_sum_pvi_heuristic_describer = FunctionDescriber(
-    description='local_view_pvi_min_heuristic(gamma=1.0)',
+    description='local_view_pvi_sum_heuristic(gamma=1.0)',
     func=partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0))
 
 vi_describer = FunctionDescriber(
