@@ -51,7 +51,7 @@ rtdp_stop_no_improvement_min_heuristic_describer = FunctionDescriber(
 )
 
 long_rtdp_stop_no_improvement_min_heuristic_describer = FunctionDescriber(
-    description=f'long stop_no_improvement_rtdp('
+    description=f'stop_no_improvement_rtdp('
                 f'{local_min_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
@@ -77,7 +77,7 @@ rtdp_stop_no_improvement_sum_heuristic_describer = FunctionDescriber(
 )
 
 long_rtdp_stop_no_improvement_sum_heuristic_describer = FunctionDescriber(
-    description=f'long stop_no_improvement_rtdp('
+    description=f'stop_no_improvement_rtdp('
                 f'{local_sum_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
@@ -103,7 +103,7 @@ rtdp_stop_no_improvement_determinsitic_heuristic_describer = FunctionDescriber(
 )
 
 long_rtdp_stop_no_improvement_determinsitic_heuristic_describer = FunctionDescriber(
-    description=f'long stop_no_improvement_rtdp('
+    description=f'stop_no_improvement_rtdp('
                 f'{deterministic_relaxation_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
@@ -120,7 +120,7 @@ id_rtdp_describer = FunctionDescriber(
 )
 
 long_id_rtdp_describer = FunctionDescriber(
-    description=f'long ID({long_rtdp_stop_no_improvement_min_heuristic_describer.description})',
+    description=f'ID({long_rtdp_stop_no_improvement_min_heuristic_describer.description})',
     func=partial(id, long_rtdp_stop_no_improvement_min_heuristic_describer.func)
 )
 
@@ -138,7 +138,7 @@ ma_rtdp_sum_describer = FunctionDescriber(
 )
 
 long_ma_rtdp_sum_describer = FunctionDescriber(
-    description=f'long ma_rtdp('
+    description=f'ma_rtdp('
                 f'{local_sum_pvi_heuristic_describer.description,}'
                 f'gamma=1.0,'
                 f'batch_size=100,'
