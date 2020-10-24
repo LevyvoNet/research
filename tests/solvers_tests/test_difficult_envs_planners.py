@@ -112,6 +112,57 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         self.assertGreater(reward, -20)
 
 
+class FixedIterationsCountRtdpPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        return partial(fixed_iterations_count_rtdp,
+                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
+                       400)
+
+
+class StopWhenNoImprovementRtdpMinLocalHeuristicPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        self.iter_in_batches = 100
+        self.max_iterations = 500
+
+        return partial(stop_when_no_improvement_between_batches_rtdp,
+                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
+                       1.0,
+                       self.iter_in_batches,
+                       self.max_iterations)
+
+    def print_white_box_data(self, policy: Policy, info: Dict):
+        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
+
+class StopWhenNoImprovementRtdpSumLocalHeuristicPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        self.iter_in_batches = 100
+        self.max_iterations = 500
+
+        return partial(stop_when_no_improvement_between_batches_rtdp,
+                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+                       1.0,
+                       self.iter_in_batches,
+                       self.max_iterations)
+
+    def print_white_box_data(self, policy: Policy, info: Dict):
+        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
+
+class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        self.iters_in_batch = 100
+        self.max_iterations = 500
+
+        return partial(ma_rtdp,
+                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+                       1.0,
+                       self.iters_in_batch,
+                       self.max_iterations)
+
+    def print_white_box_data(self, policy: Policy, info: Dict):
+        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

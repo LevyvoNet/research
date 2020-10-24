@@ -49,7 +49,7 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                                       for prob, next_state, reward, done in
                                                                       self.env.P[joint_state][fake_joint_action]])
 
-    def v_update(self, joint_state, agent, local_action):
+    def v_update(self, joint_state):
         self.v_partial_table[joint_state] = max([max([self.get_q(agent_idx, joint_state, a)
                                                       for a in range(len(ACTIONS))])
                                                  for agent_idx in range(self.env.n_agents)])
@@ -96,7 +96,10 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
         for agent in reversed(range(policy.env.n_agents)):
             # update q(s, agent, action) based on the last state
             policy.q_update(agent, trajectory_states[agent], trajectory_actions[agent])
-            policy.v_update(trajectory_states[agent], agent, trajectory_actions[agent])
+            policy.v_update(trajectory_states[agent])
+
+    # Backward update?
+    pass
 
     # TODO: There is a bug here(total_reward is always 0), will think about it later
 

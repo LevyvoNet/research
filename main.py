@@ -174,7 +174,6 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         insert_to_db_func(instance_data)
         return
 
-
     # Run the solver
     instance_data.update({'solver_data': {}})
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
@@ -187,8 +186,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
                 instance_data['average_reward'] = reward
                 instance_data['clashed'] = clashed
         except stopit.utils.TimeoutException:
-            log_func(DEBUG, f'scen {instance.scen_id} on map {instance.map} with solver {instance.solver} got timeout')
-            instance_data['end_reason'] = 'timeout'
+            log_func(DEBUG, f'{configuration_string} got timeout')
 
         end = time.time()
         instance_data['total_time'] = round(end - start, 2)
