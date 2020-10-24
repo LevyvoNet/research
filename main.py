@@ -75,13 +75,13 @@ def id_query(instance):
 # ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    # 'room-32-32-4',
+    'room-32-32-4',
     'room-64-64-8',
-    'room-64-64-16',
-    # 'empty-8-8',
-    # 'empty-16-16',
-    # 'empty-32-32',
-    # 'empty-48-48',
+    # 'room-64-64-16',
+    'empty-8-8',
+    'empty-16-16',
+    'empty-32-32',
+    'empty-48-48',
 ]
 POSSIBLE_N_AGENTS = list(range(1, 5))
 
@@ -96,41 +96,9 @@ POSSIBLE_FAIL_PROB = [
 SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
-#TODO: maybe import the descriptions from tests/solvers
-local_min_pvi_heuristic_describer = FunctionDescriber(
-    description='local_view_pvi_min_heuristic(gamma=1.0)',
-    func=partial(local_views_prioritized_value_iteration_min_heuristic, 1.0))
-
-local_sum_pvi_heuristic_describer = FunctionDescriber(
-    description='local_view_pvi_sum_heuristic(gamma=1.0)',
-    func=partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0))
-
-vi_describer = FunctionDescriber(
-    description='value_iteration(gamma=1.0)',
-    func=partial(value_iteration, 1.0))
-
-rtdp_stop_no_improvement_describer = FunctionDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000)
-)
-
-id_rtdp_describer = FunctionDescriber(
-    description=f'ID({rtdp_stop_no_improvement_describer.description})',
-    func=partial(id, rtdp_stop_no_improvement_describer.func)
-)
-
 POSSIBLE_SOLVERS = [
-    id_rtdp_describer,
-    rtdp_stop_no_improvement_describer,
-    # vi_describer,
+    long_ma_rtdp_min_describer,
+    long_ma_rtdp_sum_describer,
 ]
 
 TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
