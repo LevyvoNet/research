@@ -34,55 +34,64 @@ EXPERIMENT_SOLVERS = [
 SINGLE_SCENARIO_TIMEOUT = 300  # seconds
 
 
-class AbstractPerformanceTest(unittest.TestCase):
-    solver_describers = []
-    env_str = None
-    env = None
+def benchmark_planners_on_env(env, env_str, solver_describers):
+    if env is None:
+        raise unittest.SkipTest("This is an abstract test case")
 
-    def test_planners_performance(self):
-        if self.env is None:
-            raise unittest.SkipTest("This is an abstract test case")
+    results_df = pd.DataFrame(columns=[
+        'env',
+        'solver',
+        'time',
+        'avg_reward',
+        'clashed'
+    ])
 
-        results_df = pd.DataFrame(columns=[
-            'solver',
-            'time',
-            'avg_reward',
-            'clashed'
-        ])
+    for solver_describer in solver_describers:
+        solver_str = solver_describer.description
+        solve_func = solver_describer.func
 
-        for solver_describer in self.solver_describers:
-            solver_str = solver_describer.description
-            solve_func = solver_describer.func
+        # Assume solved
+        solved = True
+        reward, clashed = -1000, False
 
-            # Assume solved
-            solved = True
-            reward, clashed = -1000, False
+        print(f'running {solver_str} on {env_str}')
+        # Run with time limit
+        with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+            try:
+                start = time.time()
+                info = {}
+                policy = solve_func(env, info)
+            except stopit.utils.TimeoutException:
+                solved = False
 
-            print(f'running {solver_str} on {self.env_str}')
-            # Run with time limit
-            with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
-                try:
-                    start = time.time()
-                    info = {}
-                    policy = solve_func(self.env, info)
-                except stopit.utils.TimeoutException:
-                    solved = False
+        # Evaluate policy is solved
+        if solved:
+            reward, clashed = evaluate_policy(policy, 100, 1000)
 
-            # Evaulate policy is solved
-            if solved:
-                reward, clashed = evaluate_policy(policy, 100, 1000)
+        # Measure time
+        total_time = time.time() - start
 
-            # Measure time
-            total_time = time.time() - start
+        # Collect results
+        results_df = results_df.append({
+            'env': env_str,
+            'solver': solver_str,
+            'time': total_time,
+            'avg_reward': reward,
+            'clashed': clashed
+        }
+            , ignore_index=True)
+    # print the result
+    print(f'-----{env_str}------')
+    print(results_df)
 
-            # Collect results
-            results_df = results_df.append({
-                'solver': solver_str,
-                'time': total_time,
-                'avg_reward': reward,
-                'clashed': clashed
-            }
-                , ignore_index=True)
-        # print the result
-        print(f'-----{self.env_str}------')
-        print(results_df)
+    return results_df
+
+
+def run_all(kwargs_list):
+    df = benchmark_planners_on_env(**kwargs_list[0])
+
+    # more than 1 always
+    for kwargs in kwargs_list[1:]:
+        df = df.append(benchmark_planners_on_env(**kwargs))
+
+    print(df)

@@ -43,6 +43,13 @@ SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 25  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
+ScenarioMetadata = namedtuple('ScenarioMetadata', [
+    'map',
+    'scen_id',
+    'fail_prob',
+    'n_agents',
+])
+
 InstanceMetaData = namedtuple('InstanceMetaData', [
     'map',
     'scen_id',
@@ -101,7 +108,7 @@ POSSIBLE_SOLVERS = [
     long_ma_rtdp_sum_describer,
 ]
 
-TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
+TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),  # number of instance data
                                [
                                    POSSIBLE_MAPS,
                                    POSSIBLE_N_AGENTS,
@@ -111,8 +118,19 @@ TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),
                                ],
                                1)
 
+TOTAL_SCENARIOS_COUNT = reduce(lambda x, y: x * len(y),  # number of scenario data
+                               [
+                                   POSSIBLE_MAPS,
+                                   POSSIBLE_N_AGENTS,
+                                   POSSIBLE_FAIL_PROB,
+                                   POSSIBLE_SCEN_IDS,
+                               ],
+                               1)
 
-def instances_chunks_generator(instances: Iterable, chunk_size: int):
+TOTAL_DOCS_COUNT = TOTAL_INSTANCES_COUNT + TOTAL_SCENARIOS_COUNT
+
+
+def chunks_generator(instances: Iterable, chunk_size: int):
     local_instances = iter(instances)
 
     while True:
@@ -141,7 +159,67 @@ def full_instances_chunks_generator(chunk_size: int):
         , products
     )
 
-    return instances_chunks_generator(all_instances, chunk_size)
+    return chunks_generator(all_instances, chunk_size)
+
+
+def full_scenarios_chunks_generator(chunk_size: int):
+    products = itertools.product(POSSIBLE_MAPS,
+                                 POSSIBLE_N_AGENTS,
+                                 POSSIBLE_FAIL_PROB,
+                                 POSSIBLE_SCEN_IDS)
+
+    all_scenarios = map(
+        lambda comb: ScenarioMetadata(comb[0], comb[3], comb[2], comb[1]),
+        products
+    )
+
+    return chunks_generator(all_scenarios, chunk_size)
+
+
+def insert_scenario_metadata(log_func, insert_to_db_func, scenario_metadata: ScenarioMetadata):
+    scen_data = {
+        'type': 'scenario_data',
+        'map': scenario_metadata.map,
+        'scen_id': scenario_metadata.scen_id,
+        'fail_prob': scenario_metadata.fail_prob,
+        'n_agents': scenario_metadata.n_agents,
+        'valid': True,
+    }
+
+    configuration_string = '_'.join([f'{key}:{value}'
+                                     for key, value in scenario_metadata.items()])
+    log_func(DEBUG, f'starting scenario data for {configuration_string}')
+
+    log_func(DEBUG, f'starting solving independent agents for {configuration_string}')
+    try:
+        env = create_mapf_env(scenario_metadata.map,
+                              scenario_metadata.scen_id,
+                              scenario_metadata.n_agents,
+                              scenario_metadata.fail_prob / 2,
+                              scenario_metadata.fail_prob / 2,
+                              -1000,
+                              -1,
+                              -1)
+    except KeyError:
+        log_func(ERROR,
+                 f'{scenario_metadata.map}:{scenario_metadata.scen_id} with {scenario_metadata.n_agents} agents is invalid')
+        scen_data['valid'] = False
+        insert_to_db_func(scen_data)
+        return
+
+    # Calculate single agent rewards
+    scen_data['self_agent_reward'] = []
+    for i in range(env.n_agents):
+        pvi_plan_func = partial(prioritized_value_iteration, 1.0)
+        local_env = get_local_view(env, [i])
+        policy = pvi_plan_func(local_env, {})
+        local_env.reset()
+        self_agent_reward = float(policy.v[local_env.s])
+        scen_data['self_agent_reward'].append(self_agent_reward)
+
+    log_func(DEBUG, f'inserting scenario data for {configuration_string} to DB')
+    # Insert stats about this instance to the DB
+    insert_to_db_func(scen_data)
 
 
 def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaData):
@@ -155,7 +233,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
     }
     configuration_string = '_'.join([f'{key}:{value}'
                                      for key, value in instance_data.items()])
-    log_func(DEBUG, f'starting {configuration_string}')
+    log_func(DEBUG, f'starting solving instance {configuration_string}')
 
     # Create mapf env, some of the benchmarks from movingAI might have bugs so be careful
     try:
@@ -170,7 +248,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
     except KeyError:
         log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
         instance_data.update({'solver_data': {},
-                              'end_reason': 'invalid_env'})
+                              'end_reason': ''})
         insert_to_db_func(instance_data)
         return
 
@@ -193,16 +271,6 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
 
     if 'end_reason' not in instance_data:
         instance_data['end_reason'] = 'done'
-
-    instance_data['self_agent_reward'] = []
-    log_func(DEBUG, f'starting solving independent agents for {configuration_string}')
-    for i in range(env.n_agents):
-        pvi_plan_func = partial(prioritized_value_iteration, 1.0)
-        local_env = get_local_view(env, [i])
-        policy = pvi_plan_func(local_env, {})
-        local_env.reset()
-        self_agent_reward = float(policy.v[local_env.s])
-        instance_data['self_agent_reward'].append(self_agent_reward)
 
     log_func(DEBUG, f'inserting {configuration_string} to DB')
     # Insert stats about this instance to the DB
@@ -256,9 +324,29 @@ def get_collection_name_and_instances_from_file(file_name):
                                                    plan_func=solver.func))
 
     # Set the generator for the required instances
-    instances_chunks = instances_chunks_generator(leftover_instances, CHUNK_SIZE)
+    instances_chunks = chunks_generator(leftover_instances, CHUNK_SIZE)
 
     return collection_name, instances_chunks, len(leftover_instances)
+
+
+def get_chunks_and_parameters(args):
+    if args['only_scenarios'] is not None:
+        collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=2), 'GMT')).strftime(
+            "%Y-%m-%d_%H:%M") + '_scenarios'
+        instances_count = TOTAL_SCENARIOS_COUNT
+        instances_chunks = full_scenarios_chunks_generator(CHUNK_SIZE)
+    else:
+        if args['from_file'] is not None:
+            # Get collection name and instances
+            collection_name, instances_chunks, instances_count = get_collection_name_and_instances_from_file(
+                args['from_file'])
+        else:
+            collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=2), 'GMT')).strftime(
+                "%Y-%m-%d_%H:%M")
+            instances_chunks = full_instances_chunks_generator(CHUNK_SIZE)
+            instances_count = TOTAL_INSTANCES_COUNT
+
+    return collection_name, instances_chunks, instances_count
 
 
 def main():
@@ -276,22 +364,14 @@ def main():
         dump_leftovers(args['dump_leftovers'])
         return
 
-    if args['from_file'] is not None:
-        # Get collection name and instances
-        collection_name, instances_chunks, instances_count = get_collection_name_and_instances_from_file(
-            args['from_file'])
-    else:
-        collection_name = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3), 'GMT')).strftime(
-            "%Y-%m-%d_%H:%M")
-        instances_chunks = full_instances_chunks_generator(CHUNK_SIZE)
-        instances_count = TOTAL_INSTANCES_COUNT
+    collection_name, chunks, count = get_chunks_and_parameters(args)
 
     # start logger process
     logger_q = multiprocessing.Manager().Queue()
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    log_func(INFO, f'Running {instances_count} instances, expecting eventual {TOTAL_INSTANCES_COUNT}.')
+    log_func(INFO, f'Running {count} instances, expecting eventual {TOTAL_DOCS_COUNT}.')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
@@ -301,7 +381,7 @@ def main():
     db_process, insert_to_db_func = start_db_process(init_collection_func,
                                                      db_q,
                                                      log_func,
-                                                     instances_count)
+                                                     count)
 
     # define the solving function
     def solve_instances(instances):
@@ -314,7 +394,7 @@ def main():
     # TODO: find another way, the poo.map function acts weird sometimes
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
-        pool.map(solve_instances, instances_chunks)
+        pool.map(solve_instances, chunks)
 
     # Wait for the db and logger queues to be empty
     while any([
