@@ -246,7 +246,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
                               -1,
                               -1)
     except KeyError:
-        log_func(ERROR, f'{instance.map}:{instance.scen_id} with {instance.n_agents} agents is invalid')
+        log_func(ERROR, f'{configuration_string} is invalid')
         instance_data.update({'solver_data': {},
                               'end_reason': ''})
         insert_to_db_func(instance_data)
