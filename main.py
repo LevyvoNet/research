@@ -183,11 +183,11 @@ def insert_scenario_metadata(log_func, insert_to_db_func, scenario_metadata: Sce
         'scen_id': scenario_metadata.scen_id,
         'fail_prob': scenario_metadata.fail_prob,
         'n_agents': scenario_metadata.n_agents,
-        'valid': True,
     }
 
     configuration_string = '_'.join([f'{key}:{value}'
-                                     for key, value in scenario_metadata.items()])
+                                     for key, value in scen_data.items()])
+    scen_data['valid'] = True
     log_func(DEBUG, f'starting scenario data for {configuration_string}')
 
     log_func(DEBUG, f'starting solving independent agents for {configuration_string}')
@@ -202,7 +202,7 @@ def insert_scenario_metadata(log_func, insert_to_db_func, scenario_metadata: Sce
                               -1)
     except KeyError:
         log_func(ERROR,
-                 f'{scenario_metadata.map}:{scenario_metadata.scen_id} with {scenario_metadata.n_agents} agents is invalid')
+                 f'{configuration_string} is invalid')
         scen_data['valid'] = False
         insert_to_db_func(scen_data)
         return
@@ -350,10 +350,11 @@ def get_chunks_and_parameters(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Description of your program')
+    parser = argparse.ArgumentParser(description='Benchmark for algorithms and problems')
     parser.add_argument('--resume', help='Resume existing experiment', required=False)
-    parser.add_argument('--from-file', help='Resume existing experiment', required=False)
-    parser.add_argument('--dump-leftovers', help='Resume existing experiment', required=False)
+    parser.add_argument('--from-file', help='Run instances from a file', required=False)
+    parser.add_argument('--dump-leftovers', help='Dump leftovers from previous experiment to a file', required=False)
+    parser.add_argument('--only-scenarios', help='Calculate only scenarios data', required=False)
     args = vars(parser.parse_args())
 
     if args['resume'] is not None:
@@ -384,9 +385,13 @@ def main():
                                                      count)
 
     # define the solving function
-    def solve_instances(instances):
+    def solve_chunk(instances):
         for instance in instances:
-            solve_single_instance(log_func, insert_to_db_func, instance)
+            if type(instance) == InstanceMetaData:
+                solve_single_instance(log_func, insert_to_db_func, instance)
+
+            if type(instance) == ScenarioMetadata:
+                insert_scenario_metadata(log_func, insert_to_db_func, instance)
 
         return True
 
@@ -394,7 +399,11 @@ def main():
     # TODO: find another way, the poo.map function acts weird sometimes
     with ProcessPool() as pool:
         log_func(INFO, f'Number of CPUs is {pool.ncpus}')
-        pool.map(solve_instances, chunks)
+        pool.map(solve_chunk, chunks)
+
+    # # for debug, run single process
+    # for chunk in chunks:
+    #     solve_chunk(chunk)
 
     # Wait for the db and logger queues to be empty
     while any([

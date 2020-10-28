@@ -3,7 +3,7 @@ import functools
 import time
 from typing import Callable
 
-from logger_process import INFO
+from research.logger_process import INFO
 
 
 def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
