@@ -14,7 +14,7 @@ dnspython==1.16.0
 entrypoints==0.3
 future==0.17.1
 gym==0.13.0
--e git+https://github.com/LevyvoNet/gym-mapf.git@407f2b47a7d5e0c1b7e078883e4230ce9b0a98b2#egg=gym_mapf
+gym-mapf==0.2.0
 importlib-metadata==1.7.0
 iniconfig==1.0.1
 ipdb==0.12
