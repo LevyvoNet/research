@@ -111,6 +111,23 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         # Assert that the solution is reasonable (actually solving)
         self.assertGreaterEqual(reward, -20 * 1.05)
 
+    @measure_time
+    def test_deterministic_sanity_env(self):
+        """Easy room scenario with fail probabilities"""
+        env = create_mapf_env('sanity', None, 2, 0.1, 0.1, -1000, -1, -1)
+
+        plan_func = self.get_plan_func()
+        info = {}
+        policy = plan_func(env, info)
+
+        reward, clashed = evaluate_policy(policy, 1, 1000)
+
+        self.print_white_box_data(policy, info)
+
+        # Assert that the solution is reasonable (actually solving)
+        # 20 steps is more than enough
+        self.assertGreaterEqual(reward, -20)
+
 
 class FixedIterationsCountRtdpPlannerTest(DifficultEnvsPlannerTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:

@@ -14,7 +14,7 @@ dnspython==1.16.0
 entrypoints==0.3
 future==0.17.1
 gym==0.13.0
-gym-mapf==0.2.1
+gym-mapf==0.2.2
 importlib-metadata==1.7.0
 iniconfig==1.0.1
 ipdb==0.12
