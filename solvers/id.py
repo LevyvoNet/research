@@ -6,20 +6,7 @@ from gym_mapf.envs.mapf_env import MapfEnv
 from research.solvers.utils import (detect_conflict,
                                     solve_independently_and_cross,
                                     get_local_view,
-                                    Policy)
-
-
-def group_of_agent(agents_groups, agent_idx):
-    groups_of_agent = [i for i in range(len(agents_groups)) if agent_idx in agents_groups[i]]
-    # if more than one group contains the given agent something is wrong
-    assert len(groups_of_agent) == 1, "agent {} is in more than one group.\n agent groups are:\n {}".format(agent_idx,
-                                                                                                            agents_groups)
-    return groups_of_agent[0]
-
-
-def merge_agent_groups(agents_groups, g1, g2):
-    return [agents_groups[i] for i in range(len(agents_groups)) if i not in [g1, g2]] + [
-        sorted(agents_groups[g1] + agents_groups[g2])]
+                                    Policy, group_of_agent, merge_agent_groups)
 
 
 def id(low_level_planner: Callable[[MapfEnv], Policy], env: MapfEnv, info: Dict, **kwargs) -> Policy:

@@ -68,7 +68,9 @@ def print_path_to_state(path: dict, state: int, env: MapfEnv):
                                              integer_action_to_vector(action, env.n_agents)))
 
 
-def detect_conflict(env: MapfEnv, joint_policy: Policy, **kwargs):
+def detect_conflict(env: MapfEnv,
+                    joint_policy: CrossedPolicy,
+                    **kwargs):
     """Find a conflict between agents.
 
     A conflict is ((i,,s_i,new_s_i), (j,s_j,new_s_j)) where:
@@ -249,3 +251,16 @@ class ValueFunctionPolicy(Policy):
         best_action = possible_actions_from_state[np.argmax(q_sa)]
         self.policy_cache[s] = best_action
         return best_action
+
+
+def group_of_agent(agents_groups, agent_idx):
+    groups_of_agent = [i for i in range(len(agents_groups)) if agent_idx in agents_groups[i]]
+    # if more than one group contains the given agent something is wrong
+    assert len(groups_of_agent) == 1, "agent {} is in more than one group.\n agent groups are:\n {}".format(agent_idx,
+                                                                                                            agents_groups)
+    return groups_of_agent[0]
+
+
+def merge_agent_groups(agents_groups, g1, g2):
+    return [agents_groups[i] for i in range(len(agents_groups)) if i not in [g1, g2]] + [
+        sorted(agents_groups[g1] + agents_groups[g2])]
