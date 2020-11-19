@@ -3,7 +3,6 @@ import time
 from typing import Dict, Callable
 from functools import partial
 
-from gym_mapf.tests.utils import measure_time
 from gym_mapf.envs.utils import create_mapf_env, MapfEnv, MapfGrid
 from research.solvers.utils import evaluate_policy, Policy
 from research.solvers import fixed_iterations_count_rtdp, stop_when_no_improvement_between_batches_rtdp, ma_rtdp
@@ -24,7 +23,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         """Return the concrete planner"""
         raise unittest.SkipTest("This is an abstract test case")
 
-    @measure_time
     def test_room_scen_13_converges(self):
         """This is a pretty hard scenario (maybe because of the potential conflict).
 
@@ -43,7 +41,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         optimal_reward = -48.0
         self.assertGreater(reward, -1000)
 
-    @measure_time
     def test_normal_room_scenario_converges(self):
         env = create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, -1, -1)
 
@@ -56,7 +53,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
 
-    @measure_time
     def test_deterministic_room_scenario_1_2_agents(self):
         env = create_mapf_env('room-32-32-4', 1, 2, 0, 0, -1000, 0, -1)
 
@@ -67,7 +63,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         reward, _ = evaluate_policy(policy, 1, 1000)
         self.assertGreater(reward, -1000)
 
-    @measure_time
     def test_hand_crafted_env_converges(self):
         grid = MapfGrid([
             '...',
@@ -88,7 +83,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         # Make sure this policy is optimal
         self.assertGreater(reward, -1000)
 
-    @measure_time
     def test_stochastic_room_env(self):
         """Easy room scenario with fail probabilities"""
         env = create_mapf_env('room-32-32-4', 12, 2, 0.1, 0.1, -1000, -1, -1)
@@ -102,7 +96,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
 
-    @measure_time
     def test_deterministic_sanity_env(self):
         """Sanity check - independent agents scenario"""
         env = create_mapf_env('sanity', None, 4, 0.1, 0.1, -1000, -1, -1)
