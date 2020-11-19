@@ -1,0 +1,2 @@
+pytest --capture=no
+python python tests/benchmark_performance.py
