@@ -1,2 +1,3 @@
+export PYTHONPATH=`pwd`
 pytest --capture=no
 python research/tests/benchmark_performance.py
