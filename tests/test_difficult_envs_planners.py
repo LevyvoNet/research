@@ -96,21 +96,6 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
 
-    def test_deterministic_sanity_env(self):
-        """Sanity check - independent agents scenario"""
-        env = create_mapf_env('sanity', None, 4, 0.1, 0.1, -1000, -1, -1)
-
-        plan_func = self.get_plan_func()
-        info = {}
-        a = time.time()
-        policy = plan_func(env, info)
-        print(f"plan time was {time.time() - a} seconds")
-
-        reward, clashed = evaluate_policy(policy, 1, 1000)
-
-        # Assert that the solution is reasonable (actually solving)
-        self.assertGreater(reward, -1000)
-
 
 class FixedIterationsCountRtdpPlannerTest(DifficultEnvsPlannerTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
