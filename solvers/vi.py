@@ -3,8 +3,8 @@ import numpy as np
 import math
 from typing import Dict
 
-from research.solvers import V_TYPE, V_TYPE_SIZE, MAXIMUM_RAM
-from research.solvers.utils import safe_actions, ValueFunctionPolicy, Policy
+from solvers import V_TYPE, V_TYPE_SIZE, MAXIMUM_RAM
+from solvers.utils import safe_actions, ValueFunctionPolicy, Policy
 from gym_mapf.envs.mapf_env import MapfEnv
 
 

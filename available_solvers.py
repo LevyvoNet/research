@@ -1,12 +1,12 @@
 from collections import namedtuple
 
-from research.solvers import (value_iteration,
+from solvers import (value_iteration,
                               stop_when_no_improvement_between_batches_rtdp,
                               fixed_iterations_count_rtdp,
                               ma_rtdp,
                               policy_iteration,
                               id)
-from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    local_views_prioritized_value_iteration_sum_heuristic,
                                    deterministic_relaxation_prioritized_value_iteration_heuristic)
 from functools import partial

@@ -9,8 +9,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     ACTIONS,
                                     vector_action_to_integer)
 
-from research.solvers.utils import evaluate_policy
-from research.solvers.rtdp import RtdpPolicy
+from solvers.utils import evaluate_policy
+from solvers.rtdp import RtdpPolicy
 
 
 class MultiagentRtdpPolicy(RtdpPolicy):

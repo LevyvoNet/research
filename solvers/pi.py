@@ -3,9 +3,9 @@ import numpy as np
 import math
 from typing import Dict
 
-from research.solvers import V_TYPE_SIZE, V_TYPE, MAXIMUM_RAM
+from solvers import V_TYPE_SIZE, V_TYPE, MAXIMUM_RAM
 from gym_mapf.envs.mapf_env import MapfEnv
-from research.solvers.utils import Policy, ValueFunctionPolicy
+from solvers.utils import Policy, ValueFunctionPolicy
 
 
 def one_step_lookahead(env, state, V, discount_factor=1.0):

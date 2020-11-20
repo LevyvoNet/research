@@ -2,8 +2,8 @@ import time
 from typing import Callable, Dict
 
 from gym_mapf.envs.mapf_env import MapfEnv
-from research.solvers.rtdp import RtdpPolicy, greedy_action
-from research.solvers.utils import Policy
+from solvers.rtdp import RtdpPolicy, greedy_action
+from solvers.utils import Policy
 
 
 class LrtdpPolicy(RtdpPolicy):

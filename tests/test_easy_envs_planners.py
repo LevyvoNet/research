@@ -6,8 +6,8 @@ from gym_mapf.envs.utils import MapfGrid, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     UP, DOWN, STAY)
-from research.solvers.utils import Policy, evaluate_policy
-from research.solvers import (value_iteration,
+from solvers.utils import Policy, evaluate_policy
+from solvers import (value_iteration,
                               policy_iteration,
                               rtdp_iterations_generator,
                               id,
@@ -15,7 +15,7 @@ from research.solvers import (value_iteration,
                               fixed_iterations_count_rtdp,
                               stop_when_no_improvement_between_batches_rtdp,
                               ma_rtdp)
-from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    local_views_prioritized_value_iteration_sum_heuristic)
 
 

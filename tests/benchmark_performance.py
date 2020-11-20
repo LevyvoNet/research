@@ -1,7 +1,7 @@
 from gym_mapf.envs.utils import create_mapf_env
 
-from research.available_solvers import *
-from research.tests.performance_utils import (run_all,
+from available_solvers import *
+from tests.performance_utils import (run_all,
                                               STRONG_SOLVERS,
                                               EXPERIMENT_SOLVERS)
 

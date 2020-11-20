@@ -3,8 +3,8 @@ import unittest
 import pandas as pd
 import stopit
 
-from research.solvers.utils import evaluate_policy
-from research.available_solvers import *
+from solvers.utils import evaluate_policy
+from available_solvers import *
 
 EXCLUDED_SOLVERS = [
     rtdp_stop_no_improvement_determinsitic_heuristic_describer,

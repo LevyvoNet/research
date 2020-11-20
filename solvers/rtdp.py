@@ -4,8 +4,8 @@ import math
 from typing import Callable, Dict, Iterable
 
 from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object
-from research.solvers.vi import prioritized_value_iteration
-from research.solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
+from solvers.vi import prioritized_value_iteration
+from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
 
 class RtdpPolicy(ValueFunctionPolicy):

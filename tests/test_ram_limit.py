@@ -3,8 +3,8 @@ from functools import partial
 from typing import Dict, Callable
 from gym_mapf.envs.mapf_env import MapfEnv
 from gym_mapf.envs.utils import create_mapf_env
-from research.solvers.utils import Policy
-from research.solvers import (value_iteration,
+from solvers.utils import Policy
+from solvers import (value_iteration,
                               prioritized_value_iteration,
                               policy_iteration)
 

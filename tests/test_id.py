@@ -6,11 +6,11 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     UP, DOWN, RIGHT, LEFT, STAY)
 
-from research.solvers import (value_iteration,
+from solvers import (value_iteration,
                               id,
                               fixed_iterations_count_rtdp)
-from research.solvers.rtdp import local_views_prioritized_value_iteration_min_heuristic
-from research.solvers.utils import solve_independently_and_cross, evaluate_policy
+from solvers.rtdp import local_views_prioritized_value_iteration_min_heuristic
+from solvers.utils import solve_independently_and_cross, evaluate_policy
 
 
 class IdTests(unittest.TestCase):

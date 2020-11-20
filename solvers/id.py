@@ -3,7 +3,7 @@ import time
 from typing import Dict, Callable
 
 from gym_mapf.envs.mapf_env import MapfEnv
-from research.solvers.utils import (detect_conflict,
+from solvers.utils import (detect_conflict,
                                     solve_independently_and_cross,
                                     get_local_view,
                                     Policy, group_of_agent, merge_agent_groups)

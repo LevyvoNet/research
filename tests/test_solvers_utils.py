@@ -2,15 +2,15 @@ import unittest
 import json
 from functools import partial
 
-from research.solvers.utils import CrossedPolicy, detect_conflict, solve_independently_and_cross, Policy
-from research.solvers.vi import value_iteration
+from solvers.utils import CrossedPolicy, detect_conflict, solve_independently_and_cross, Policy
+from solvers.vi import value_iteration
 from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     integer_action_to_vector,
                                     DOWN, RIGHT, LEFT, STAY,
                                     ACTIONS)
-from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    fixed_iterations_count_rtdp)
 
 

@@ -11,14 +11,14 @@ from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
 
-from research.logger_process import start_logger_process, ERROR, INFO, DEBUG
-from research.db_process import start_db_process
+from logger_process import start_logger_process, ERROR, INFO, DEBUG
+from db_process import start_db_process
 
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
-from research.solvers.utils import evaluate_policy
-from research.solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+from solvers.utils import evaluate_policy
+from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                                    local_views_prioritized_value_iteration_sum_heuristic)
-from research.solvers import (id,
+from solvers import (id,
                               value_iteration,
                               prioritized_value_iteration,
                               policy_iteration,
@@ -27,10 +27,10 @@ from research.solvers import (id,
                               fixed_iterations_count_rtdp,
                               lrtdp
                               )
-from research.available_solvers import *
+from available_solvers import *
 
 # *************** Dependency Injection *************************************************************************
-import research.db_providers.tinymongo_db_provider as db_provider
+import db_providers.tinymongo_db_provider as db_provider
 
 # import db_providers.pymongo_db_provider as db_provider
 
