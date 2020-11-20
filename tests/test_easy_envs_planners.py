@@ -49,7 +49,6 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
 
         # Check the policy performance
         reward, _ = evaluate_policy(policy, 100, 100)
-        print(f'got reward {reward}')
 
         # print white box data
         self.print_white_box_data(policy, info)

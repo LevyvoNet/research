@@ -245,9 +245,6 @@ class SolversUtilsTests(unittest.TestCase):
         agents_goals = ((0, 2), (2, 2), (2, 0))
         env = MapfEnv(grid, 3, agents_starts, agents_goals, 0, 0, -1, 1, -0.01)
 
-        import ipdb
-        ipdb.set_trace()
-
         policy1 = {
             0: ACTIONS.index(RIGHT),
             1: ACTIONS.index(STAY),
@@ -284,7 +281,6 @@ class SolversUtilsTests(unittest.TestCase):
                                      [[0], [1], [2]])
 
         aux_local_env = get_local_view(env, [0])
-
 
         self.assertEqual(detect_conflict(env, joint_policy),
                          (
