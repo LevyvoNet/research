@@ -1,16 +1,14 @@
 import time
-import json
+import itertools
 from abc import ABCMeta, abstractmethod
 from collections import Counter
 from typing import Dict, Callable
 
 import numpy as np
-
-from gym_mapf.envs import integer_to_vector
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector,
                                     vector_action_to_integer)
-from gym_mapf.envs.utils import get_local_view, manhattan_distance
+from gym_mapf.envs.utils import get_local_view
 
 
 class Policy(metaclass=ABCMeta):
@@ -68,6 +66,76 @@ def print_path_to_state(path: dict, state: int, env: MapfEnv):
                                              integer_action_to_vector(action, env.n_agents)))
 
 
+def couple_detect_conflict(env: MapfEnv,
+                           joint_policy: CrossedPolicy,
+                           a1: int,
+                           a2: int,
+                           **kwargs):
+    """Detect a conflict for two specific agents"""
+    info = kwargs.get('info', {})
+    start = time.time()
+
+    a1_group_idx = group_of_agent(joint_policy.agents_groups, a1)
+    a2_group_idx = group_of_agent(joint_policy.agents_groups, a2)
+
+    a1_group = joint_policy.agents_groups[a1_group_idx]
+    a2_group = joint_policy.agents_groups[a2_group_idx]
+
+    a1_idx_in_group = a1_group.index(a1)
+    a2_idx_in_group = a2_group.index(a2)
+
+    a1_group_policy = joint_policy.policies[a1_group_idx]
+    a2_group_policy = joint_policy.policies[a2_group_idx]
+
+    env1 = get_local_view(env, a1_group)
+    env2 = get_local_view(env, a2_group)
+
+    state_pairs_to_expand = [(env1.s, env2.s)]
+    visited_state_pairs = set()
+
+    while len(state_pairs_to_expand) > 0:
+        (s1, s2) = state_pairs_to_expand.pop()
+        loc1 = env1.state_to_locations(s1)[a1_idx_in_group]
+        loc2 = env1.state_to_locations(s2)[a2_idx_in_group]
+        visited_state_pairs.add((s1, s2))
+
+        next_states_1 = [next_state
+                         for _, next_state, _, _ in env1.P[s1][a1_group_policy.act(s1)]]
+        next_states_2 = [next_state
+                         for _, next_state, _, _ in env2.P[s2][a2_group_policy.act(s2)]]
+
+        for n1 in next_states_1:
+            for n2 in next_states_2:
+                next_loc1 = env1.state_to_locations(n1)[a1_idx_in_group]
+                next_loc2 = env1.state_to_locations(n2)[a2_idx_in_group]
+
+                # Check for a potential clash
+                if any([
+                    next_loc1 == next_loc2,
+                    loc1 == next_loc2 and loc2 == next_loc1
+                ]):
+                    single_agent_local_env = get_local_view(env, [0])
+
+                    info['detect_conflict_time'] = round(time.time() - start, 2)
+                    return (
+                        (a1,
+                         single_agent_local_env.locations_to_state((loc1,)),
+                         single_agent_local_env.locations_to_state((next_loc1,))
+                         ),
+                        (a2,
+                         single_agent_local_env.locations_to_state((loc2,)),
+                         single_agent_local_env.locations_to_state((next_loc2,))
+                         )
+                    )
+
+                if (n1, n2) not in visited_state_pairs:
+                    state_pairs_to_expand.append((n1, n2))
+
+    # Done expanding all pairs without a clash, return no conflict is possible
+    info['detect_conflict_time'] = round(time.time() - start, 2)
+    return None
+
+
 def detect_conflict(env: MapfEnv,
                     joint_policy: CrossedPolicy,
                     **kwargs):
@@ -83,75 +151,13 @@ def detect_conflict(env: MapfEnv,
     """
     info = kwargs.get('info', {})
     start = time.time()
-    visited_states = set()
-    env.reset()
-    states_to_expand = [env.s]
-    path = {env.s: None}
-    aux_local_env = get_local_view(env, [0])
 
-    while len(states_to_expand) > 0:
-        curr_expanded_state = states_to_expand.pop()
-        visited_states.add(curr_expanded_state)
-        joint_action = joint_policy.act(curr_expanded_state)
-        # print(f'{len(states_to_expand)} to expand, {len(visited_states)} already expanded, total {env.nS} states')
-        for prob, next_state, reward, done in env.P[curr_expanded_state][joint_action]:
-            # next_state_vector = env.state_to_locations(next_state)
-            # loc_count = Counter(next_state_vector)
-            # shared_locations = [loc for loc, counts in loc_count.items() if counts > 1]
-            if done and reward == env.reward_of_clash:  # clash between two agents
-                # TODO: shouldn't I take care of every shared location instead of just the first one?
-                next_state_vector = env.state_to_locations(next_state)
-                loc_count = Counter(next_state_vector)
-                shared_locations = [loc for loc, counts in loc_count.items() if counts > 1]
-                if len(shared_locations) > 0:
-                    # classical clash
-                    first_agent = next_state_vector.index(shared_locations[0])
-                    second_agent = next_state_vector[first_agent + 1:].index(shared_locations[0]) + (first_agent + 1)
-                else:
-                    # switch between two agents
-                    curr_state_vector = env.state_to_locations(curr_expanded_state)
-                    shared_locations = [loc for loc in next_state_vector if loc in curr_state_vector]
-                    for shared_loc in shared_locations:
-                        # check if this is just an agent which remained in place
-                        first_agent = curr_state_vector.index(shared_loc)
-                        second_agent = next_state_vector.index(shared_loc)
-                        if first_agent != second_agent:
-                            # these agents made a switch
-                            return (
-                                (
-                                    first_agent,
-                                    aux_local_env.locations_to_state((curr_state_vector[first_agent],)),
-                                    aux_local_env.locations_to_state((next_state_vector[first_agent],))
-                                ),
-                                (
-                                    second_agent,
-                                    aux_local_env.locations_to_state((curr_state_vector[second_agent],)),
-                                    aux_local_env.locations_to_state((next_state_vector[second_agent],))
-                                )
-                            )
-
-                    assert False, "Something is wrong - MapfEnv had a conflict but there isn't"
-
-                # calculate the local states for each agent that with the current action got them here.
-                vector_curr_expanded_state = env.state_to_locations(curr_expanded_state)
-
+    for (g1, g2) in itertools.combinations(range(len(joint_policy.agents_groups)), 2):
+        for (a1, a2) in itertools.product(joint_policy.agents_groups[g1], joint_policy.agents_groups[g2]):
+            conflict = couple_detect_conflict(env, joint_policy, a1, a2)
+            if conflict is not None:
                 info['detect_conflict_time'] = round(time.time() - start, 2)
-                return (
-                    (
-                        first_agent,
-                        aux_local_env.locations_to_state((vector_curr_expanded_state[first_agent],)),
-                        aux_local_env.locations_to_state((shared_locations[0],))
-                    ),
-                    (
-                        second_agent,
-                        aux_local_env.locations_to_state((vector_curr_expanded_state[second_agent],)),
-                        aux_local_env.locations_to_state((shared_locations[0],))
-                    )
-                )
-
-            if next_state not in visited_states:
-                states_to_expand.append(next_state)
-                path[next_state] = (curr_expanded_state, joint_action)
+                return conflict
 
     info['detect_conflict_time'] = round(time.time() - start, 2)
     return None

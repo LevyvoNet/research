@@ -2,7 +2,11 @@ import unittest
 import json
 from functools import partial
 
-from solvers.utils import CrossedPolicy, detect_conflict, solve_independently_and_cross, Policy
+from solvers.utils import (CrossedPolicy,
+                           detect_conflict,
+                           solve_independently_and_cross,
+                           Policy,
+                           couple_detect_conflict)
 from solvers.vi import value_iteration
 from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
@@ -11,7 +15,7 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     DOWN, RIGHT, LEFT, STAY,
                                     ACTIONS)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
-                                   fixed_iterations_count_rtdp)
+                          fixed_iterations_count_rtdp)
 
 
 class DictPolicy(Policy):
@@ -238,7 +242,7 @@ class SolversUtilsTests(unittest.TestCase):
         # Assert the conflict parameters are right
         self.assertIn(conflict, possible_conflicts)
 
-    def test_detect_conflict_3_agents(self):
+    def test_couple_detect_conflict_3_agents(self):
         """This test may sometime be used to test detecting a conflict for only a couple of agents.
 
         The test will make sure that agent 0 got no conflicts with 1 and 2 while agents 1 and 2 do get a conflict.
@@ -303,7 +307,8 @@ class SolversUtilsTests(unittest.TestCase):
 
         aux_local_env = get_local_view(env, [0])
 
-        self.assertEqual(detect_conflict(env, joint_policy),
+        # Assert a conflict is found for agents 1 and 2
+        self.assertEqual(couple_detect_conflict(env, joint_policy, 1, 2),
                          (
                              (
                                  1,
@@ -316,6 +321,12 @@ class SolversUtilsTests(unittest.TestCase):
                                  aux_local_env.locations_to_state(((2, 1),))
                              )
                          ))
+
+        # Assert no conflict is found for agents 0 and 1
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 1))
+
+        # Assert no conflict is found for agents 0 and 2
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 2))
 
 
 if __name__ == '__main__':

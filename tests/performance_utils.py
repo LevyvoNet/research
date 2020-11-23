@@ -35,9 +35,6 @@ SINGLE_SCENARIO_TIMEOUT = 300  # seconds
 
 
 def benchmark_planners_on_env(env, env_str, solver_describers):
-    if env is None:
-        raise unittest.SkipTest("This is an abstract test case")
-
     results_df = pd.DataFrame(columns=[
         'env',
         'solver',
