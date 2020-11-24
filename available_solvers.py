@@ -44,8 +44,8 @@ def id_extra_info(info):
 
     # This time mostly matters for heuristics calculation (on RTDP for example)
     extra_info_dict['solver_init_time'] = sum(
-        [sum([info['iterations'][j]['joint_policy'][f"[{i}]"]['initialization_time']
-              for i in range(n_agents)])
+        [sum([info['iterations'][j]['joint_policy'][key]['initialization_time']
+              for key in info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['), key.endswith(']')])])
          for j in range(len(info['iterations']))])
 
     return SolverExtraInfo(**extra_info_dict)
