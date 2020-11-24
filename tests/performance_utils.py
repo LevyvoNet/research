@@ -52,7 +52,7 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
         reward, clashed = -1000, False
 
         # Run with time limit
-        with stopit.ThreadingTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+        with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
             print(f'Running {solver_str} on {env_str}')
             try:
                 start = time.time()
