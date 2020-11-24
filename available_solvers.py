@@ -37,8 +37,9 @@ def id_extra_info(info):
     # Number of found conflicts
     extra_info_dict['n_conflicts'] = len(info['iterations']) - 1
 
-    # Total time for conflicts detection
-    extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i]['detect_conflict_time']
+    # Total time for conflicts detection,
+    # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
+    extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i].get('detect_conflict_time', 0)
                                                       for i in range(len(info['iterations']))])
 
     # This time mostly matters for heuristics calculation (on RTDP for example)
