@@ -1,5 +1,5 @@
 import time
-import unittest
+import traceback
 import pandas as pd
 import stopit
 
@@ -44,42 +44,48 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
     ])
 
     for solver_describer in solver_describers:
-        solver_str = solver_describer.description
-        solve_func = solver_describer.func
+        try:
+            solver_str = solver_describer.description
+            solve_func = solver_describer.func
 
-        # Assume solved
-        solved = True
-        reward, clashed = -1000, False
+            # Assume solved
+            solved = True
+            reward, clashed = -1000, False
 
-        # Run with time limit
-        with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
-            print(f'Running {solver_str} on {env_str}')
-            try:
-                start = time.time()
-                info = {}
-                policy = solve_func(env, info)
-            except stopit.utils.TimeoutException:
-                solved = False
+            # Run with time limit
+            with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+                print(f'Running {solver_str} on {env_str}')
+                try:
+                    start = time.time()
+                    info = {}
+                    policy = solve_func(env, info)
+                except stopit.utils.TimeoutException:
+                    solved = False
 
-        # Evaluate policy is solved
-        if solved:
-            reward, clashed = evaluate_policy(policy, 100, 1000)
+            # Evaluate policy is solved
+            if solved:
+                reward, clashed = evaluate_policy(policy, 100, 1000)
 
-        # Measure time
-        total_time = time.time() - start
+            # Measure time
+            total_time = time.time() - start
 
-        # Collect results
-        row = {
-            'env': env_str,
-            'solver': solver_str,
-            'time': total_time,
-            'avg_reward': reward,
-            'clashed': clashed
-        }
-        row.update(dict(solver_describer.extra_info(info)._asdict()))
+            # Collect results
+            row = {
+                'env': env_str,
+                'solver': solver_str,
+                'time': total_time,
+                'avg_reward': reward,
+                'clashed': clashed
+            }
+            row.update(dict(solver_describer.extra_info(info)._asdict()))
 
-        # Insert new row to results data frame
-        results_df = results_df.append(row, ignore_index=True)
+            # Insert new row to results data frame
+            results_df = results_df.append(row, ignore_index=True)
+        except Exception as e:
+            print(f"{solver_describer.description} failed on {env_str}")
+            tb = traceback.TracebackException.from_exception(e)
+            print(''.join(tb.stack.format()))
+
     # print the result
     print(f'-----{env_str}------')
     print(results_df)

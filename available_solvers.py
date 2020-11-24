@@ -39,12 +39,13 @@ def id_extra_info(info):
 
     # Total time for conflicts detection
     extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i]['detect_conflict_time']
-                                                   for i in range(len(info['iterations']))])
+                                                      for i in range(len(info['iterations']))])
 
     # This time mostly matters for heuristics calculation (on RTDP for example)
-    extra_info_dict['solver_init_time'] = sum([sum([info['iterations'][j]['joint_policy'][f"[{i}]"]['initialization_time']
-                                                 for i in range(n_agents)])
-                                            for j in range(len(info['iterations']))])
+    extra_info_dict['solver_init_time'] = sum(
+        [sum([info['iterations'][j]['joint_policy'][f"[{i}]"]['initialization_time']
+              for i in range(n_agents)])
+         for j in range(len(info['iterations']))])
 
     return SolverExtraInfo(**extra_info_dict)
 
