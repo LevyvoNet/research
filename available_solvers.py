@@ -1,4 +1,5 @@
 from collections import namedtuple
+from functools import partial
 
 from solvers import (value_iteration,
                      stop_when_no_improvement_between_batches_rtdp,
@@ -9,7 +10,6 @@ from solvers import (value_iteration,
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
                           deterministic_relaxation_prioritized_value_iteration_heuristic)
-from functools import partial
 
 SolverDescriber = namedtuple('SolverDescriber', [
     'description',
@@ -31,8 +31,6 @@ def default_extra_info(info):
 def id_extra_info(info):
     extra_info = default_extra_info(info)
     extra_info_dict = dict(extra_info._asdict())
-
-    n_agents = len(info['iterations'][0]['joint_policy']) - 1
 
     # Number of found conflicts
     extra_info_dict['n_conflicts'] = len(info['iterations']) - 1
