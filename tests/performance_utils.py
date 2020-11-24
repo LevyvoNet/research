@@ -76,7 +76,7 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
             'avg_reward': reward,
             'clashed': clashed
         }
-        row.update(solver_describer.info_df(info))
+        row.update(dict(solver_describer.extra_info(info)._asdict()))
 
         # Insert new row to results data frame
         results_df = results_df.append(row, ignore_index=True)
