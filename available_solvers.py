@@ -1,14 +1,14 @@
 from collections import namedtuple
 
 from solvers import (value_iteration,
-                              stop_when_no_improvement_between_batches_rtdp,
-                              fixed_iterations_count_rtdp,
-                              ma_rtdp,
-                              policy_iteration,
-                              id)
+                     stop_when_no_improvement_between_batches_rtdp,
+                     fixed_iterations_count_rtdp,
+                     ma_rtdp,
+                     policy_iteration,
+                     id)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
-                                   local_views_prioritized_value_iteration_sum_heuristic,
-                                   deterministic_relaxation_prioritized_value_iteration_heuristic)
+                          local_views_prioritized_value_iteration_sum_heuristic,
+                          deterministic_relaxation_prioritized_value_iteration_heuristic)
 from functools import partial
 
 SolverDescriber = namedtuple('SolverDescriber', [
@@ -25,7 +25,10 @@ InfoDF = namedtuple('InfoDf', [
 
 
 def default_info_df(info):
-    return InfoDF('-', '-', '-')
+    info_df = InfoDF('-', '-', '-')
+    info_df_dict = dict(info_df._asdict())
+
+    return info_df_dict
 
 
 def id_info_df(info):
