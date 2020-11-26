@@ -161,17 +161,6 @@ long_rtdp_stop_no_improvement_determinsitic_heuristic_describer = SolverDescribe
                  1000),
     extra_info=default_extra_info
 )
-id_rtdp_describer = SolverDescriber(
-    description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
-    func=partial(id, rtdp_stop_no_improvement_min_heuristic_describer.func),
-    extra_info=id_extra_info
-)
-
-long_id_rtdp_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_min_heuristic_describer.description})',
-    func=partial(id, long_rtdp_stop_no_improvement_min_heuristic_describer.func),
-    extra_info=id_extra_info
-)
 
 ma_rtdp_sum_describer = SolverDescriber(
     description=f'ma_rtdp('
@@ -239,4 +228,28 @@ fixed_iter_rtdp_min_describer = SolverDescriber(
                  1.0,
                  400),
     extra_info=default_extra_info
+)
+
+id_rtdp_describer = SolverDescriber(
+    description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
+    func=partial(id, rtdp_stop_no_improvement_min_heuristic_describer.func),
+    extra_info=id_extra_info
+)
+
+long_id_rtdp_describer = SolverDescriber(
+    description=f'ID({long_rtdp_stop_no_improvement_min_heuristic_describer.description})',
+    func=partial(id, long_rtdp_stop_no_improvement_min_heuristic_describer.func),
+    extra_info=id_extra_info
+)
+
+id_ma_rtdp_describer = SolverDescriber(
+    description=f'ID({ma_rtdp_min_describer.description})',
+    func=partial(id, ma_rtdp_min_describer.func),
+    extra_info=id_extra_info
+)
+
+long_id_ma_rtdp_describer = SolverDescriber(
+    description=f'ID({long_ma_rtdp_min_describer.description})',
+    func=partial(id, long_ma_rtdp_min_describer.func),
+    extra_info=id_extra_info
 )
