@@ -33,6 +33,10 @@ EXPERIMENT_SOLVERS = [
 SINGLE_SCENARIO_TIMEOUT = 300  # seconds
 
 
+def timeout_handler(signum, frame):
+    raise TimeoutError()
+
+
 def benchmark_planners_on_env(env, env_str, solver_describers):
     results_df = pd.DataFrame(columns=[
         'env',
@@ -46,20 +50,19 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
         solver_str = solver_describer.description
         solve_func = solver_describer.func
 
-        # Assume solved
+        # Fill default values in case of a timeout (we will not be able to evaluate the policy)
         solved = True
         reward, clashed = -1000, False
 
-        # Run with time limit
-        def timeout_handler(signum, frame):
-            raise TimeoutError()
-
+        # Prepare for running
         print(f'Running {solver_str} on {env_str}')
+        signal.signal(signal.SIGALRM, timeout_handler)
+        start = time.time()
+        info = {}
+        signal.alarm(SINGLE_SCENARIO_TIMEOUT)
+
+        # Run with time limit
         try:
-            signal.signal(signal.SIGALRM, timeout_handler)
-            start = time.time()
-            info = {}
-            signal.alarm(SINGLE_SCENARIO_TIMEOUT)
             policy = solve_func(env, info)
         except TimeoutError:
             print(f'{solver_str} on {env_str} got timeout')
