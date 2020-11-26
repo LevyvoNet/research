@@ -1,7 +1,6 @@
 import time
-
+import signal
 import pandas as pd
-import stopit
 
 from available_solvers import *
 from solvers.utils import evaluate_policy
@@ -52,14 +51,20 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
         reward, clashed = -1000, False
 
         # Run with time limit
-        with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
-            print(f'Running {solver_str} on {env_str}')
-            try:
-                start = time.time()
-                info = {}
-                policy = solve_func(env, info)
-            except stopit.utils.TimeoutException:
-                solved = False
+        def timeout_handler(signum, frame):
+            raise TimeoutError()
+
+        print(f'Running {solver_str} on {env_str}')
+        try:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            start = time.time()
+            info = {}
+            signal.alarm(SINGLE_SCENARIO_TIMEOUT)
+            policy = solve_func(env, info)
+        except TimeoutError:
+            solved = False
+
+        signal.alarm(0)  # Disable possible signal in case we've solved in time
 
         # Evaluate policy is solved
         if solved:
