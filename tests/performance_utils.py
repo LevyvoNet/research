@@ -11,14 +11,15 @@ EXCLUDED_SOLVERS = [
 
 WEAK_SOLVERS = [
     value_iteration_describer,
-    policy_iteration_describer
+    policy_iteration_describer,
 ]
 STRONG_SOLVERS = [
     rtdp_stop_no_improvement_min_heuristic_describer,
     rtdp_stop_no_improvement_sum_heuristic_describer,
     id_rtdp_describer,
     ma_rtdp_min_describer,
-    fixed_iter_rtdp_min_describer
+    fixed_iter_rtdp_min_describer,
+    id_ma_rtdp_describer,
 
 ]
 
@@ -26,6 +27,7 @@ EXPERIMENT_SOLVERS = [
     long_id_rtdp_describer,
     long_rtdp_stop_no_improvement_min_heuristic_describer,
     long_ma_rtdp_min_describer,
+    long_id_ma_rtdp_describer,
 ]
 
 SINGLE_SCENARIO_TIMEOUT = 300  # seconds
