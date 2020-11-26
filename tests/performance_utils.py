@@ -5,6 +5,8 @@ import pandas as pd
 from available_solvers import *
 from solvers.utils import evaluate_policy
 
+pd.options.display.max_columns=20
+
 EXCLUDED_SOLVERS = [
     rtdp_stop_no_improvement_determinsitic_heuristic_describer,
 ]
