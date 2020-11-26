@@ -7,9 +7,8 @@ from gym_mapf.envs.utils import create_mapf_env, MapfEnv, MapfGrid
 from solvers.utils import evaluate_policy, Policy
 from solvers import fixed_iterations_count_rtdp, stop_when_no_improvement_between_batches_rtdp, ma_rtdp
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
-                                   deterministic_relaxation_prioritized_value_iteration_heuristic,
-                                   local_views_prioritized_value_iteration_sum_heuristic)
-from available_solvers import id_rtdp_describer
+                          local_views_prioritized_value_iteration_sum_heuristic)
+from available_solvers import id_rtdp_describer, id_ma_rtdp_describer
 
 
 class DifficultEnvsPlannerTest(unittest.TestCase):
@@ -143,6 +142,11 @@ class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
 class IdRtdpPlannerTest(DifficultEnvsPlannerTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
         return id_rtdp_describer.func
+
+
+class IdMaRtdpPlannerTest(DifficultEnvsPlannerTest):
+    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+        return id_ma_rtdp_describer.func
 
 
 if __name__ == '__main__':

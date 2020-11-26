@@ -1,4 +1,3 @@
 export PYTHONPATH=`pwd`
-export COLUMNS=211
 pytest --capture=no
 python tests/benchmark_performance.py

@@ -5,7 +5,7 @@ import pandas as pd
 from available_solvers import *
 from solvers.utils import evaluate_policy
 
-pd.options.display.max_columns=20
+pd.options.display.max_columns = 20
 
 EXCLUDED_SOLVERS = [
     rtdp_stop_no_improvement_determinsitic_heuristic_describer,
@@ -74,6 +74,7 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
 
         # Evaluate policy is solved
         if solved:
+            print(f'evaluating policy calculated by {solver_str} on {env_str}')
             reward, clashed = evaluate_policy(policy, 100, 1000)
 
         # Measure time
