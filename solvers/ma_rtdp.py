@@ -141,7 +141,9 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
 
     # initialize V to an upper bound
+    start = time.time()
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
+    info['initialization_time'] = time.time() - start
 
     # Run RTDP iterations
     for iter_count, reward in enumerate(multi_agent_turn_based_rtdp_iterations_generator(policy, info),
