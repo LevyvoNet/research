@@ -62,6 +62,7 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
             signal.alarm(SINGLE_SCENARIO_TIMEOUT)
             policy = solve_func(env, info)
         except TimeoutError:
+            print(f'{solver_str} on {env_str} got timeout')
             solved = False
 
         signal.alarm(0)  # Disable possible signal in case we've solved in time
