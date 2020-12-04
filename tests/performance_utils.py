@@ -108,5 +108,5 @@ def run_all(kwargs_list):
         df = df.append(benchmark_planners_on_env(**kwargs))
 
     print(df)
-    
+
     return df

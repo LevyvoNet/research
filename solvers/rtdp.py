@@ -91,15 +91,16 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
     return heuristic_function
 
 
-def bellman_update(policy: RtdpPolicy, s: int, a: int):
-    new_v_s = sum([prob * (reward + policy.gamma * policy.v[next_state])
-                   for prob, next_state, reward, done in policy.env.P[s][a]])
-    policy.v_partial_table[s] = new_v_s
+def bellman_update(policy: RtdpPolicy, s: int):
+    q_s_a = [sum([prob * (reward + policy.gamma * policy.v[next_state])
+                  for prob, next_state, reward, done in policy.env.P[s][a]])
+             for a in range(policy.env.nA)]
+    policy.v_partial_table[s] = max(q_s_a)
 
 
 def rtdp_single_iteration(policy: RtdpPolicy,
                           select_action: Callable[[RtdpPolicy, int], int],
-                          update: Callable[[RtdpPolicy, int, int], None],
+                          update: Callable[[RtdpPolicy, int], None],
                           info: Dict):
     """Run a single iteration of RTDP.
 
@@ -124,16 +125,19 @@ def rtdp_single_iteration(policy: RtdpPolicy,
         # Choose action action for current state
         a = select_action(policy, s)
         # a = policy.act(s)
-        path.append((s, a))
+        path.append(s)
 
         # Do a bellman update
-        update(policy, s, a)
+        update(policy, s)
 
         # Simulate the step and sample a new state
         s, r, done, _ = policy.env.step(a)
         total_reward += r
 
-    # TODO: update backwards here using path variable
+    # Backward update
+    while path:
+        s = path.pop()
+        update(policy, s)
 
     # Write measures about that information
     info['time'] = round(time.time() - start, 2)

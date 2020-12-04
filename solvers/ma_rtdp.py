@@ -67,7 +67,7 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
     s = policy.env.reset()
     done = False
     start = time.time()
-    path = []
+    path = [s]
     total_reward = 0
     all_stay = (STAY,) * policy.env.n_agents
 
@@ -92,14 +92,17 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
 
             s, r, done, _ = policy.env.step(fake_joint_action)
             trajectory_states.append(s)
+            path.append(s)
 
         for agent in reversed(range(policy.env.n_agents)):
             # update q(s, agent, action) based on the last state
             policy.q_update(agent, trajectory_states[agent], trajectory_actions[agent])
             policy.v_update(trajectory_states[agent])
 
-    # Backward update?
-    pass
+    # Backward update
+    while path:
+        s = path.pop()
+        policy.v_update(s)
 
     # TODO: There is a bug here(total_reward is always 0), will think about it later
 
