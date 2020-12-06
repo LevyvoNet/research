@@ -89,6 +89,7 @@ POSSIBLE_MAPS = [
     'empty-16-16',
     'empty-32-32',
     'empty-48-48',
+    'sanity'
 ]
 POSSIBLE_N_AGENTS = list(range(1, 5))
 
@@ -104,8 +105,10 @@ SCENES_PER_MAP_COUNT = 25
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 POSSIBLE_SOLVERS = [
-    long_ma_rtdp_min_describer,
-    long_ma_rtdp_sum_describer,
+    long_id_ma_rtdp_describer,
+    # long_rtdp_stop_no_improvement_min_heuristic_describer,
+    # long_id_rtdp_describer,
+    # long_ma_rtdp_min_describer,
 ]
 
 TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),  # number of instance data
