@@ -17,16 +17,16 @@ from db_process import start_db_process
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
 from solvers.utils import evaluate_policy
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
-                                   local_views_prioritized_value_iteration_sum_heuristic)
+                          local_views_prioritized_value_iteration_sum_heuristic)
 from solvers import (id,
-                              value_iteration,
-                              prioritized_value_iteration,
-                              policy_iteration,
-                              rtdp,
-                              stop_when_no_improvement_between_batches_rtdp,
-                              fixed_iterations_count_rtdp,
-                              lrtdp
-                              )
+                     value_iteration,
+                     prioritized_value_iteration,
+                     policy_iteration,
+                     rtdp,
+                     stop_when_no_improvement_between_batches_rtdp,
+                     fixed_iterations_count_rtdp,
+                     lrtdp
+                     )
 from available_solvers import *
 
 # *************** Dependency Injection *************************************************************************

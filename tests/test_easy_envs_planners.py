@@ -33,7 +33,7 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         agents_starts = ((0, 0), (0, 2))
         agents_goals = ((0, 2), (0, 0))
 
-        # These parameters are for making sre that VI avoids collision regardless of reward efficiency
+        # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -0.001, -1, -1)
 
         info = {}
@@ -86,20 +86,20 @@ class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(Easy
     def print_white_box_data(self, policy: Policy, info: Dict):
         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
 
-
-class EasyEnvironmentsStopWhenNoImprovementLocalSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(stop_when_no_improvement_between_batches_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       10,
-                       100)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+# The sum heuristic is not admissible for Makespan, therefore not interesting right now.
+# class EasyEnvironmentsStopWhenNoImprovementLocalSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
+#     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+#         self.max_iterations = 100
+#         self.iters_in_batch = 10
+#
+#         return partial(stop_when_no_improvement_between_batches_rtdp,
+#                        partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+#                        1.0,
+#                        10,
+#                        100)
+#
+#     def print_white_box_data(self, policy: Policy, info: Dict):
+#         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
 
 
 class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
@@ -107,20 +107,20 @@ class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTe
         low_level_planner = partial(value_iteration, 1.0)
         return partial(id, low_level_planner)
 
-
-class EasyEnvironmentsMultiagentSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
-
-        return partial(ma_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       10,
-                       100)
-
-    def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+# The sum heuristic is not admissible for Makespan, therefore not interesting right now.
+# class EasyEnvironmentsMultiagentSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
+#     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+#         self.max_iterations = 100
+#         self.iters_in_batch = 10
+#
+#         return partial(ma_rtdp,
+#                        partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+#                        1.0,
+#                        10,
+#                        100)
+#
+#     def print_white_box_data(self, policy: Policy, info: Dict):
+#         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
 
 
 class EasyEnvironmentsMultiagentMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):

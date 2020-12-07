@@ -3,7 +3,7 @@ import time
 import math
 from typing import Callable, Dict, Iterable
 
-from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object
+from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, integer_action_to_vector
 from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
@@ -28,21 +28,14 @@ class RtdpPolicy(ValueFunctionPolicy):
 # TODO: Is really important to get a random greedy action (instead of just the first index?).
 #  I wish I could delete this function and just use `policy.act(s)` instead
 def greedy_action(policy: RtdpPolicy, s):
-    action_values = np.zeros(policy.env.nA)
-    for a in range(policy.env.nA):
-        for prob, next_state, reward, done in policy.env.P[s][a]:
-            if reward == policy.env.reward_of_clash and done:
-                action_values[a] = -math.inf
-                break
-
-            action_values[a] += prob * (reward + (policy.gamma * policy.v[next_state]))
+    q_s_a = calc_q_s_no_clash_possible(policy, s)
 
     # # for debug
     # for i in range(env.nA):
     #     print(f'{integer_action_to_vector(i, env.n_agents)}: {action_values[i]}')
 
-    max_value = np.max(action_values)
-    return np.random.choice(np.argwhere(action_values == max_value).flatten())
+    max_value = np.max(q_s_a)
+    return np.random.choice(np.argwhere(q_s_a == max_value).flatten())
 
 
 def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
@@ -91,10 +84,21 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
     return heuristic_function
 
 
+def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
+    q_s_a = np.zeros(policy.env.nA)
+    for a in range(policy.env.nA):
+        for prob, next_state, reward, done in policy.env.P[s][a]:
+            if reward == policy.env.reward_of_clash and done:
+                q_s_a[a] = -math.inf
+                break
+
+            q_s_a[a] += prob * (reward + (policy.gamma * policy.v[next_state]))
+
+    return q_s_a
+
+
 def bellman_update(policy: RtdpPolicy, s: int):
-    q_s_a = [sum([prob * (reward + policy.gamma * policy.v[next_state])
-                  for prob, next_state, reward, done in policy.env.P[s][a]])
-             for a in range(policy.env.nA)]
+    q_s_a = calc_q_s_no_clash_possible(policy, s)
     policy.v_partial_table[s] = max(q_s_a)
 
 
@@ -120,19 +124,18 @@ def rtdp_single_iteration(policy: RtdpPolicy,
     total_reward = 0
 
     while not done:
-        # time.sleep(0.1)
-        # policy.env.render()
         # Choose action action for current state
         a = select_action(policy, s)
-        # a = policy.act(s)
-        path.append(s)
-
-        # Do a bellman update
-        update(policy, s)
 
         # Simulate the step and sample a new state
         s, r, done, _ = policy.env.step(a)
         total_reward += r
+
+        # Do a bellman update
+        update(policy, s)
+
+        # Add next state to path
+        path.append(s)
 
     # Backward update
     while path:

@@ -127,16 +127,17 @@ class StopWhenNoImprovementRtdpSumLocalHeuristicPlannerTest(DifficultEnvsPlanner
                        self.max_iterations)
 
 
-class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.iters_in_batch = 100
-        self.max_iterations = 500
-
-        return partial(ma_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       self.iters_in_batch,
-                       self.max_iterations)
+# The sum heuristic is not admissible for Makespan, therefore not interesting right now.
+# class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
+#     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+#         self.iters_in_batch = 100
+#         self.max_iterations = 500
+#
+#         return partial(ma_rtdp,
+#                        partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
+#                        1.0,
+#                        self.iters_in_batch,
+#                        self.max_iterations)
 
 
 class IdRtdpPlannerTest(DifficultEnvsPlannerTest):
