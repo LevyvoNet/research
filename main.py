@@ -130,8 +130,6 @@ TOTAL_SCENARIOS_COUNT = reduce(lambda x, y: x * len(y),  # number of scenario da
                                ],
                                1)
 
-TOTAL_DOCS_COUNT = TOTAL_INSTANCES_COUNT + TOTAL_SCENARIOS_COUNT
-
 
 def chunks_generator(instances: Iterable, chunk_size: int):
     local_instances = iter(instances)
@@ -375,7 +373,12 @@ def main():
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    log_func(INFO, f'Running {count} instances, expecting eventual {count}.')
+    if args['only_scenarios'] is not None:
+        total_docs_count = TOTAL_SCENARIOS_COUNT
+    else:
+        total_docs_count = TOTAL_INSTANCES_COUNT
+
+    log_func(INFO, f'Running {count} instances, expecting eventual {total_docs_count}.')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
