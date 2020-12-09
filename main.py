@@ -375,7 +375,7 @@ def main():
     logger_process, log_func = start_logger_process(collection_name, logger_q)
 
     # Log about the experiment starting
-    log_func(INFO, f'Running {count} instances, expecting eventual {TOTAL_DOCS_COUNT}.')
+    log_func(INFO, f'Running {count} instances, expecting eventual {count}.')
 
     # start db process
     db_q = multiprocessing.Manager().Queue()
