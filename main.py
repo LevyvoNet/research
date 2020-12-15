@@ -30,8 +30,8 @@ from solvers import (id,
 from available_solvers import *
 
 # *************** Dependency Injection *************************************************************************
-import db_providers.tinymongo_db_provider as db_provider
-
+# import db_providers.tinymongo_db_provider as db_provider
+import db_providers.simple_json_file as db_provider
 # import db_providers.pymongo_db_provider as db_provider
 
 # *************** DB parameters ********************************************************************************
@@ -283,8 +283,9 @@ def dump_leftovers(collection_name):
 
     with db_provider.get_client(db_provider.CONNECT_STR) as client:
         collection = client[DB_NAME][collection_name]
-    # Save queries (might be to free remote DB)
-    already_solved_instances = list(collection.find())
+        # Save queries (might be to free remote DB)
+        already_solved_instances = list(collection.find())
+
     all_instances = [instance
                      for chunk in full_instances_chunks_generator(CHUNK_SIZE)
                      for instance in chunk]
@@ -361,6 +362,7 @@ def main():
     if args['resume'] is not None:
         file_name = dump_leftovers(args['resume'])
         os.system(f'python main.py --from-file {file_name}')
+        return
 
     if args['dump_leftovers'] is not None:
         dump_leftovers(args['dump_leftovers'])
