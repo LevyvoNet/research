@@ -84,7 +84,7 @@ class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(Easy
                        self.max_iterations)
 
     def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+        print(f"performed {info['n_iterations']}/{self.max_iterations} iterations")
 
 # The sum heuristic is not admissible for Makespan, therefore not interesting right now.
 # class EasyEnvironmentsStopWhenNoImprovementLocalSumHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
@@ -99,7 +99,7 @@ class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(Easy
 #                        100)
 #
 #     def print_white_box_data(self, policy: Policy, info: Dict):
-#         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+#         print(f"performed {info['n_iterations']}/{self.max_iterations} iterations")
 
 
 class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
@@ -120,7 +120,7 @@ class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTe
 #                        100)
 #
 #     def print_white_box_data(self, policy: Policy, info: Dict):
-#         print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+#         print(f"performed {info['n_iterations']}/{self.max_iterations} iterations")
 
 
 class EasyEnvironmentsMultiagentMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
@@ -135,7 +135,7 @@ class EasyEnvironmentsMultiagentMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlan
                        100)
 
     def print_white_box_data(self, policy: Policy, info: Dict):
-        print(f"performed {len(info['iterations'])}/{self.max_iterations} iterations")
+        print(f"performed {info['n_iterations']}/{self.max_iterations} iterations")
 
 
 if __name__ == '__main__':

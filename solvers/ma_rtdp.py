@@ -112,11 +112,11 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
 
 
 def multi_agent_turn_based_rtdp_iterations_generator(policy, info: Dict):
-    info['iterations'] = []
+    # info['iterations'] = []
 
     while True:
-        info['iterations'].append({})
-        iter_reward = multi_agent_turn_based_rtdp_single_iteration(policy, info['iterations'][-1])
+        # info['iterations'].append({})
+        iter_reward = multi_agent_turn_based_rtdp_single_iteration(policy, {})
         yield iter_reward
 
 
@@ -155,4 +155,6 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
         if no_improvement_from_last_batch(policy, iter_count) or iter_count >= max_iterations:
             break
 
+    info['n_iterations'] = iter_count
+    info['total_time'] = time.time() - start
     return policy

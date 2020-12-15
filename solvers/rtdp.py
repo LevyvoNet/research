@@ -153,11 +153,11 @@ def rtdp_single_iteration(policy: RtdpPolicy,
 
 
 def rtdp_iterations_generator(policy: RtdpPolicy, select_action, update, info: Dict) -> Iterable:
-    info['iterations'] = []
+    # info['iterations'] = []
 
     while True:
-        info['iterations'].append({})
-        iter_reward = rtdp_single_iteration(policy, select_action, update, info['iterations'][-1])
+        # info['iterations'].append({})
+        iter_reward = rtdp_single_iteration(policy, select_action, update, {})
         yield iter_reward
 
 
@@ -212,4 +212,6 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
         if no_improvement_from_last_batch(policy, iter_count) or iter_count >= max_iterations:
             break
 
+    info['n_iterations'] = iter_count
+    info['total_time'] = time.time() - start
     return policy
