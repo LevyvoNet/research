@@ -96,7 +96,7 @@ def couple_detect_conflict(env: MapfEnv,
     while len(state_pairs_to_expand) > 0:
         (s1, s2) = state_pairs_to_expand.pop()
         loc1 = env1.state_to_locations(s1)[a1_idx_in_group]
-        loc2 = env1.state_to_locations(s2)[a2_idx_in_group]
+        loc2 = env2.state_to_locations(s2)[a2_idx_in_group]
         visited_state_pairs.add((s1, s2))
 
         next_states_1 = [next_state

@@ -3,7 +3,7 @@ import functools
 import time
 from typing import Callable
 
-from logger_process import INFO
+from logger_process import INFO, DEBUG
 
 
 def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
@@ -27,15 +27,14 @@ def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
         # Log about the progress every 10 instances, don't let it fail the process.
         # This is a best effort.
         try:
-            if n_solved % 10 == 0:
-                done_ratio = round(n_solved / n_total_instances, 4)
-                minutes_from_beginning = round((time.time() - t0) / 60, 2)
+            done_ratio = round(n_solved / n_total_instances, 4)
+            minutes_from_beginning = round((time.time() - t0) / 60, 2)
 
-                log_func(INFO,
-                         f'solved {n_solved}/{n_total_instances}='
-                         f'{done_ratio * 100}%'
-                         f' after {minutes_from_beginning} minutes.'
-                         f' Expected time left is {round(minutes_from_beginning * ((1 - done_ratio) / done_ratio), 2)} minutes')
+            log_func(INFO,
+                     f'solved {n_solved}/{n_total_instances}='
+                     f'{done_ratio * 100}%'
+                     f' after {minutes_from_beginning} minutes.'
+                     f' Expected time left is {round(minutes_from_beginning * ((1 - done_ratio) / done_ratio), 2)} minutes')
         except Exception:
             pass
 
