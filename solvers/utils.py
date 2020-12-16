@@ -107,7 +107,7 @@ def couple_detect_conflict(env: MapfEnv,
         for n1 in next_states_1:
             for n2 in next_states_2:
                 next_loc1 = env1.state_to_locations(n1)[a1_idx_in_group]
-                next_loc2 = env1.state_to_locations(n2)[a2_idx_in_group]
+                next_loc2 = env2.state_to_locations(n2)[a2_idx_in_group]
 
                 # Check for a potential clash
                 if any([
