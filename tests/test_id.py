@@ -82,6 +82,8 @@ class IdTests(unittest.TestCase):
 
         reward, clashed = evaluate_policy(policy, 1, 1000)
 
+        self.assertFalse(clashed)
+
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
 

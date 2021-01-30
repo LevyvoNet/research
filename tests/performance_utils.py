@@ -16,7 +16,6 @@ WEAK_SOLVERS = [
     policy_iteration_describer,
 ]
 
-
 STRONG_SOLVERS = [
     rtdp_stop_no_improvement_min_heuristic_describer,
     rtdp_stop_no_improvement_sum_heuristic_describer,
@@ -34,6 +33,9 @@ EXPERIMENT_SOLVERS = [
 
 SINGLE_SCENARIO_TIMEOUT = 300  # seconds
 
+# Set option for pandas to print only full lines
+pd.set_option('display.expand_frame_repr', False)
+
 
 def timeout_handler(signum, frame):
     raise TimeoutError()
@@ -49,7 +51,7 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
     ])
 
     for solver_describer in solver_describers:
-        solver_str = solver_describer.description
+        solver_str = solver_describer.short_description
         solve_func = solver_describer.func
 
         # Fill default values in case of a timeout (we will not be able to evaluate the policy)

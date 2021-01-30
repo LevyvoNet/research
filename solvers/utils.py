@@ -223,12 +223,11 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
             # # debug print
             # print(f'steps={steps}')
             # policy.env.render()
-            # time.sleep(1)
+            # time.sleep(0.1)
             new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
             total_reward += reward
             steps += 1
             if reward == policy.env.reward_of_clash and done:
-                print("clash happened!!!")
                 clashed = True
 
     policy.env.reset()

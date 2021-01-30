@@ -62,45 +62,110 @@ BENCHMARKS = [
         'solver_describers': EXPERIMENT_SOLVERS
     },
     {
-        'env': create_mapf_env('sanity', None, 1, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:1;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('empty-16-16', 1, 4, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:empty-16-16;scen:1;n_agents:4;fail_prob:0.1;2 conflicts",
+        'solver_describers': [long_ma_rtdp_min_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 2, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:2;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('empty-16-16', 1, 5, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:empty-16-16;scen:1;n_agents:5;fail_prob:0.1;2 conflicts",
+        'solver_describers': [long_ma_rtdp_min_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 3, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:3;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('empty-16-16', 1, 6, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:empty-16-16;scen:1;n_agents:6;fail_prob:0.1;2 conflicts",
+        'solver_describers': [long_ma_rtdp_min_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 4, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:4;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('sanity-1-8', None, 1, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-1-8;n_agents:1X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 5, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:5;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('sanity-2-8', None, 2, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-2-8;n_agents:2X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 6, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:6;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-3-8;n_agents:3X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 7, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:7;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
+        'env': create_mapf_env('sanity-4-8', None, 4, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-4-8;n_agents:4X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
     },
     {
-        'env': create_mapf_env('sanity', None, 8, 0.1, 0.1, -1000, -1, -1),
-        'env_str': "map:sanity;n_agents:8;fail_prob:0.1;0 conflicts",
-        'solver_describers': [id_rtdp_describer]
-    }
+        'env': create_mapf_env('sanity-5-8', None, 5, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-5-8;n_agents:5X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-6-8', None, 6, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-6-8;n_agents:6X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-7-8', None, 7, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-7-8;n_agents:7X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-8-8', None, 8, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-8-8;n_agents:8X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-1-32', None, 1, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-1-32;n_agents:1X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-2-32', None, 2, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-2-32;n_agents:2X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-3-32', None, 3, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-3-32;n_agents:3X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-4-32', None, 4, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-4-32;n_agents:4X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-5-32', None, 5, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-5-32;n_agents:5X1;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-2-8', None, 4, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-2-8;n_agents:2X2;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-3-8', None, 6, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-3-8;n_agents:3X2;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-4-8', None, 8, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-4-8;n_agents:4X2;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('sanity-1-16', None, 3, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-1-16;n_agents:1X3;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS
+    },
+    {
+        'env': create_mapf_env('sanity-2-16', None, 6, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:sanity-2-16;n_agents:2X3;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS
+    },
 
 ]
 

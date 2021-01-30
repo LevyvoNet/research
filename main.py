@@ -31,15 +31,15 @@ from available_solvers import *
 
 # *************** Dependency Injection *************************************************************************
 # import db_providers.tinymongo_db_provider as db_provider
-import db_providers.simple_json_file as db_provider
-# import db_providers.pymongo_db_provider as db_provider
+# import db_providers.simple_json_file as db_provider
+import db_providers.pymongo_db_provider as db_provider
 
 # *************** DB parameters ********************************************************************************
 DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
+SINGLE_SCENARIO_TIMEOUT = 10 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 25  # How many instances to solve in a single process
 
 # *************** 'Structs' definitions ************************************************************************
@@ -82,33 +82,33 @@ def id_query(instance):
 # ************* Experiment parameters **************************************************************************
 
 POSSIBLE_MAPS = [
-    'room-32-32-4',
-    'room-64-64-8',
+    # 'room-32-32-4',
+    # 'room-64-64-8',
     # 'room-64-64-16',
-    'empty-8-8',
-    'empty-16-16',
-    'empty-32-32',
-    'empty-48-48',
+    # 'empty-8-8',
+    # 'empty-16-16',
+    # 'empty-32-32',
+    # 'empty-48-48',
     'sanity'
 ]
-POSSIBLE_N_AGENTS = list(range(1, 5))
+POSSIBLE_N_AGENTS = list(range(1, 8))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
-    0,
-    0.1,
+    # 0,
+    # 0.1,
     0.2,
-    0.3,
+    # 0.3,
 ]
 
-SCENES_PER_MAP_COUNT = 25
+SCENES_PER_MAP_COUNT = 1
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 POSSIBLE_SOLVERS = [
     long_id_ma_rtdp_describer,
     # long_rtdp_stop_no_improvement_min_heuristic_describer,
-    # long_id_rtdp_describer,
-    # long_ma_rtdp_min_describer,
+    long_id_rtdp_describer,
+    long_ma_rtdp_min_describer,
 ]
 
 TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),  # number of instance data
@@ -249,7 +249,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
     except KeyError:
         log_func(ERROR, f'{configuration_string} is invalid')
         instance_data.update({'solver_data': {},
-                              'end_reason': ''})
+                              'end_reason': 'invalid'})
         insert_to_db_func(instance_data)
         return
 
@@ -265,6 +265,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
                 instance_data['average_reward'] = reward
                 instance_data['clashed'] = clashed
         except stopit.utils.TimeoutException:
+            instance_data['end_reason'] = 'timeout'
             log_func(DEBUG, f'{configuration_string} got timeout')
 
         end = time.time()

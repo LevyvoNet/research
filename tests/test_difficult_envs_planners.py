@@ -1,5 +1,4 @@
 import unittest
-import time
 from typing import Dict, Callable
 from functools import partial
 
@@ -8,7 +7,7 @@ from solvers.utils import evaluate_policy, Policy
 from solvers import fixed_iterations_count_rtdp, stop_when_no_improvement_between_batches_rtdp, ma_rtdp
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic)
-from available_solvers import id_rtdp_describer, id_ma_rtdp_describer
+from available_solvers import id_rtdp_describer, id_ma_rtdp_describer, ma_rtdp_min_describer
 
 
 class DifficultEnvsPlannerTest(unittest.TestCase):
@@ -36,6 +35,8 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
 
         reward, clashed = evaluate_policy(policy, 1, 1000)
 
+        self.assertFalse(clashed)
+
         # Assert that the solution is reasonable (actually solving)
         optimal_reward = -48.0
         self.assertGreater(reward, -1000)
@@ -49,6 +50,8 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
 
         reward, clashed = evaluate_policy(policy, 1, 1000)
 
+        self.assertFalse(clashed)
+
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
 
@@ -59,7 +62,9 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         plan_func = self.get_plan_func()
         policy = plan_func(env, info)
 
-        reward, _ = evaluate_policy(policy, 1, 1000)
+        reward, clashed = evaluate_policy(policy, 1, 1000)
+
+        self.assertFalse(clashed)
         self.assertGreater(reward, -1000)
 
     def test_hand_crafted_env_converges(self):
@@ -79,6 +84,8 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         policy = planner(deterministic_env, {})
         reward, clashed = evaluate_policy(policy, 1, 20)
 
+        self.assertFalse(clashed)
+
         # Make sure this policy is optimal
         self.assertGreater(reward, -1000)
 
@@ -91,6 +98,8 @@ class DifficultEnvsPlannerTest(unittest.TestCase):
         policy = plan_func(env, info)
 
         reward, clashed = evaluate_policy(policy, 1, 1000)
+
+        self.assertFalse(clashed)
 
         # Assert that the solution is reasonable (actually solving)
         self.assertGreater(reward, -1000)
@@ -115,29 +124,9 @@ class StopWhenNoImprovementRtdpMinLocalHeuristicPlannerTest(DifficultEnvsPlanner
                        self.max_iterations)
 
 
-class StopWhenNoImprovementRtdpSumLocalHeuristicPlannerTest(DifficultEnvsPlannerTest):
+class MultiagentMinHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.iter_in_batches = 100
-        self.max_iterations = 500
-
-        return partial(stop_when_no_improvement_between_batches_rtdp,
-                       partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-                       1.0,
-                       self.iter_in_batches,
-                       self.max_iterations)
-
-
-# The sum heuristic is not admissible for Makespan, therefore not interesting right now.
-# class MultiagentSumHeuristicRtdpPlannerTest(DifficultEnvsPlannerTest):
-#     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-#         self.iters_in_batch = 100
-#         self.max_iterations = 500
-#
-#         return partial(ma_rtdp,
-#                        partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-#                        1.0,
-#                        self.iters_in_batch,
-#                        self.max_iterations)
+        return ma_rtdp_min_describer.func
 
 
 class IdRtdpPlannerTest(DifficultEnvsPlannerTest):

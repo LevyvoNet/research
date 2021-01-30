@@ -15,26 +15,26 @@ def insert_to_db_loop(init_json_collection: Callable[[Callable], object],
     collection = init_json_collection(log_func)
 
     # Set counter of solved problems and start measure time
-    n_solved = 0
+    n_done = 0
     t0 = time.time()
 
     # Send to remove DB instances data
     while True:
         instance_data = q.get()
         collection.insert_one(instance_data)
-        n_solved += 1
+        n_done += 1
 
         # Log about the progress every 10 instances, don't let it fail the process.
         # This is a best effort.
         try:
-            done_ratio = round(n_solved / n_total_instances, 4)
+            done_ratio = round(n_done / n_total_instances, 4)
             minutes_from_beginning = round((time.time() - t0) / 60, 2)
 
             log_func(INFO,
-                     f'solved {n_solved}/{n_total_instances}='
-                     f'{done_ratio * 100}%'
+                     f'done {n_done}/{n_total_instances}='
+                     f'{round(done_ratio * 100, 2)}%'
                      f' after {minutes_from_beginning} minutes.'
-                     f' Expected time left is {round(minutes_from_beginning * ((1 - done_ratio) / done_ratio), 2)} minutes')
+                     f' Estimated time left is {round(minutes_from_beginning * ((1 - done_ratio) / done_ratio), 2)} minutes')
         except Exception:
             pass
 

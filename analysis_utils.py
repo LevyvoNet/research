@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import pymongo
 from typing import Callable, Dict
 
+from available_solvers import id_extra_info
+
 
 def _annotate_row(axs, row_idx, annotation):
     pad = 5
@@ -71,9 +73,10 @@ def mean_conflict_count(instances: pymongo.cursor.Cursor):
     count = 0
 
     for count, instance in enumerate(filter(lambda ins: ins['end_reason'] != 'invalid', instances)):
-        conflict_count = len([iteration
-                              for iteration in instance['solver_data']['iterations']
-                              if 'conflict' in iteration])
+        conflict_count = id_extra_info(instance['solver_data']).n_conflicts
+        # conflict_count = len([iteration
+        #                       for iteration in instance['solver_data']['iterations']
+        #                       if 'conflict' in iteration])
 
         sum += conflict_count
 

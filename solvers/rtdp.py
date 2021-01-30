@@ -204,12 +204,16 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
     start = time.time()
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
     info['initialization_time'] = time.time() - start
+    info['total_evaluation_time'] = 0
 
     # Run RTDP iterations
     for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
                                         start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
-        if no_improvement_from_last_batch(policy, iter_count) or iter_count >= max_iterations:
+        eval_start = time.time()
+        no_improvement = no_improvement_from_last_batch(policy, iter_count)
+        info['total_evaluation_time'] += time.time() - eval_start
+        if no_improvement or iter_count >= max_iterations:
             break
 
     info['n_iterations'] = iter_count

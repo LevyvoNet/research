@@ -3,11 +3,14 @@ import math
 from typing import Dict, Callable
 from collections import defaultdict
 import numpy as np
+from numpy.core.tests.test_nditer import iter_iterindices
+
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     function_to_get_item_of_object,
                                     STAY,
                                     ACTIONS,
                                     vector_action_to_integer)
+from gym_mapf.envs.utils import get_local_view
 
 from solvers.utils import evaluate_policy
 from solvers.rtdp import RtdpPolicy
@@ -17,6 +20,7 @@ class MultiagentRtdpPolicy(RtdpPolicy):
     def __init__(self, env, gamma, heuristic):
         super(MultiagentRtdpPolicy, self).__init__(env, gamma, heuristic)
         self.q_partial_table = {i: defaultdict(dict) for i in range(env.n_agents)}
+        self.local_env_aux = get_local_view(self.env, [0])
 
     def get_q(self, agent, joint_state, local_action):
         if joint_state in self.q_partial_table[agent]:
@@ -54,13 +58,51 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                       for a in range(len(ACTIONS))])
                                                  for agent_idx in range(self.env.n_agents)])
 
+    def act(self, joint_state):
+        if joint_state in self.policy_cache:
+            return self.policy_cache[joint_state]
 
-def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int):
+        joint_action = ()
+        all_stay = (STAY,) * self.env.n_agents
+        forbidden_states = set()
+        for agent in range(self.env.n_agents):
+            # TODO: the problem is that the best response is according to joint state even though we are in state s.
+            # TODO: we shouldn't actually step in this part...
+            local_action = best_response(self, joint_state, agent, forbidden_states, False)
+            fake_joint_action_vector = all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:]
+            fake_joint_action = vector_action_to_integer(fake_joint_action_vector)
+            s, r, done, _ = self.env.step(fake_joint_action)
+            joint_action = joint_action + (ACTIONS[local_action],)
+
+        best_action = vector_action_to_integer(joint_action)
+        self.policy_cache[joint_state] = best_action
+        return best_action
+
+
+def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int, forbidden_states, stochastic=True):
     action_values = [policy.get_q(agent, joint_state, local_action)
                      for local_action in range(len(ACTIONS))]
 
+    # Make sure the chosen local action is not forbidden
+    locations = policy.env.state_to_locations(joint_state)
+    local_state = policy.local_env_aux.locations_to_state((locations[agent],))
+    for local_action in range(len(action_values)):
+        for _, next_state, prob in policy.env.single_agent_movements(local_state, local_action):
+            if next_state in forbidden_states and prob > 0:
+                action_values[local_action] = -math.inf
+
     max_value = np.max(action_values)
-    return np.random.choice(np.argwhere(action_values == max_value).flatten())
+    if stochastic:
+        best_action = np.random.choice(np.argwhere(action_values == max_value).flatten())
+    else:
+        best_action = np.argmax(action_values)
+
+    # Forbid the possible states from the chosen action to the next agents
+    for _, next_state, prob in policy.env.single_agent_movements(local_state, best_action):
+        if prob > 0:
+            forbidden_states.add(next_state)
+
+    return best_action
 
 
 def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, info: Dict):
@@ -69,35 +111,43 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
     start = time.time()
     path = [s]
     total_reward = 0
-    all_stay = (STAY,) * policy.env.n_agents
 
     # # debug
     # print('--------start iteration---------------')
 
     while not done:
-        # import ipdb
-        # ipdb.set_trace()
-        trajectory_states = [s]
         trajectory_actions = []
+        forbidden_states = set()
+        joint_action_vector = (STAY,) * policy.env.n_agents
+
+        # Calculate local action
         for agent in range(policy.env.n_agents):
-            local_action = best_response(policy, s, agent)
+            local_action = best_response(policy, s, agent, forbidden_states)
             trajectory_actions.append(local_action)
-            fake_joint_action_vector = all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:]
-            fake_joint_action = vector_action_to_integer(fake_joint_action_vector)
+            joint_action_vector = joint_action_vector[:agent] + (ACTIONS[local_action],) + joint_action_vector[
+                                                                                           agent + 1:]
 
-            # # debug
-            # policy.env.render()
-            # print(f'selected action: {fake_joint_action_vector}')
-            # time.sleep(1)
+        # # debug
+        # policy.env.render()
+        # print(f'selected action: {joint_action_vector}')
+        # time.sleep(1)
 
-            s, r, done, _ = policy.env.step(fake_joint_action)
-            trajectory_states.append(s)
-            path.append(s)
+        # Compose the joint action
+        joint_action = vector_action_to_integer(joint_action_vector)
 
+        # update the current state, TODO: maybe I should update the same way as RTDP (which updates the last state as well)?
         for agent in reversed(range(policy.env.n_agents)):
             # update q(s, agent, action) based on the last state
-            policy.q_update(agent, trajectory_states[agent], trajectory_actions[agent])
-            policy.v_update(trajectory_states[agent])
+            policy.q_update(agent, s, trajectory_actions[agent])
+            policy.v_update(s)
+
+        # step
+        s, r, done, _ = policy.env.step(joint_action)
+        total_reward += r
+        path.append(s)
+
+    # # debug
+    # policy.env.render()
 
     # Backward update
     while path:
@@ -112,11 +162,15 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy, i
 
 
 def multi_agent_turn_based_rtdp_iterations_generator(policy, info: Dict):
-    # info['iterations'] = []
+    info['iterations'] = []
 
     while True:
-        # info['iterations'].append({})
+        iter_info = {}
+        info['iterations'].append(iter_info)
+        start = time.time()
         iter_reward = multi_agent_turn_based_rtdp_single_iteration(policy, {})
+        iter_info['time'] = time.time() - start
+        iter_info['reward'] = iter_reward
         yield iter_reward
 
 
@@ -147,14 +201,20 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
     start = time.time()
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
     info['initialization_time'] = time.time() - start
+    info['total_evaluation_time'] = 0
 
     # Run RTDP iterations
+    iter_count = 0
     for iter_count, reward in enumerate(multi_agent_turn_based_rtdp_iterations_generator(policy, info),
                                         start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
-        if no_improvement_from_last_batch(policy, iter_count) or iter_count >= max_iterations:
+        eval_start = time.time()
+        no_improvement = no_improvement_from_last_batch(policy, iter_count)
+        info['total_evaluation_time'] += time.time() - eval_start
+        if no_improvement or iter_count >= max_iterations:
             break
 
     info['n_iterations'] = iter_count
     info['total_time'] = time.time() - start
+
     return policy
