@@ -18,7 +18,6 @@ WEAK_SOLVERS = [
 
 STRONG_SOLVERS = [
     rtdp_stop_no_improvement_min_heuristic_describer,
-    rtdp_stop_no_improvement_sum_heuristic_describer,
     id_rtdp_describer,
     ma_rtdp_min_describer,
     fixed_iter_rtdp_min_describer,

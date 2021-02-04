@@ -14,7 +14,7 @@ dnspython==1.16.0
 entrypoints==0.3
 future==0.17.1
 gym==0.13.0
-gym-mapf==0.2.2
+-e git+https://github.com/LevyvoNet/gym-mapf.git@800d05280e916aa85a051d4d4d8a50844b6e34f6#egg=gym_mapf
 importlib-metadata==1.7.0
 iniconfig==1.0.1
 ipdb==0.12
@@ -26,7 +26,7 @@ jedi==0.14.0
 Jinja2==2.11.2
 jsonschema==3.2.0
 jupyter==1.0.0
-jupyter-client==6.0.0
+jupyter-client==6.1.11
 jupyter-console==6.2.0
 jupyter-core==4.6.3
 jupyterlab-pygments==0.1.1
