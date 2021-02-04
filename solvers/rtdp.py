@@ -34,8 +34,9 @@ def greedy_action(policy: RtdpPolicy, s):
     # for i in range(env.nA):
     #     print(f'{integer_action_to_vector(i, env.n_agents)}: {action_values[i]}')
 
-    max_value = np.max(q_s_a)
-    return np.random.choice(np.argwhere(q_s_a == max_value).flatten())
+    return np.argmax(q_s_a)
+    # max_value = np.max(q_s_a)
+    # return np.random.choice(np.argwhere(q_s_a == max_value).flatten())
 
 
 def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
@@ -45,8 +46,15 @@ def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: Map
     def heuristic_function(s):
         locations = env.state_to_locations(s)
         local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
-        # at the current, the MapfEnv reward is makespan oriented
-        return min([local_v[i][local_states[i]] for i in range(env.n_agents)])
+        # at the current, the MapfEnv reward is makespan oriented, ignore agents who are currently in their goal
+
+        relevant_values = [local_v[i][local_states[i]] for i in range(env.n_agents)
+                           if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
+                           ]
+
+        if not relevant_values:
+            return 0
+        return min(relevant_values)
 
     return heuristic_function
 
@@ -123,16 +131,19 @@ def rtdp_single_iteration(policy: RtdpPolicy,
     path = []
     total_reward = 0
 
-    while not done:
+    steps=0
+    while not done and steps < 1000:
+        steps += 1
+
         # Choose action action for current state
         a = select_action(policy, s)
+
+        # Do a bellman update
+        update(policy, s)
 
         # Simulate the step and sample a new state
         s, r, done, _ = policy.env.step(a)
         total_reward += r
-
-        # Do a bellman update
-        update(policy, s)
 
         # Add next state to path
         path.append(s)

@@ -35,10 +35,10 @@ def ma_rtdp_extra_info(info):
     extra_info_dict = dict(extra_info._asdict())
 
     # Set initialization time
-    extra_info_dict['solver_init_time'] = info['initialization_time']
+    extra_info_dict['solver_init_time'] = info.get('initialization_time', '*')
 
     # Set evaluation time
-    extra_info_dict['total_evaluation_time'] = info['total_evaluation_time']
+    extra_info_dict['total_evaluation_time'] = info.get('total_evaluation_time', '*')
 
     return SolverExtraInfo(**extra_info_dict)
 
@@ -48,18 +48,23 @@ def id_extra_info(info):
     extra_info_dict = dict(extra_info._asdict())
 
     # Number of found conflicts
-    extra_info_dict['n_conflicts'] = len(info['iterations']) - 1
+    try:
+        extra_info_dict['n_conflicts'] = len(info['iterations']) - 1
 
-    # Total time for conflicts detection,
-    # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
-    extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i].get('detect_conflict_time', 0)
-                                                      for i in range(len(info['iterations']))])
+        # Total time for conflicts detection,
+        # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
+        extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i].get('detect_conflict_time', 0)
+                                                          for i in range(len(info['iterations']))])
 
-    # This time mostly matters for heuristics calculation (on RTDP for example)
-    extra_info_dict['solver_init_time'] = sum(
-        [sum([info['iterations'][j]['joint_policy'][key]['initialization_time']
-              for key in info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['), key.endswith(']')])])
-         for j in range(len(info['iterations']))])
+        # This time mostly matters for heuristics calculation (on RTDP for example)
+        extra_info_dict['solver_init_time'] = sum(
+            [sum([info['iterations'][j]['joint_policy'][key]['initialization_time']
+                  for key in info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['),
+                                                                                  key.endswith(']')])
+                  ])
+             for j in range(len(info['iterations']))])
+    except:
+        print('something terrible happened')
 
     return SolverExtraInfo(**extra_info_dict)
 

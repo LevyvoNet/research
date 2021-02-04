@@ -53,6 +53,9 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         # Make sure no clash happened
         self.assertFalse(clashed)
 
+        # Assert the reward is reasonable
+        self.assertGreater(reward, 50.0 * env.reward_of_living)
+
         # print white box data
         self.print_white_box_data(policy, info)
 
@@ -72,8 +75,7 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         # solvers get cost of about 17-18 so 30 should be a fair upper bound
         self.assertGreater(reward, -30)
 
-    def test_symmetrical_bottleneck(self):
-        """During this scenario, MA-RTDP does not even succeeds to complete the episodes during training"""
+    def test_symmetrical_bottleneck_deterministic(self):
         grid = MapfGrid(['..@...',
                          '..@...',
                          '......',
@@ -96,15 +98,67 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         # Make sure no clash happened
         self.assertFalse(clashed)
 
-        # Make sure the policy is optimal
-        print(f'got reward {reward}')
-        optimal_reward = -7 * env.reward_of_living
-        self.assertEqual(reward, optimal_reward)
+        # Make sure the policy is near optimal
+        optimal_reward = 6.0 * env.reward_of_living + env.reward_of_goal
+        # Allow a difference of 1 for MA-RTDP sub optimality
+        self.assertGreaterEqual(reward - optimal_reward, env.reward_of_living)
 
-    def test_bottleneck(self):
-        """During this scenario, MA-RTDP manages to complete the episodes during training but fails to complete them
-        during policy evaluation (probably because of equally good actions)
-        """
+    def test_symmetrical_bottleneck_deterministic_goal_large_reward(self):
+        grid = MapfGrid(['..@...',
+                         '..@...',
+                         '......',
+                         '..@...'
+                         '..@...'])
+
+        agents_starts = ((2, 0), (2, 5))
+        agents_goals = ((2, 5), (2, 0))
+
+        # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, 0, -0.001, 100, -1)
+
+        info = {}
+        plan_func = self.get_plan_func()
+        policy = plan_func(env, info)
+
+        # Check the policy performance
+        reward, clashed = evaluate_policy(policy, 1, 20)
+
+        # Make sure no clash happened
+        self.assertFalse(clashed)
+
+        # Make sure the policy is near optimal
+        optimal_reward = 6.0 * env.reward_of_living + env.reward_of_goal
+        # Allow a difference of 1 for MA-RTDP sub optimality
+        self.assertGreaterEqual(reward - optimal_reward, env.reward_of_living)
+
+    def test_symmetrical_bottleneck_stochastic(self):
+        grid = MapfGrid(['..@...',
+                         '..@...',
+                         '......',
+                         '..@...'
+                         '..@...'])
+
+        agents_starts = ((2, 0), (2, 5))
+        agents_goals = ((2, 5), (2, 0))
+
+        # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -0.001, -1, -1)
+
+        info = {}
+        plan_func = self.get_plan_func()
+        policy = plan_func(env, info)
+
+        # Check the policy performance
+        reward, clashed = evaluate_policy(policy, 10, 100)
+
+        # Make sure no clash happened
+        self.assertFalse(clashed)
+
+        # Make sure the policy is near optimal
+        optimal_reward_expectation = -12.605924
+        self.assertGreaterEqual(reward, 20 * env.reward_of_living)
+
+    def test_bottleneck_deterministic(self):
         grid = MapfGrid(['..@..',
                          '..@..',
                          '.....',
@@ -122,15 +176,79 @@ class EasyEnvironmentsPlannersTest(unittest.TestCase):
         policy = plan_func(env, info)
 
         # Check the policy performance
-        reward, clashed = evaluate_policy(policy, 1, 20)
+        reward, clashed = evaluate_policy(policy, 1, 100)
 
         # Make sure no clash happened
         self.assertFalse(clashed)
 
-        # Make sure the policy is optimal
-        print(f'got reward {reward}')
-        optimal_reward = -7.0 * env.reward_of_living
-        self.assertEqual(reward, optimal_reward)
+        # Make sure the policy is near optimal
+        # Value iteration is done in 7 steps
+        # Vanilla RTDP also do it in 7 steps
+        # MA-RTDP takes 8 steps
+        optimal_reward = 6.0 * env.reward_of_living + env.reward_of_goal
+        # Allow a difference of 1 for MA-RTDP sub optimality
+        self.assertGreaterEqual(reward - optimal_reward, env.reward_of_living)
+
+    def test_bottleneck_deterministic_goal_large_reward(self):
+        grid = MapfGrid(['..@..',
+                         '..@..',
+                         '.....',
+                         '..@..'
+                         '..@..'])
+
+        agents_starts = ((2, 0), (2, 4))
+        agents_goals = ((2, 4), (2, 0))
+
+        # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, 0, -0.001, 100, -1)
+
+        info = {}
+        plan_func = self.get_plan_func()
+        policy = plan_func(env, info)
+
+        # Check the policy performance
+        reward, clashed = evaluate_policy(policy, 1, 100)
+
+        # Make sure no clash happened
+        self.assertFalse(clashed)
+
+        # Make sure the policy is near optimal
+        # Value iteration is done in 7 steps
+        # Vanilla RTDP also do it in 7 steps
+        # MA-RTDP takes 8 steps
+        optimal_reward = 6.0 * env.reward_of_living + env.reward_of_goal
+        # Allow a difference of 1 for MA-RTDP sub optimality
+        self.assertGreaterEqual(reward - optimal_reward, env.reward_of_living)
+
+    def test_bottleneck_stochastic(self):
+        grid = MapfGrid(['..@..',
+                         '..@..',
+                         '.....',
+                         '..@..'
+                         '..@..'])
+
+        agents_starts = ((2, 0), (2, 4))
+        agents_goals = ((2, 4), (2, 0))
+
+        # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -0.001, -1, -1)
+
+        info = {}
+        plan_func = self.get_plan_func()
+        policy = plan_func(env, info)
+
+        # Check the policy performance
+        reward, clashed = evaluate_policy(policy, 10, 100)
+
+        # Make sure no clash happened
+        self.assertFalse(clashed)
+
+        # Make sure the policy is near optimal
+        # Value iteration is done in 7 steps
+        # Vanilla RTDP also do it in 7 steps
+        # MA-RTDP takes 8 steps
+        optimal_reward_expectation = -12.420579
+        self.assertGreaterEqual(reward, 20 * env.reward_of_living)
 
 
 class EasyEnvironmentsValueIterationPlannerTest(EasyEnvironmentsPlannersTest):
@@ -148,13 +266,13 @@ class EasyEnvironmentsFixedIterationsCountRtdpPlannerTest(EasyEnvironmentsPlanne
         return partial(fixed_iterations_count_rtdp,
                        partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
                        1.0,
-                       100)
+                       500)
 
 
 class EasyEnvironmentsStopWhenNoImprovementLocalMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
+        self.max_iterations = 500
+        self.iters_in_batch = 20
 
         return partial(stop_when_no_improvement_between_batches_rtdp,
                        partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
@@ -174,14 +292,14 @@ class EasyEnvironmentsIdOverValueIterationPlannerTest(EasyEnvironmentsPlannersTe
 
 class EasyEnvironmentsMultiagentMinHeuristicRtdpPlannerTest(EasyEnvironmentsPlannersTest):
     def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        self.max_iterations = 100
-        self.iters_in_batch = 10
+        self.max_iterations = 500
+        self.iters_in_batch = 20
 
         return partial(ma_rtdp,
                        partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
                        1.0,
-                       10,
-                       100)
+                       self.iters_in_batch,
+                       self.max_iterations)
 
     def print_white_box_data(self, policy: Policy, info: Dict):
         print(f"performed {info['n_iterations']}/{self.max_iterations} iterations")

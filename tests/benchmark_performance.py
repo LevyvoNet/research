@@ -159,11 +159,16 @@ BENCHMARKS = [
     {
         'env': create_mapf_env('sanity-1-16', None, 3, 0.1, 0.1, -1000, -1, -1),
         'env_str': "map:sanity-1-16;n_agents:1X3;fail_prob:0.1;0 conflicts",
-        'solver_describers': EXPERIMENT_SOLVERS
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
     },
     {
         'env': create_mapf_env('sanity-2-16', None, 6, 0.1, 0.1, -1000, -1, -1),
         'env_str': "map:sanity-2-16;n_agents:2X3;fail_prob:0.1;0 conflicts",
+        'solver_describers': EXPERIMENT_SOLVERS + [long_id_rtdp_describer]
+    },
+    {
+        'env': create_mapf_env('empty-8-8', 6, 5, 0.1, 0.1, -1000, -1, -1),
+        'env_str': "map:empty-8-8;scen:6;n_agents:5;fail_prob:0.1",
         'solver_describers': EXPERIMENT_SOLVERS
     },
 
