@@ -221,12 +221,6 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
         steps = 0
         episode_reward = 0
         while not done and steps < max_steps:
-            if steps >= 99 and debug:
-                print(f'stuck state is: {policy.env.s}')
-                policy.env.render()
-                import ipdb
-                ipdb.set_trace()
-
             # debug print
             # if debug:
             #     print(f'steps={steps}')
@@ -242,10 +236,6 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
         episodes_rewards.append(episode_reward)
 
     policy.env.reset()
-
-    if debug:
-        import ipdb
-        ipdb.set_trace()
 
     return sum(episodes_rewards) / n_episodes, clashed, episodes_rewards
 

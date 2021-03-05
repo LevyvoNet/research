@@ -10,6 +10,7 @@ from typing import Iterable
 from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
+import numpy as np
 
 from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
@@ -279,8 +280,9 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
             policy = instance.plan_func(env, instance_data['solver_data'])
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
-                reward, clashed, _ = evaluate_policy(policy, 100, MAX_STEPS)
+                reward, clashed, all_rewards = evaluate_policy(policy, 100, MAX_STEPS)
                 instance_data['average_reward'] = reward
+                instance_data['reward_std'] = np.std(all_rewards)
                 instance_data['clashed'] = clashed
         except stopit.utils.TimeoutException:
             instance_data['end_reason'] = 'timeout'
@@ -466,8 +468,8 @@ def restore_forget_bug():
     print(f'first reward:{reward}, first trained states len: {len(policy.visited_states)}')
 
     while True:
-        import ipdb
-        ipdb.set_trace()
+        # import ipdb
+        # ipdb.set_trace()
         train_more_iters(policy, info, 10000)
         reward, clashed, _ = evaluate_policy(policy, 30, 100, True)
         print(f'reward:{reward}')
@@ -476,4 +478,4 @@ def restore_forget_bug():
 
 
 if __name__ == '__main__':
-    restore_forget_bug()
+    main()
