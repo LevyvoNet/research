@@ -2,6 +2,7 @@ import numpy as np
 import time
 import math
 from typing import Callable, Dict, Iterable
+from collections import defaultdict
 
 from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, integer_action_to_vector
 from solvers.vi import prioritized_value_iteration
@@ -15,6 +16,7 @@ class RtdpPolicy(ValueFunctionPolicy):
         # Now this v behaves like a full numpy array
         self.v = function_to_get_item_of_object(self._get_value)
         self.heuristic = heuristic
+        self.visited_states = defaultdict(lambda: 0)
 
     def _get_value(self, s):
         if s in self.v_partial_table:
@@ -48,9 +50,10 @@ def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: Map
         local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
         # at the current, the MapfEnv reward is makespan oriented, ignore agents who are currently in their goal
 
-        relevant_values = [local_v[i][local_states[i]] for i in range(env.n_agents)
-                           if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
-                           ]
+        relevant_values = [
+            local_v[i][local_states[i]] for i in range(env.n_agents)
+            if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
+        ]
 
         if not relevant_values:
             return 0
@@ -67,7 +70,16 @@ def local_views_prioritized_value_iteration_sum_heuristic(gamma: float, env: Map
         locations = env.state_to_locations(s)
         local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
         # try something which is more SoC oriented
-        return sum([local_v[i][local_states[i]] for i in range(env.n_agents)])
+
+        relevant_values = [
+            local_v[i][local_states[i]] for i in range(env.n_agents)
+            if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
+        ]
+
+        if not relevant_values:
+            return 0
+
+        return sum(relevant_values)
 
     return heuristic_function
 
@@ -90,6 +102,74 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
         return policy.v[s]
 
     return heuristic_function
+
+
+def _dijkstra_distance_single_env(env):
+    goal_state = env.locations_to_state(env.agents_goals)
+    distance = np.full((env.nS,), math.inf)
+    visited = np.full((env.nS,), False)
+
+    # Initialize the distance from goal state to 0
+    distance[goal_state] = 0
+
+    while not visited.all():
+        # Fetch the cheapest unvisited state
+        masked_distance = np.ma.masked_array(distance, mask=visited)
+        current_state = masked_distance.argmin()
+        current_distance = distance[current_state]
+
+        # Update the distance for each of the neighbors
+        for n in env.predecessors(current_state):
+            distance[n] = min(distance[n], current_distance + 1)
+
+        # Mark the current state as visited
+        visited[current_state] = True
+
+    return distance
+
+
+def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
+    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_distance = [(_dijkstra_distance_single_env(local_env)) for local_env in local_envs]
+
+    def f(s):
+        locations = env.state_to_locations(s)
+        local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
+        # at the current, the MapfEnv reward is makespan oriented, ignore agents who are currently in their goal
+
+        relevant_distances = [
+            local_distance[i][local_states[i]] for i in range(env.n_agents)
+            if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
+        ]
+
+        if not relevant_distances:
+            return 0
+
+        return (max(relevant_distances) - 1) * env.reward_of_living + env.reward_of_goal
+
+    return f
+
+
+def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
+    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_distance = [(_dijkstra_distance_single_env(local_env)) for local_env in local_envs]
+
+    def f(s):
+        locations = env.state_to_locations(s)
+        local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
+        # at the current, the MapfEnv reward is makespan oriented, ignore agents who are currently in their goal
+
+        relevant_distances = [
+            local_distance[i][local_states[i]] for i in range(env.n_agents)
+            if local_envs[i].loc_to_int[local_envs[i].agents_goals[0]] != local_states[i]
+        ]
+
+        if not relevant_distances:
+            return 0
+
+        return (sum(relevant_distances) - len(relevant_distances)) * env.reward_of_living + len(relevant_distances) * env.reward_of_goal
+
+    return f
 
 
 def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
@@ -131,7 +211,7 @@ def rtdp_single_iteration(policy: RtdpPolicy,
     path = []
     total_reward = 0
 
-    steps=0
+    steps = 0
     while not done and steps < 1000:
         steps += 1
 
@@ -199,7 +279,7 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
             return False
 
         policy.policy_cache.clear()
-        reward, _ = evaluate_policy(policy, 100, 1000)
+        reward, _, _ = evaluate_policy(policy, 100, 1000)
         if reward == policy.env.reward_of_living * 1000:
             return False
 

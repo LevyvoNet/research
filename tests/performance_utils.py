@@ -1,5 +1,5 @@
 import time
-import signal
+import stopit
 import pandas as pd
 
 from available_solvers import *
@@ -26,8 +26,22 @@ STRONG_SOLVERS = [
 ]
 
 EXPERIMENT_SOLVERS = [
-    long_ma_rtdp_min_describer,
-    long_id_ma_rtdp_describer,
+    long_ma_rtdp_min_pvi_describer,
+    long_id_ma_rtdp_min_pvi_describer,
+    long_id_rtdp_min_pvi_describer,
+
+    long_ma_rtdp_sum_pvi_describer,
+    long_id_ma_rtdp_sum_pvi_describer,
+    long_id_rtdp_sum_pvi_describer,
+
+
+    long_ma_rtdp_min_dijkstra_describer,
+    long_id_ma_rtdp_min_dijkstra_describer,
+    long_id_rtdp_min_dijkstra_describer,
+
+    long_ma_rtdp_sum_dijkstra_describer,
+    long_id_ma_rtdp_sum_dijkstra_describer,
+    long_id_rtdp_sum_dijkstra_describer
 ]
 
 SINGLE_SCENARIO_TIMEOUT = 300  # seconds
@@ -59,24 +73,21 @@ def benchmark_planners_on_env(env, env_str, solver_describers):
 
         # Prepare for running
         print(f'Running {solver_str} on {env_str}')
-        signal.signal(signal.SIGALRM, timeout_handler)
-        start = time.time()
-        info = {}
-        signal.alarm(SINGLE_SCENARIO_TIMEOUT)
 
         # Run with time limit
-        try:
-            policy = solve_func(env, info)
-        except TimeoutError:
-            print(f'{solver_str} on {env_str} got timeout')
-            solved = False
-
-        signal.alarm(0)  # Disable possible signal in case we've solved in time
+        with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+            try:
+                start = time.time()
+                info = {}
+                policy = solve_func(env, info)
+            except stopit.utils.TimeoutException:
+                print(f'{solver_str} on {env_str} got timeout')
+                solved = False
 
         # Evaluate policy is solved
         if solved:
             print(f'evaluating policy calculated by {solver_str} on {env_str}')
-            reward, clashed = evaluate_policy(policy, 100, 1000)
+            reward, clashed, _ = evaluate_policy(policy, 1000, 1000)
 
         # Measure time
         total_time = time.time() - start

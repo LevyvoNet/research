@@ -212,26 +212,42 @@ def render_states(env, states):
     env.s = s_initial
 
 
-def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int):
-    total_reward = 0
+def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False):
+    episodes_rewards = []
     clashed = False
     for i in range(n_episodes):
         policy.env.reset()
         done = False
         steps = 0
+        episode_reward = 0
         while not done and steps < max_steps:
-            # # debug print
-            # print(f'steps={steps}')
-            # policy.env.render()
-            # time.sleep(0.1)
+            if steps >= 99 and debug:
+                print(f'stuck state is: {policy.env.s}')
+                policy.env.render()
+                import ipdb
+                ipdb.set_trace()
+
+            # debug print
+            # if debug:
+            #     print(f'steps={steps}')
+            #     policy.env.render()
+            #     time.sleep(0.1)
+
             new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
-            total_reward += reward
+            episode_reward += reward
             steps += 1
             if reward == policy.env.reward_of_clash and done:
                 clashed = True
 
+        episodes_rewards.append(episode_reward)
+
     policy.env.reset()
-    return total_reward / n_episodes, clashed
+
+    if debug:
+        import ipdb
+        ipdb.set_trace()
+
+    return sum(episodes_rewards) / n_episodes, clashed, episodes_rewards
 
 
 class ValueFunctionPolicy(Policy):

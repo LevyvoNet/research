@@ -31,16 +31,18 @@ from available_solvers import *
 
 # *************** Dependency Injection *************************************************************************
 # import db_providers.tinymongo_db_provider as db_provider
-# import db_providers.simple_json_file as db_provider
-import db_providers.pymongo_db_provider as db_provider
+import db_providers.simple_json_file as db_provider
+
+# import db_providers.pymongo_db_provider as db_provider
 
 # *************** DB parameters ********************************************************************************
 DB_NAME = 'uncertain_mapf_benchmarks'
 
 # *************** Running parameters ***************************************************************************
 SECONDS_IN_MINUTE = 60
-SINGLE_SCENARIO_TIMEOUT = 10 * SECONDS_IN_MINUTE
+SINGLE_SCENARIO_TIMEOUT = 5 * SECONDS_IN_MINUTE
 CHUNK_SIZE = 25  # How many instances to solve in a single process
+MAX_STEPS = 200
 
 # *************** 'Structs' definitions ************************************************************************
 ScenarioMetadata = namedtuple('ScenarioMetadata', [
@@ -89,9 +91,14 @@ POSSIBLE_MAPS = [
     # 'empty-16-16',
     # 'empty-32-32',
     # 'empty-48-48',
-    'sanity'
+    'sanity-2-8',
+    'sanity-3-8',
+    'sanity-2-16',
+    'sanity-3-16',
+    'sanity-2-32',
+    'sanity-3-32',
 ]
-POSSIBLE_N_AGENTS = list(range(1, 8))
+POSSIBLE_N_AGENTS = list(range(1, 7))
 
 # fail prob here is the total probability to fail (half for right, half for left)
 POSSIBLE_FAIL_PROB = [
@@ -105,10 +112,21 @@ SCENES_PER_MAP_COUNT = 1
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 POSSIBLE_SOLVERS = [
-    long_id_ma_rtdp_describer,
-    # long_rtdp_stop_no_improvement_min_heuristic_describer,
-    long_id_rtdp_describer,
-    long_ma_rtdp_min_describer,
+    long_ma_rtdp_min_pvi_describer,
+    long_id_ma_rtdp_min_pvi_describer,
+    long_id_rtdp_min_pvi_describer,
+
+    long_ma_rtdp_sum_pvi_describer,
+    long_id_ma_rtdp_sum_pvi_describer,
+    long_id_rtdp_sum_pvi_describer,
+
+    long_ma_rtdp_min_dijkstra_describer,
+    long_id_ma_rtdp_min_dijkstra_describer,
+    long_id_rtdp_min_dijkstra_describer,
+
+    long_ma_rtdp_sum_dijkstra_describer,
+    long_id_ma_rtdp_sum_dijkstra_describer,
+    long_id_rtdp_sum_dijkstra_describer
 ]
 
 TOTAL_INSTANCES_COUNT = reduce(lambda x, y: x * len(y),  # number of instance data
@@ -261,7 +279,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
             policy = instance.plan_func(env, instance_data['solver_data'])
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
-                reward, clashed = evaluate_policy(policy, 100, 1000)
+                reward, clashed, _ = evaluate_policy(policy, 100, MAX_STEPS)
                 instance_data['average_reward'] = reward
                 instance_data['clashed'] = clashed
         except stopit.utils.TimeoutException:
@@ -430,5 +448,32 @@ def main():
     db_process.terminate()
 
 
+from solvers.ma_rtdp import multi_agent_turn_based_rtdp_single_iteration
+
+
+def train_more_iters(policy, info, n_iters):
+    for i in range(n_iters):
+        multi_agent_turn_based_rtdp_single_iteration(policy, info)
+
+
+def restore_forget_bug():
+    env = create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1)
+
+    info = {}
+    policy = ma_rtdp_min_describer.func(env, info)
+
+    reward, clashed, _ = evaluate_policy(policy, 30, 100, True)
+    print(f'first reward:{reward}, first trained states len: {len(policy.visited_states)}')
+
+    while True:
+        import ipdb
+        ipdb.set_trace()
+        train_more_iters(policy, info, 10000)
+        reward, clashed, _ = evaluate_policy(policy, 30, 100, True)
+        print(f'reward:{reward}')
+
+    print('done')
+
+
 if __name__ == '__main__':
-    main()
+    restore_forget_bug()

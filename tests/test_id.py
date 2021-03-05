@@ -80,7 +80,7 @@ class IdTests(unittest.TestCase):
                                  100)
         policy = id(rtdp_plan_func, env, {})
 
-        reward, clashed = evaluate_policy(policy, 1, 1000)
+        reward, clashed, _ = evaluate_policy(policy, 1, 1000)
 
         self.assertFalse(clashed)
 

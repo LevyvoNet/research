@@ -24,9 +24,6 @@ class MultiagentRtdpPolicy(RtdpPolicy):
         self.local_env_aux = get_local_view(self.env, [0])
 
     def get_q(self, agent, joint_state, local_action):
-        # if joint_state == 117:
-        #     import ipdb
-        #     ipdb.set_trace()
         if joint_state in self.q_partial_table[agent]:
             if local_action in self.q_partial_table[agent][joint_state]:
                 return self.q_partial_table[agent][joint_state][local_action]
@@ -49,8 +46,9 @@ class MultiagentRtdpPolicy(RtdpPolicy):
         return self.q_partial_table[agent][joint_state][local_action]
 
     def q_update(self, agent, joint_state, local_action, joint_action):
-        all_stay = (STAY,) * self.env.n_agents
-
+        # TODO: figure out which way is right - considering the joint action or the local one.
+        # TODO: Maybe each agent should have a different heuristic
+        # all_stay = (STAY,) * self.env.n_agents
         # fake_joint_action = vector_action_to_integer(all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:])
 
         self.q_partial_table[agent][joint_state][local_action] = sum([prob * (reward + self.gamma * self.v[next_state])
@@ -145,10 +143,11 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
             policy.v_update(s)
             policy.q_update(agent, s, trajectory_actions[agent], joint_action)
 
+        policy.visited_states[s] = policy.visited_states[s] + 1
+
         # step
         s, r, done, _ = policy.env.step(joint_action)
         total_reward += r
-
 
     # # debug
     # policy.env.render()
@@ -195,8 +194,8 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             return False
 
         policy.policy_cache.clear()
-        reward, _ = evaluate_policy(policy, 100, max_eval_steps)
-        if reward == policy.env.reward_of_living * max_eval_steps:
+        reward, _, episodes_rewards = evaluate_policy(policy, 100, max_eval_steps)
+        if (policy.env.reward_of_living * max_eval_steps) == reward:
             return False
 
         if not hasattr(policy, 'last_eval'):
