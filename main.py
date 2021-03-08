@@ -271,7 +271,7 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
         instance_data.update({
             'solver_data': {},
             'end_reason': 'invalid',
-            'error': traceback.TracebackException.from_exception(ex).format()
+            'error': traceback.print_tb(ex.__traceback__)
         })
         insert_to_db_func(instance_data)
         return
