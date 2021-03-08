@@ -11,6 +11,7 @@ from collections import namedtuple
 from functools import partial, reduce
 from pathos.multiprocessing import ProcessPool
 import numpy as np
+import traceback
 
 from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
@@ -265,10 +266,13 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
                               -1000,
                               -1,
                               -1)
-    except KeyError:
+    except Exception as ex:
         log_func(ERROR, f'{configuration_string} is invalid')
-        instance_data.update({'solver_data': {},
-                              'end_reason': 'invalid'})
+        instance_data.update({
+            'solver_data': {},
+            'end_reason': 'invalid',
+            'error': traceback.TracebackException.from_exception(ex).format()
+        })
         insert_to_db_func(instance_data)
         return
 
