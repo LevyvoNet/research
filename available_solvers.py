@@ -303,7 +303,7 @@ ma_rtdp_min_describer = SolverDescriber(
 
 ma_rtdp_dijkstra_describer = SolverDescriber(
     description=f'ma_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
+                f'{local_min_dijkstra_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
                 f'max_iters=500,',
@@ -334,7 +334,7 @@ long_ma_rtdp_min_pvi_describer = SolverDescriber(
 
 long_ma_rtdp_sum_pvi_describer = SolverDescriber(
     description=f'ma_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
+                f'{local_sum_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
                 f'batch_size=100,'
                 f'max_iters=10000,',
