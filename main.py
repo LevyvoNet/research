@@ -31,6 +31,9 @@ from solvers import (id,
                      )
 from available_solvers import *
 
+# *************** Multi Process Deadlock Prevention ************************************************************
+# multiprocessing.set_start_method("spawn")
+
 # *************** Dependency Injection *************************************************************************
 # import db_providers.tinymongo_db_provider as db_provider
 import db_providers.simple_json_file as db_provider
