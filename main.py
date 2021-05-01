@@ -457,32 +457,26 @@ def main():
     db_process.terminate()
 
 
-from solvers.ma_rtdp import multi_agent_turn_based_rtdp_single_iteration
+def restore_weird_stuff():
+    """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
+    print('start restoring')
+    env = create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1)
+    solver = long_id_ma_rtdp_sum_pvi_describer.func
+
+    with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+        try:
+            info = {}
+            policy = solver(env, info)
+        except stopit.utils.TimeoutException:
+            print('got timeout!!!')
 
 
-def train_more_iters(policy, info, n_iters):
-    for i in range(n_iters):
-        multi_agent_turn_based_rtdp_single_iteration(policy, info)
 
+    import ipdb
+    ipdb.set_trace()
 
-def restore_forget_bug():
-    env = create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1)
-
-    info = {}
-    policy = ma_rtdp_min_describer.func(env, info)
-
-    reward, clashed, _ = evaluate_policy(policy, 30, 100, True)
-    print(f'first reward:{reward}, first trained states len: {len(policy.visited_states)}')
-
-    while True:
-        # import ipdb
-        # ipdb.set_trace()
-        train_more_iters(policy, info, 10000)
-        reward, clashed, _ = evaluate_policy(policy, 30, 100, True)
-        print(f'reward:{reward}')
-
-    print('done')
+    print('OMG')
 
 
 if __name__ == '__main__':
-    main()
+    restore_weird_stuff()

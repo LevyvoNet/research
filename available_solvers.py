@@ -271,21 +271,6 @@ ma_rtdp_sum_describer = SolverDescriber(
     short_description='ma_rtdp_pvi_sum'
 )
 
-long_ma_rtdp_sum_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description,}'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000',
-    func=partial(ma_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_pvi_sum'
-)
-
 ma_rtdp_min_describer = SolverDescriber(
     description=f'ma_rtdp('
                 f'{local_min_pvi_heuristic_describer.description},'
@@ -301,7 +286,7 @@ ma_rtdp_min_describer = SolverDescriber(
     short_description='ma_rtdp'
 )
 
-ma_rtdp_dijkstra_describer = SolverDescriber(
+ma_rtdp_dijkstra_min_describer = SolverDescriber(
     description=f'ma_rtdp('
                 f'{local_min_dijkstra_heuristic_describer.description},'
                 f'gamma=1.0,'
@@ -313,9 +298,23 @@ ma_rtdp_dijkstra_describer = SolverDescriber(
                  100,
                  1000),
     extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp_dijkstra'
+    short_description='ma_rtdp_dijkstra_min'
 )
 
+ma_rtdp_dijkstra_sum_describer = SolverDescriber(
+    description=f'ma_rtdp('
+                f'{local_sum_dijkstra_heuristic_describer.description},'
+                f'gamma=1.0,'
+                f'batch_size=100,'
+                f'max_iters=500,',
+    func=partial(ma_rtdp,
+                 local_sum_dijkstra_heuristic_describer.func,
+                 1.0,
+                 100,
+                 1000),
+    extra_info=ma_rtdp_extra_info,
+    short_description='ma_rtdp_dijkstra_sum'
+)
 
 long_ma_rtdp_min_pvi_describer = SolverDescriber(
     description=f'ma_rtdp('
@@ -388,6 +387,13 @@ fixed_iter_rtdp_min_describer = SolverDescriber(
                  400),
     extra_info=default_extra_info,
     short_description='fixed_rtdp'
+)
+
+id_vi_describer = SolverDescriber(
+    description=f'ID({value_iteration_describer.description})',
+    func=value_iteration_describer.func,
+    extra_info=id_extra_info,
+    short_description='id_vi'
 )
 
 id_rtdp_describer = SolverDescriber(
