@@ -164,14 +164,15 @@ def test_solver_on_env(env: MapfEnv, env_name: str, solver_describer: SolverDesc
             policy = solver_describer.func(env, info)
         except stopit.utils.TimeoutException:
             print(
-                f'env:{env_name}, reward:-, time: {TEST_SINGLE_SCENARIO_TIMEOUT}, solver:{solver_describer.description}')
+                f'env:{env_name}, reward:-, time: {TEST_SINGLE_SCENARIO_TIMEOUT}, solver:{solver_describer.description}',
+                end=' ')
             assert False
 
     solve_time = round(time.time() - start, 2)
 
     reward, clashed, _ = evaluate_policy(policy, 100, 1000)
 
-    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.description}')
+    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.description}', end=' ')
 
     assert not clashed
 
