@@ -7,6 +7,8 @@ jobs:
                 steps:
                         - uses: actions/checkout@master
                         - name: solvers unit tests
-                          with:
-                                  args:
-                                          export PYTHONPATH=`pwd`; pytest -v
+                          uses: actions/research@master
+                          env:
+                                  PYTHONPATH: `pwd`
+                          run:
+                                  pytest -v
