@@ -12,4 +12,4 @@ jobs:
                         - run: pip install pytest stopit gym-mapf
                         - run: pytest -v
                           env:
-                            PYTHONPATH: `pwd`
+                            PYTHONPATH: "."
