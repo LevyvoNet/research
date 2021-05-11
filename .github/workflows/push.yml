@@ -9,4 +9,4 @@ jobs:
                         - name: solvers unit tests
                           uses: cclaus/Github-Action-for-pytest@master
                           with:
-                              args:export PYTHONPATH=`pwd` && pytest -v
+                              args:pytest -v
