@@ -1,0 +1,12 @@
+on: push
+name: solvers test
+jobs:
+        UT:
+                name: solver unit tests
+                runs-on: ubuntu-latest
+                steps:
+                        - uses: actions/checkout@master
+                        - name: solvers unit tests
+                          with:
+                                  args:
+                                          export PYTHONPATH=`pwd`; pytest -v
