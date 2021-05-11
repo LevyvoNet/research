@@ -9,7 +9,7 @@ jobs:
                         - uses: actions/setup-python@v2
                           with:
                             python-version: '3.6'
-                        - run: pip install pytest stopit gym-mapf numpy colorama
+                        - run: pip install pytest stopit gym gym-mapf numpy colorama
                         - run: pytest -v
                           env:
                             PYTHONPATH: "."
