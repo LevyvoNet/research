@@ -11,3 +11,5 @@ jobs:
                             python-version: '3.6'
                         - run: pip install pytest stopit gym-mapf
                         - run: pytest -v
+                          env:
+                            PYTHONPATH: `pwd`
