@@ -2,13 +2,10 @@ on: push
 name: solvers test
 jobs:
         UT:
-                name: solver unit tests
+                name: unit tests
                 runs-on: ubuntu-latest
                 steps:
                         - uses: actions/checkout@master
                         - name: solvers unit tests
-                          uses: actions/research@master
-                          env:
-                                  PYTHONPATH: `pwd`
-                          run:
-                                  pytest -v
+                          with:
+                              args:export PYTHONPATH=`pwd` && pytest -v
