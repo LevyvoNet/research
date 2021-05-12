@@ -10,6 +10,6 @@ jobs:
                           with:
                             python-version: '3.6'
                         - run: pip install pytest stopit gym gym-mapf numpy colorama pandas
-                        - run: pytest -v
+                        - run: pytest --capture=no
                           env:
                             PYTHONPATH: "."
