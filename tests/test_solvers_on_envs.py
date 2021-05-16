@@ -12,7 +12,7 @@ from solvers.utils import evaluate_policy
 from available_solvers import *
 from tests.performance_utils import *
 
-TEST_SINGLE_SCENARIO_TIMEOUT = 120
+TEST_SINGLE_SCENARIO_TIMEOUT = 300
 
 weak_tested_solvers = [
     value_iteration_describer,
@@ -23,18 +23,22 @@ weak_tested_solvers = [
     long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
     ma_rtdp_sum_describer,
     ma_rtdp_dijkstra_min_describer,
-    ma_rtdp_dijkstra_sum_describer
+    ma_rtdp_dijkstra_sum_describer,
+]
+
+mid_tested_solvers = [
+    id_ma_rtdp_describer,
+    long_ma_rtdp_min_pvi_describer,
+    long_ma_rtdp_min_dijkstra_describer,
+    id_rtdp_describer,
 ]
 
 strong_tested_solvers = [
     long_rtdp_stop_no_improvement_sum_heuristic_describer,
     long_ma_rtdp_sum_pvi_describer,
-    long_ma_rtdp_min_pvi_describer,
-    id_rtdp_describer,
-    id_ma_rtdp_describer,
+    long_id_rtdp_sum_pvi_describer,
     long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
     long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-    long_ma_rtdp_min_dijkstra_describer,
     long_ma_rtdp_sum_dijkstra_describer
 ]
 
@@ -101,11 +105,7 @@ easy_envs = [
     ),
 ]
 
-difficult_envs = [
-    (
-        create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, -1, -1),
-        'room-32-32-4 scen 13 - 2 agents 1 conflict'
-    ),
+mid_envs = [
     (
         create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, -1, -1),
         'room-32-32-4 scen 12 - 2 agents deterministic'
@@ -130,11 +130,17 @@ difficult_envs = [
         create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1),
         'sanity 3 agents stochastic'
     ),
+]
+
+difficult_envs = [
+    (
+        create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, -1, -1),
+        'room-32-32-4 scen 13 - 2 agents 1 conflict'
+    ),
     (
         create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1),
         'conflict between pair and single large map'
     )
-
 ]
 
 
@@ -142,6 +148,10 @@ def generate_solver_env_combinations():
     # Initialize with all solvers on easy envs
     combs = [(env, env_name, solver_describer)
              for (env, env_name), solver_describer in itertools.product(easy_envs, all_tested_solvers)]
+
+    # Add mid and strong solvers for mid envs
+    combs += [(env, env_name, solver_describer)
+              for (env, env_name), solver_describer in itertools.product(mid_envs, mid_tested_solvers)]
 
     # Add the strong solvers on the difficult envs
     combs += [(env, env_name, solver_describer)
@@ -163,9 +173,9 @@ def test_solver_on_env(env: MapfEnv, env_name: str, solver_describer: SolverDesc
         try:
             policy = solver_describer.func(env, info)
         except stopit.utils.TimeoutException:
-            print(
-                f'env:{env_name}, reward:-, time: {TEST_SINGLE_SCENARIO_TIMEOUT}, solver:{solver_describer.description}',
-                end=' ')
+            print(f'solver {solver_describer.description} got timeout on {env_name}', end=' ')
+            import ipdb
+            ipdb.set_trace()
             assert False
 
     solve_time = round(time.time() - start, 2)
@@ -207,4 +217,4 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber):
     assert not clashed
 
     # Assert the reward is reasonable
-    assert reward >= 50.0 * env.reward_of_living
+    assert reward >= 100.0 * env.reward_of_living

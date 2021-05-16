@@ -1,10 +1,10 @@
-import time
 import itertools
+import time
 from abc import ABCMeta, abstractmethod
-from collections import Counter
 from typing import Dict, Callable
 
 import numpy as np
+
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector,
                                     vector_action_to_integer)
@@ -90,7 +90,7 @@ def couple_detect_conflict(env: MapfEnv,
     env1 = get_local_view(env, a1_group)
     env2 = get_local_view(env, a2_group)
 
-    state_pairs_to_expand = [(env1.s, env2.s)]
+    state_pairs_to_expand = {(env1.s, env2.s)}
     visited_state_pairs = set()
 
     while len(state_pairs_to_expand) > 0:
@@ -99,37 +99,51 @@ def couple_detect_conflict(env: MapfEnv,
         loc2 = env2.state_to_locations(s2)[a2_idx_in_group]
         visited_state_pairs.add((s1, s2))
 
-        next_states_1 = [next_state
-                         for _, next_state, _, _ in env1.P[s1][a1_group_policy.act(s1)]]
-        next_states_2 = [next_state
-                         for _, next_state, _, _ in env2.P[s2][a2_group_policy.act(s2)]]
+        next_states1 = [next_state
+                        for _, next_state, _, _ in env1.P[s1][a1_group_policy.act(s1)]]
+        next_states2 = [next_state
+                        for _, next_state, _, _ in env2.P[s2][a2_group_policy.act(s2)]]
 
-        for n1 in next_states_1:
-            for n2 in next_states_2:
-                next_loc1 = env1.state_to_locations(n1)[a1_idx_in_group]
-                next_loc2 = env2.state_to_locations(n2)[a2_idx_in_group]
+        next_locs1 = set([env1.state_to_locations(n1)[a1_idx_in_group] for n1 in next_states1])
+        next_locs2 = set([env2.state_to_locations(n2)[a2_idx_in_group] for n2 in next_states2])
 
-                # Check for a potential clash
-                if any([
-                    next_loc1 == next_loc2,
-                    loc1 == next_loc2 and loc2 == next_loc1
-                ]):
-                    single_agent_local_env = get_local_view(env, [0])
+        # Check for a clash conflict
+        clash_locs = next_locs1.intersection(next_locs2)
+        if clash_locs:
+            clash_loc = clash_locs.pop()
+            single_agent_local_env = get_local_view(env, [0])
+            info['detect_conflict_time'] = round(time.time() - start, 2)
 
-                    info['detect_conflict_time'] = round(time.time() - start, 2)
-                    return (
-                        (a1,
-                         single_agent_local_env.locations_to_state((loc1,)),
-                         single_agent_local_env.locations_to_state((next_loc1,))
-                         ),
-                        (a2,
-                         single_agent_local_env.locations_to_state((loc2,)),
-                         single_agent_local_env.locations_to_state((next_loc2,))
-                         )
-                    )
+            return (
+                (a1,
+                 single_agent_local_env.locations_to_state((loc1,)),
+                 single_agent_local_env.locations_to_state((clash_loc,))
+                 ),
+                (a2,
+                 single_agent_local_env.locations_to_state((loc2,)),
+                 single_agent_local_env.locations_to_state((clash_loc,))
+                 )
+            )
 
-                if (n1, n2) not in visited_state_pairs:
-                    state_pairs_to_expand.append((n1, n2))
+        # Check for a switch conflict
+        if loc1 in next_locs2 and loc2 in next_locs1:
+            info['detect_conflict_time'] = round(time.time() - start, 2)
+            single_agent_local_env = get_local_view(env, [0])
+
+            return (
+                (a1,
+                 single_agent_local_env.locations_to_state((loc1,)),
+                 single_agent_local_env.locations_to_state((loc2,))
+                 ),
+                (a2,
+                 single_agent_local_env.locations_to_state((loc2,)),
+                 single_agent_local_env.locations_to_state((loc1,))
+                 )
+            )
+
+        # No conflict detected yet, add states to expand and keep searching
+        next_pairs = set(itertools.product(next_states1, next_states2))
+        state_pairs_to_expand.update(next_pairs.difference(visited_state_pairs))
 
     # Done expanding all pairs without a clash, return no conflict is possible
     info['detect_conflict_time'] = round(time.time() - start, 2)
