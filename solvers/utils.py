@@ -191,13 +191,19 @@ def safe_actions(env: MapfEnv, s):
             if not might_conflict(env.reward_of_clash, env.P[s][a])]
 
 
-def solve_independently_and_cross(env, agent_groups, low_level_planner: Callable[[MapfEnv, Dict], Policy], info: Dict):
+def solve_independently_and_cross(env,
+                                  agent_groups,
+                                  low_level_planner: Callable[[MapfEnv, Dict], Policy],
+                                  info: Dict):
     """Solve the MDP MAPF for the local views of the given agent groups
 
     Args:
         agent_groups (list): a list of lists, each list is a group of agents.
         low_level_planner ((MapfEnv)->Policy): a low level planner to solve the local envs with.
         info (dict): information to update during the solving
+
+        If there is an existing solution for a slightly different division of groups, one can pass it to this fucntion
+        for optimization.
     """
     start = time.time()  # TODO: use a decorator for updating info with time measurement
     local_envs = [get_local_view(env, group) for group in agent_groups]

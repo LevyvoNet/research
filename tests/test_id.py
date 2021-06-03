@@ -1,3 +1,4 @@
+import functools
 import unittest
 from functools import partial
 
@@ -7,14 +8,17 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     UP, DOWN, RIGHT, LEFT, STAY)
 
 from solvers import (value_iteration,
-                              id,
-                              fixed_iterations_count_rtdp)
-from solvers.rtdp import local_views_prioritized_value_iteration_min_heuristic
+                     id,
+                     fixed_iterations_count_rtdp)
+from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
+                          fixed_iterations_rtdp_merge,
+                          solution_heuristic_min,
+                          solution_heuristic_sum)
 from solvers.utils import solve_independently_and_cross, evaluate_policy
 
 
 class IdTests(unittest.TestCase):
-    def test_corridor_switch_indepedent_vs_merged(self):
+    def test_corridor_switch_independent_vs_merged(self):
         grid = MapfGrid(['...',
                          '@.@'])
         agents_starts = ((0, 0), (0, 2))
@@ -69,16 +73,21 @@ class IdTests(unittest.TestCase):
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -1, 1, -0.01)
 
         vi_plan_func = partial(value_iteration, 1.0)
-        joint_policy = id(vi_plan_func, env, {})
+        joint_policy = id(vi_plan_func, None, env, {})
 
         self.assertEqual(joint_policy.act(env.s), vector_action_to_integer((LEFT, RIGHT)))
 
     def test_env_with_switch_conflict_solved_properly(self):
         env = create_mapf_env('room-32-32-4', 9, 2, 0, 0, -1000, 0, -1)
+        gamma = 1.0
+        n_iterations = 100
+
         rtdp_plan_func = partial(fixed_iterations_count_rtdp,
-                                 partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                                 100)
-        policy = id(rtdp_plan_func, env, {})
+                                 partial(local_views_prioritized_value_iteration_min_heuristic, gamma),
+                                 gamma,
+                                 n_iterations)
+        rtdp_merge_func = functools.partial(fixed_iterations_rtdp_merge, solution_heuristic_min, gamma, n_iterations)
+        policy = id(rtdp_plan_func, rtdp_merge_func, env, {})
 
         reward, clashed, _ = evaluate_policy(policy, 1, 1000)
 

@@ -1,3 +1,5 @@
+import functools
+
 import numpy as np
 import time
 import math
@@ -152,7 +154,7 @@ def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
 
 def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_distance = [(_dijkstra_distance_single_env(local_env)) for local_env in local_envs]
+    local_distance = [_dijkstra_distance_single_env(local_env) for local_env in local_envs]
 
     def f(s):
         locations = env.state_to_locations(s)
@@ -167,7 +169,8 @@ def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
         if not relevant_distances:
             return 0
 
-        return (sum(relevant_distances) - len(relevant_distances)) * env.reward_of_living + len(relevant_distances) * env.reward_of_goal
+        return (sum(relevant_distances) - len(relevant_distances)) * env.reward_of_living + len(
+            relevant_distances) * env.reward_of_goal
 
     return f
 
@@ -268,29 +271,30 @@ def fixed_iterations_count_rtdp(heuristic_function: Callable[[MapfEnv], Callable
     return policy
 
 
+def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iterations_batch_size: int):
+    if iter_count % iterations_batch_size != 0:
+        return False
+
+    policy.policy_cache.clear()
+    reward, _, _ = evaluate_policy(policy, 100, 1000)
+    if reward == policy.env.reward_of_living * 1000:
+        return False
+
+    if not hasattr(policy, 'last_eval'):
+        policy.last_eval = reward
+        return False
+    else:
+        prev_eval = policy.last_eval
+        policy.last_eval = reward
+        return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
+
+
 def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
                                                   gamma: float,
                                                   iterations_batch_size: int,
                                                   max_iterations: int,
                                                   env: MapfEnv,
                                                   info: Dict):
-    def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int):
-        if iter_count % iterations_batch_size != 0:
-            return False
-
-        policy.policy_cache.clear()
-        reward, _, _ = evaluate_policy(policy, 100, 1000)
-        if reward == policy.env.reward_of_living * 1000:
-            return False
-
-        if not hasattr(policy, 'last_eval'):
-            policy.last_eval = reward
-            return False
-        else:
-            prev_eval = policy.last_eval
-            policy.last_eval = reward
-            return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
-
     # initialize V to an upper bound
     start = time.time()
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
@@ -302,7 +306,7 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
                                         start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
         eval_start = time.time()
-        no_improvement = no_improvement_from_last_batch(policy, iter_count)
+        no_improvement = no_improvement_from_last_batch(policy, iter_count, iterations_batch_size)
         info['total_evaluation_time'] += time.time() - eval_start
         if no_improvement or iter_count >= max_iterations:
             break
@@ -310,3 +314,105 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
     info['n_iterations'] = iter_count
     info['total_time'] = time.time() - start
     return policy
+
+
+def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],
+                                gamma: float,
+                                n_iterations: int,
+                                env: MapfEnv,
+                                old_groups,
+                                old_group_i_idx,
+                                old_group_j_idx,
+                                policy_i,
+                                policy_j,
+                                info: Dict):
+    return fixed_iterations_count_rtdp(functools.partial(heuristic_function,
+                                                         policy_i,
+                                                         policy_j,
+                                                         old_groups,
+                                                         old_group_i_idx,
+                                                         old_group_j_idx),
+                                       gamma,
+                                       n_iterations,
+                                       env, info)
+
+
+def stop_when_no_improvement_between_batches_rtdp_merge(
+        heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],
+        gamma,
+        iterations_batch_size,
+        max_iterations,
+        env,
+        old_groups,
+        old_group_i_idx,
+        old_group_j_idx,
+        policy_i,
+        policy_j,
+        info):
+    return stop_when_no_improvement_between_batches_rtdp(functools.partial(heuristic_function,
+                                                                           policy_i,
+                                                                           policy_j,
+                                                                           old_groups,
+                                                                           old_group_i_idx,
+                                                                           old_group_j_idx),
+                                                         gamma,
+                                                         iterations_batch_size,
+                                                         max_iterations,
+                                                         env,
+                                                         info)
+
+
+def solution_heuristic_sum(policy1: ValueFunctionPolicy,
+                           policy2: ValueFunctionPolicy,
+                           old_groups,
+                           old_group_1_idx,
+                           old_group_2_idx,
+                           env: MapfEnv):
+    group1 = old_groups[old_group_1_idx]
+    group2 = old_groups[old_group_2_idx]
+
+    def func(s: int):
+        # Get the locations of each agent in the given state
+        locations = env.state_to_locations(s)
+
+        # Compose the local states of each of the policies
+        loc1 = tuple([locations[agent] for agent in group1])
+        loc2 = tuple([locations[agent] for agent in group2])
+
+        s1 = policy1.env.state_to_locations(loc1)
+        s2 = policy1.env.state_to_locations(loc2)
+
+        v1 = policy1.v[s1]
+        v2 = policy2.v[s2]
+
+        return v1 + v2
+
+    return func
+
+
+def solution_heuristic_min(policy1: ValueFunctionPolicy,
+                           policy2: ValueFunctionPolicy,
+                           old_groups,
+                           old_group_1_idx,
+                           old_group_2_idx,
+                           env: MapfEnv):
+    group1 = old_groups[old_group_1_idx]
+    group2 = old_groups[old_group_2_idx]
+
+    def func(s: int):
+        # Get the locations of each agent in the given state
+        locations = env.state_to_locations(s)
+
+        # Compose the local states of each of the policies
+        loc1 = tuple([locations[agent_idx] for agent_idx in range(len(group1))])
+        loc2 = tuple([locations[agent_idx + len(group1)] for agent_idx in range(len(group2))])
+
+        s1 = policy1.env.locations_to_state(loc1)
+        s2 = policy1.env.locations_to_state(loc2)
+
+        v1 = policy1.v[s1]
+        v2 = policy2.v[s2]
+
+        return min(v1, v2)
+
+    return func

@@ -34,109 +34,109 @@ mid_tested_solvers = [
 ]
 
 strong_tested_solvers = [
-    long_rtdp_stop_no_improvement_sum_heuristic_describer,
-    long_ma_rtdp_sum_pvi_describer,
+    # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+    # long_ma_rtdp_sum_pvi_describer,
     long_id_rtdp_sum_pvi_describer,
-    long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-    long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-    long_ma_rtdp_sum_dijkstra_describer
+    # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+    # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+    # long_ma_rtdp_sum_dijkstra_describer
 ]
 
 all_tested_solvers = weak_tested_solvers + strong_tested_solvers
 
 easy_envs = [
-    (
-        MapfEnv(MapfGrid(['.' * 8] * 8), 1, ((7, 0),), ((0, 7),), 0.1, 0.1, -1000, -1, -1),
-        'empty_grid_single_agent'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@...',
-                          '..@...',
-                          '......',
-                          '..@...'
-                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, -1, -1),
-        'symmetrical bottle-neck deterministic'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@...',
-                          '..@...',
-                          '......',
-                          '..@...'
-                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, 100, -1),
-        'symmetrical bottle-neck deterministic large goal reward'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@...',
-                          '..@...',
-                          '......',
-                          '..@...'
-                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0.1, 0.1, -0.001, -1, -1),
-        'symmetrical bottle-neck stochastic'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@..',
-                          '..@..',
-                          '.....',
-                          '..@..'
-                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, -1, -1),
-        'Asymmetrical bottle-neck deterministic'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@..',
-                          '..@..',
-                          '.....',
-                          '..@..'
-                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1),
-        'Asymmetrical bottle-neck deterministic large goal reward'
-    ),
-
-    (
-        MapfEnv(MapfGrid(['..@..',
-                          '..@..',
-                          '.....',
-                          '..@..'
-                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1),
-        'Asymmetrical bottle-neck stochastic'
-    ),
+    # (
+    #     MapfEnv(MapfGrid(['.' * 8] * 8), 1, ((7, 0),), ((0, 7),), 0.1, 0.1, -1000, -1, -1),
+    #     'empty_grid_single_agent'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@...',
+    #                       '..@...',
+    #                       '......',
+    #                       '..@...'
+    #                       '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, -1, -1),
+    #     'symmetrical bottle-neck deterministic'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@...',
+    #                       '..@...',
+    #                       '......',
+    #                       '..@...'
+    #                       '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, 100, -1),
+    #     'symmetrical bottle-neck deterministic large goal reward'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@...',
+    #                       '..@...',
+    #                       '......',
+    #                       '..@...'
+    #                       '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0.1, 0.1, -0.001, -1, -1),
+    #     'symmetrical bottle-neck stochastic'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@..',
+    #                       '..@..',
+    #                       '.....',
+    #                       '..@..'
+    #                       '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, -1, -1),
+    #     'Asymmetrical bottle-neck deterministic'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@..',
+    #                       '..@..',
+    #                       '.....',
+    #                       '..@..'
+    #                       '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1),
+    #     'Asymmetrical bottle-neck deterministic large goal reward'
+    # ),
+    #
+    # (
+    #     MapfEnv(MapfGrid(['..@..',
+    #                       '..@..',
+    #                       '.....',
+    #                       '..@..'
+    #                       '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1),
+    #     'Asymmetrical bottle-neck stochastic'
+    # ),
 ]
 
 mid_envs = [
-    (
-        create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, -1, -1),
-        'room-32-32-4 scen 12 - 2 agents deterministic'
-    ),
-    (
-        create_mapf_env('room-32-32-4', 1, 2, 0, 0, -1000, 0, -1),
-        'room-32-32-4 scen 1 - 2 agents deterministic'
-    ),
-    (
-        MapfEnv(MapfGrid([
-            '...',
-            '@.@',
-            '@.@',
-            '...']), 2, ((0, 0), (0, 2)), ((3, 0), (3, 2)), 0.0, 0.0, -1000, -1, -1),
-        'hand crafted env'
-    ),
-    (
-        create_mapf_env('room-32-32-4', 12, 2, 0.1, 0.1, -1000, -1, -1),
-        'room-32-32-4 scen 12 - stochastic'
-    ),
-    (
-        create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1),
-        'sanity 3 agents stochastic'
-    ),
+    # (
+    #     create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, -1, -1),
+    #     'room-32-32-4 scen 12 - 2 agents deterministic'
+    # ),
+    # (
+    #     create_mapf_env('room-32-32-4', 1, 2, 0, 0, -1000, 0, -1),
+    #     'room-32-32-4 scen 1 - 2 agents deterministic'
+    # ),
+    # (
+    #     MapfEnv(MapfGrid([
+    #         '...',
+    #         '@.@',
+    #         '@.@',
+    #         '...']), 2, ((0, 0), (0, 2)), ((3, 0), (3, 2)), 0.0, 0.0, -1000, -1, -1),
+    #     'hand crafted env'
+    # ),
+    # (
+    #     create_mapf_env('room-32-32-4', 12, 2, 0.1, 0.1, -1000, -1, -1),
+    #     'room-32-32-4 scen 12 - stochastic'
+    # ),
+    # (
+    #     create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1),
+    #     'sanity 3 agents stochastic'
+    # ),
 ]
 
 difficult_envs = [
-    (
-        create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, -1, -1),
-        'room-32-32-4 scen 13 - 2 agents 1 conflict'
-    ),
+    # (
+    #     create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, -1, -1),
+    #     'room-32-32-4 scen 13 - 2 agents 1 conflict'
+    # ),
     (
         create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1),
         'conflict between pair and single large map'
