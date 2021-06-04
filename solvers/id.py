@@ -28,6 +28,7 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
 
     policies = []
     for group in new_agents_groups:
+        info[f'{group}'] = {}
         if group in old_groups:
             # We already have a solution for this group, don't calculate it again.
             policy = joint_policy.policies[old_groups.index(group)]
@@ -49,14 +50,15 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
     return CrossedPolicy(env, policies, new_agents_groups)
 
 
-def default_low_level_merger_abstract(low_level_planner,
-                                      env,
-                                      agents_groups,
-                                      group1,
-                                      group2,
-                                      policy1,
-                                      policy2,
-                                      info):
+def _default_low_level_merger_abstract(low_level_planner,
+                                       env,
+                                       agents_groups,
+                                       group1,
+                                       group2,
+                                       policy1,
+                                       policy2,
+                                       info):
+    """This will casue ID to behave the old way - just solve from the beginning"""
     new_agents_groups = merge_agent_groups(agents_groups,
                                            group1,
                                            group2)
@@ -83,7 +85,7 @@ def id(
           function int->int. The optimal policy, function from state to action.
     """
     # TODO: delete eventually
-    low_level_merger = functools.partial(default_low_level_merger_abstract,
+    low_level_merger = functools.partial(_default_low_level_merger_abstract,
                                          low_level_planner) if low_level_merger is None else low_level_merger
 
     start = time.time()  # TODO: use a decorator for updating info with time measurement
@@ -118,7 +120,6 @@ def id(
         # merge groups of i and j
         curr_iter_info = {}
         info['iterations'].append(curr_iter_info)
-        curr_iter_info['agent_groups'] = agents_groups
         curr_iter_info['joint_policy'] = {}
         curr_joint_policy = merge_agents(low_level_merger,
                                          env,

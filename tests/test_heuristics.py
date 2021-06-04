@@ -66,10 +66,6 @@ class HeuristicsTest(unittest.TestCase):
         for s in range(env.nS):
             s0 = env0.locations_to_state((env.state_to_locations(s)[0],))
             s1 = env0.locations_to_state((env.state_to_locations(s)[1],))
-            #
-            # if dijkstra_func(s)!=vi_policy0.v[s0] + vi_policy1.v[s1]:
-            #     import ipdb
-            #     ipdb.set_trace()
 
             self.assertEqual(dijkstra_func(s), vi_policy0.v[s0] + vi_policy1.v[s1])
 

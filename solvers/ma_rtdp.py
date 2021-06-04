@@ -1,3 +1,4 @@
+import functools
 import time
 import math
 from typing import Dict, Callable
@@ -13,8 +14,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector)
 from gym_mapf.envs.utils import get_local_view
 
-from solvers.utils import evaluate_policy
-from solvers.rtdp import RtdpPolicy
+from solvers.utils import evaluate_policy, Policy
+from solvers.rtdp import RtdpPolicy, no_improvement_from_last_batch
 
 
 class MultiagentRtdpPolicy(RtdpPolicy):
@@ -188,23 +189,7 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             env: MapfEnv,
             info: Dict):
     max_eval_steps = 100
-
-    def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int):
-        if iter_count % iterations_batch_size != 0:
-            return False
-
-        policy.policy_cache.clear()
-        reward, _, episodes_rewards = evaluate_policy(policy, 100, max_eval_steps)
-        if (policy.env.reward_of_living * max_eval_steps) == reward:
-            return False
-
-        if not hasattr(policy, 'last_eval'):
-            policy.last_eval = reward
-            return False
-        else:
-            prev_eval = policy.last_eval
-            policy.last_eval = reward
-            return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
+    n_episodes_eval = 100
 
     # initialize V to an upper bound
     start = time.time()
@@ -217,7 +202,11 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
                                         start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
         eval_start = time.time()
-        no_improvement = no_improvement_from_last_batch(policy, iter_count)
+        no_improvement = no_improvement_from_last_batch(policy,
+                                                        iter_count,
+                                                        iterations_batch_size,
+                                                        n_episodes_eval,
+                                                        max_eval_steps)
         info['total_evaluation_time'] += time.time() - eval_start
         if no_improvement or iter_count >= max_iterations:
             break
@@ -226,3 +215,28 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
     info['total_time'] = time.time() - start
 
     return policy
+
+
+def ma_rtdp_merge(
+        heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],
+        gamma,
+        iterations_batch_size,
+        max_iterations,
+        env,
+        old_groups,
+        old_group_i_idx,
+        old_group_j_idx,
+        policy_i,
+        policy_j,
+        info):
+    return ma_rtdp(functools.partial(heuristic_function,
+                                     policy_i,
+                                     policy_j,
+                                     old_groups,
+                                     old_group_i_idx,
+                                     old_group_j_idx),
+                   gamma,
+                   iterations_batch_size,
+                   max_iterations,
+                   env,
+                   info)

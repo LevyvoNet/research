@@ -22,7 +22,7 @@ STRONG_SOLVERS = [
     id_rtdp_describer,
     ma_rtdp_min_describer,
     fixed_iter_rtdp_min_describer,
-    id_ma_rtdp_describer,
+    id_ma_rtdp_min_pvi_describer,
 
 ]
 
