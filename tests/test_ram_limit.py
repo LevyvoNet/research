@@ -17,7 +17,7 @@ class RamLimitTest(unittest.TestCase):
     def test_multiple_agents_env(self):
         """Assert that when trying to solver a large environment we are not exceeding the RAM limit."""
         # Note the large number of agents
-        env = create_mapf_env('room-32-32-4', 12, 6, 0.1, 0.1, -1000, -1, -1)
+        env = create_mapf_env('room-32-32-4', 12, 6, 0.1, 0.1, -1000, 0, -1)
 
         info = {}
         plan_func = self.get_plan_func()

@@ -46,7 +46,7 @@ all_tested_solvers = weak_tested_solvers + mid_tested_solvers + strong_tested_so
 
 easy_envs = [
     (
-        MapfEnv(MapfGrid(['.' * 8] * 8), 1, ((7, 0),), ((0, 7),), 0.1, 0.1, -1000, -1, -1),
+        MapfEnv(MapfGrid(['.' * 8] * 8), 1, ((7, 0),), ((0, 7),), 0.1, 0.1, -1000, 0, -1),
         'empty_grid_single_agent'
     ),
 
@@ -55,7 +55,7 @@ easy_envs = [
                           '..@...',
                           '......',
                           '..@...'
-                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, -1, -1),
+                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0, 0, -0.001, 0, -1),
         'symmetrical bottle-neck deterministic'
     ),
 
@@ -73,7 +73,7 @@ easy_envs = [
                           '..@...',
                           '......',
                           '..@...'
-                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0.1, 0.1, -0.001, -1, -1),
+                          '..@...']), 2, ((2, 0), (2, 5)), ((2, 5), (2, 0)), 0.1, 0.1, -0.001, 0, -1),
         'symmetrical bottle-neck stochastic'
     ),
 
@@ -82,7 +82,7 @@ easy_envs = [
                           '..@..',
                           '.....',
                           '..@..'
-                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, -1, -1),
+                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 0, -1),
         'Asymmetrical bottle-neck deterministic'
     ),
 
@@ -107,7 +107,7 @@ easy_envs = [
 
 mid_envs = [
     (
-        create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, -1, -1),
+        create_mapf_env('room-32-32-4', 12, 2, 0, 0, -1000, 0, -1),
         'room-32-32-4 scen 12 - 2 agents deterministic'
     ),
     (
@@ -119,26 +119,26 @@ mid_envs = [
             '...',
             '@.@',
             '@.@',
-            '...']), 2, ((0, 0), (0, 2)), ((3, 0), (3, 2)), 0.0, 0.0, -1000, -1, -1),
+            '...']), 2, ((0, 0), (0, 2)), ((3, 0), (3, 2)), 0.0, 0.0, -1000, 0, -1),
         'hand crafted env'
     ),
     (
-        create_mapf_env('room-32-32-4', 12, 2, 0.1, 0.1, -1000, -1, -1),
+        create_mapf_env('room-32-32-4', 12, 2, 0.1, 0.1, -1000, 0, -1),
         'room-32-32-4 scen 12 - stochastic'
     ),
     (
-        create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, -1, -1),
+        create_mapf_env('sanity-3-8', None, 3, 0.1, 0.1, -1000, 0, -1),
         'sanity 3 agents stochastic'
     ),
 ]
 
 difficult_envs = [
     (
-        create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, -1, -1),
+        create_mapf_env('room-32-32-4', 13, 2, 0, 0, -1000, 0, -1),
         'room-32-32-4 scen 13 - 2 agents 1 conflict'
     ),
     (
-        create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1),
+        create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, 0, -1),
         'conflict between pair and single large map'
     )
 ]
@@ -196,7 +196,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber):
     agents_goals = ((0, 2), (0, 0))
 
     # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
-    env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -0.001, -1, -1)
+    env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -0.001, 0, -1)
 
     info = {}
     policy = solver_describer.func(env, info)

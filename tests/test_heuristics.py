@@ -18,7 +18,7 @@ class HeuristicsTest(unittest.TestCase):
         agents_starts = ((0, 0),)
         agents_goals = ((0, 4),)
 
-        env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, 0, -1000, -1, -1)
+        env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, 0, -1000, 0, -1)
 
         dijkstra_func = dijkstra_min_heuristic(env)
         vi_policy = value_iteration(1.0, env, {})

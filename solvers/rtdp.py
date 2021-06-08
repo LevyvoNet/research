@@ -147,7 +147,7 @@ def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
         if not relevant_distances:
             return 0
 
-        return (max(relevant_distances) - 1) * env.reward_of_living + env.reward_of_goal
+        return max(relevant_distances) * env.reward_of_living + env.reward_of_goal
 
     return f
 
@@ -169,8 +169,7 @@ def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
         if not relevant_distances:
             return 0
 
-        return (sum(relevant_distances) - len(relevant_distances)) * env.reward_of_living + len(
-            relevant_distances) * env.reward_of_goal
+        return sum(relevant_distances) * env.reward_of_living + len(relevant_distances) * env.reward_of_goal
 
     return f
 
@@ -421,6 +420,6 @@ def solution_heuristic_min(policy1: ValueFunctionPolicy,
         v1 = policy1.v[s1]
         v2 = policy2.v[s2]
 
-        return max(v1, v2)
+        return min(v1, v2)
 
     return func
