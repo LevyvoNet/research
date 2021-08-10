@@ -1,9 +1,13 @@
 import unittest
 
 from gym_mapf.envs.utils import MapfGrid, create_mapf_env, get_local_view
-from gym_mapf.envs.mapf_env import MapfEnv
-from solvers.vi import value_iteration,prioritized_value_iteration
-from solvers.rtdp import dijkstra_min_heuristic, dijkstra_sum_heuristic
+from gym_mapf.envs.mapf_env import MapfEnv, MultiAgentState, OptimizationCriteria
+from gym_mapf.envs.grid import SingleAgentState
+from solvers.vi import value_iteration, prioritized_value_iteration
+from solvers.rtdp import (dijkstra_min_heuristic,
+                          dijkstra_sum_heuristic,
+                          local_views_prioritized_value_iteration_min_heuristic,
+                          local_views_prioritized_value_iteration_sum_heuristic)
 
 
 class HeuristicsTest(unittest.TestCase):
@@ -15,26 +19,27 @@ class HeuristicsTest(unittest.TestCase):
             '.....',
         ])
 
-        agents_starts = ((0, 0),)
-        agents_goals = ((0, 4),)
+        start_state = MultiAgentState({0: SingleAgentState(0, 0)}, grid)
+        goal_state = MultiAgentState({0: SingleAgentState(0, 4)}, grid)
 
-        env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, 0, -1000, 0, -1)
+        env = MapfEnv(grid, 1, start_state, goal_state, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
         vi_policy = value_iteration(1.0, env, {})
 
-        for i in range(env.nS):
-            self.assertEqual(dijkstra_func(i), vi_policy.v[i])
+        for s in env.observation_space:
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
 
     def test_dijkstra_room_env(self):
         """Test dijkstra algorithm on a large, complex environment."""
-        env = create_mapf_env('room-32-32-4', 1, 1, 0, 0, -1000, -1, -1)
+        env = create_mapf_env('room-32-32-4', 1, 1, 0, -1000, -1, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
+
         vi_policy = value_iteration(1.0, env, {})
 
-        for i in range(env.nS):
-            self.assertEqual(dijkstra_func(i), vi_policy.v[i])
+        for s in env.observation_space:
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
 
     def test_dijkstra_large_goal_reward(self):
         grid = MapfGrid([
@@ -43,19 +48,19 @@ class HeuristicsTest(unittest.TestCase):
             '.....',
         ])
 
-        agents_starts = ((0, 0),)
-        agents_goals = ((0, 4),)
+        start_state = MultiAgentState({0: SingleAgentState(0, 0)}, grid)
+        goal_state = MultiAgentState({0: SingleAgentState(0, 4)}, grid)
 
-        env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, 0, -1000, 100, -1)
+        env = MapfEnv(grid, 1, start_state, goal_state, 0, -1000, 100, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
         vi_policy = value_iteration(1.0, env, {})
 
-        for i in range(env.nS):
-            self.assertEqual(dijkstra_func(i), vi_policy.v[i])
+        for s in env.observation_space:
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
 
     def test_dijkstra_sum_sanity_room_env_large_goal_reward(self):
-        env = create_mapf_env('sanity-2-8', None, 2, 0, 0, -1000, 100, -1)
+        env = create_mapf_env('sanity-2-8', None, 2, 0, -1000, 100, -1, OptimizationCriteria.Makespan)
         env0 = get_local_view(env, [0])
         env1 = get_local_view(env, [1])
 
@@ -63,11 +68,38 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy0 = prioritized_value_iteration(1.0, env0, {})
         vi_policy1 = prioritized_value_iteration(1.0, env1, {})
 
-        for s in range(env.nS):
-            s0 = env0.locations_to_state((env.state_to_locations(s)[0],))
-            s1 = env0.locations_to_state((env.state_to_locations(s)[1],))
+        for s in env.observation_space:
+            self.assertEqual(dijkstra_func(s),
+                             vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid)] + vi_policy1.v[MultiAgentState({1: s[1]}), env1.grid])
 
-            self.assertEqual(dijkstra_func(s), vi_policy0.v[s0] + vi_policy1.v[s1])
+    def test_pvi_sum_sanity_env_large_goal_reward(self):
+        env = create_mapf_env('sanity-2-8', None, 2, 0.2, -1000, 100, -1, OptimizationCriteria.Makespan)
+        env0 = get_local_view(env, [0])
+        env1 = get_local_view(env, [1])
+
+        heuristic_func = local_views_prioritized_value_iteration_sum_heuristic(1.0, env)
+        vi_policy0 = prioritized_value_iteration(1.0, env0, {})
+        vi_policy1 = prioritized_value_iteration(1.0, env1, {})
+
+        for s in env.observation_space:
+            self.assertEqual(heuristic_func(s),
+                             vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid)] + vi_policy1.v[MultiAgentState({1: s[1]}, env1.grid)])
+
+    def test_pvi_min_sanity_env_large_goal_reward(self):
+        env = create_mapf_env('sanity-2-8', None, 2, 0.2, -1000, 100, -1, OptimizationCriteria.Makespan)
+        envs = [get_local_view(env, [i]) for i in env.agents]
+
+        heuristic_func = local_views_prioritized_value_iteration_min_heuristic(1.0, env)
+        vi_policy = [prioritized_value_iteration(1.0, envs[i], {}) for i in env.agents]
+
+        for s in env.observation_space:
+            relevant_values = [vi_policy[i].v[MultiAgentState({i: s[i]}, envs[i].grid)]
+                               for i in env.agents if s[i] != env.goal_state[i]]
+            if not relevant_values:
+                expected_value = 0
+            else:
+                expected_value = min(relevant_values)
+            self.assertEqual(heuristic_func(s), expected_value)
 
 
 if __name__ == '__main__':

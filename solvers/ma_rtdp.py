@@ -6,12 +6,8 @@ from collections import defaultdict
 import numpy as np
 from numpy.core.tests.test_nditer import iter_iterindices
 
-from gym_mapf.envs.mapf_env import (MapfEnv,
-                                    function_to_get_item_of_object,
-                                    STAY,
-                                    ACTIONS,
-                                    vector_action_to_integer,
-                                    integer_action_to_vector)
+from gym_mapf.envs.mapf_env import MapfEnv, MultiAgentState, MultiAgentAction
+from gym_mapf.envs.grid import SingleAgentState, SingleAgentAction, ACTIONS
 from gym_mapf.envs.utils import get_local_view
 
 from solvers.utils import evaluate_policy, Policy
@@ -21,80 +17,91 @@ from solvers.rtdp import RtdpPolicy, no_improvement_from_last_batch
 class MultiagentRtdpPolicy(RtdpPolicy):
     def __init__(self, env, gamma, heuristic):
         super(MultiagentRtdpPolicy, self).__init__(env, gamma, heuristic)
-        self.q_partial_table = {i: defaultdict(dict) for i in range(env.n_agents)}
+        self.q_partial_table = {i: defaultdict(dict) for i in env.agents}
         self.local_env_aux = get_local_view(self.env, [0])
 
-    def get_q(self, agent, joint_state, local_action):
-        if joint_state in self.q_partial_table[agent]:
-            if local_action in self.q_partial_table[agent][joint_state]:
-                return self.q_partial_table[agent][joint_state][local_action]
+    def get_q(self, agent, joint_state: MultiAgentState, local_action: SingleAgentAction):
+        local_action_value = local_action.value
+        joint_state_value = joint_state.hash_value
+        if joint_state_value in self.q_partial_table[agent]:
+            if local_action_value in self.q_partial_table[agent][joint_state_value]:
+                return self.q_partial_table[agent][joint_state_value][local_action_value]
 
         # Calculate Q[s][a] for each possible local action
-        all_stay = (STAY,) * self.env.n_agents
-        joint_action_vector = all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:]
-        joint_action = vector_action_to_integer(joint_action_vector)
+        joint_action = MultiAgentAction({agent: SingleAgentAction.STAY for agent in self.env.agents})
+        joint_action[agent] = local_action
 
         # Compute Q[s][a]. In case of a possible clash set the reward to -infinity
         q_value = 0
         for prob, next_state, reward, done in self.env.P[joint_state][joint_action]:
-            if reward == self.env.reward_of_clash and done:
+            if self.env.is_collision_transition(joint_state, next_state):
                 q_value = -math.inf
+                break
 
             q_value += prob * (reward + (self.gamma * self.v[next_state]))
 
-        self.q_partial_table[agent][joint_state][local_action] = q_value
+        self.q_partial_table[agent][joint_state_value][local_action_value] = q_value
 
-        return self.q_partial_table[agent][joint_state][local_action]
+        return self.q_partial_table[agent][joint_state_value][local_action_value]
 
-    def q_update(self, agent, joint_state, local_action, joint_action):
+    def q_update(self, agent, joint_state: MultiAgentState, local_action: SingleAgentAction,
+                 joint_action: MultiAgentAction):
         # TODO: figure out which way is right - considering the joint action or the local one.
         # TODO: Maybe each agent should have a different heuristic
         # all_stay = (STAY,) * self.env.n_agents
         # fake_joint_action = vector_action_to_integer(all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:])
 
-        self.q_partial_table[agent][joint_state][local_action] = sum([prob * (reward + self.gamma * self.v[next_state])
-                                                                      for prob, next_state, reward, done in
-                                                                      self.env.P[joint_state][joint_action]])
+        # NOTE: joint_action here can't be an action which might cause a collision because of the way it is chosen.
+        self.q_partial_table[agent][joint_state.hash_value][local_action.value] = sum(
+            [prob * (reward + self.gamma * self.v[next_state])
+             for prob, next_state, reward, done in
+             self.env.P[joint_state][joint_action]])
 
-    def v_update(self, joint_state):
-        self.v_partial_table[joint_state] = max([max([self.get_q(agent_idx, joint_state, a)
-                                                      for a in range(len(ACTIONS))])
-                                                 for agent_idx in range(self.env.n_agents)])
+    def v_update(self, joint_state: MultiAgentState):
+        self.v_partial_table[joint_state.hash_value] = max([max([self.get_q(agent, joint_state, a)
+                                                                 for a in ACTIONS])
+                                                            for agent in self.env.agents])
 
-    def act(self, joint_state):
+    def act(self, joint_state: MultiAgentState):
         if joint_state in self.policy_cache:
             return self.policy_cache[joint_state]
 
-        joint_action = ()
+        joint_action = MultiAgentAction({})
         forbidden_states = set()
-        for agent in range(self.env.n_agents):
+        for agent in self.env.agents:
             # TODO: the problem is that the best response is according to joint state even though we are in state s.
             # TODO: we shouldn't actually step in this part...
             local_action = best_response(self, joint_state, agent, forbidden_states, False)
-            joint_action = joint_action + (ACTIONS[local_action],)
+            joint_action[agent] = local_action
 
-        best_action = vector_action_to_integer(joint_action)
-        self.policy_cache[joint_state] = best_action
-        return best_action
+        self.policy_cache[joint_state] = joint_action
+        return joint_action
 
 
-def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int, forbidden_states, stochastic=True):
+def best_response(policy: MultiagentRtdpPolicy, joint_state: MultiAgentState, agent: int, forbidden_states,
+                  stochastic=True):
     action_values = [policy.get_q(agent, joint_state, local_action)
-                     for local_action in range(len(ACTIONS))]
+                     for local_action in SingleAgentAction]
 
     # Make sure the chosen local action is not forbidden
-    locations = policy.env.state_to_locations(joint_state)
-    local_state = policy.local_env_aux.locations_to_state((locations[agent],))
-    for local_action in range(len(action_values)):
+    local_state = joint_state[agent]
+    for local_action_idx, local_action in enumerate(SingleAgentAction):
         for _, next_state, prob in policy.env.single_agent_movements(local_state, local_action):
             if next_state in forbidden_states and prob > 0:
-                action_values[local_action] = -math.inf
+                action_values[local_action_idx] = -math.inf
 
     max_value = np.max(action_values)
     if stochastic:
-        best_action = np.random.choice(np.argwhere(action_values == max_value).flatten())
+        best_action_idx = np.random.choice(np.argwhere(action_values == max_value).flatten())
     else:
-        best_action = np.argmax(action_values)
+        best_action_idx = np.argmax(action_values)
+
+    best_action = None
+    for idx, local_action in enumerate(SingleAgentAction):
+        if idx == best_action_idx:
+            best_action = local_action
+
+    assert best_action is not None, "best response returned None"
 
     # Forbid the possible states from the chosen action to the next agents
     for _, next_state, prob in policy.env.single_agent_movements(local_state, best_action):
@@ -120,14 +127,13 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
         steps += 1
         trajectory_actions = []
         forbidden_states = set()
-        joint_action_vector = (STAY,) * policy.env.n_agents
+        joint_action = MultiAgentAction({})
 
         # Calculate local action
-        for agent in range(policy.env.n_agents):
+        for agent in policy.env.agents:
             local_action = best_response(policy, s, agent, forbidden_states, False)
             trajectory_actions.append(local_action)
-            joint_action_vector = joint_action_vector[:agent] + (ACTIONS[local_action],) + joint_action_vector[
-                                                                                           agent + 1:]
+            joint_action[agent] = local_action
 
         # # debug
         # policy.env.render()
@@ -135,11 +141,10 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
         # time.sleep(0.2)
 
         # Compose the joint action
-        joint_action = vector_action_to_integer(joint_action_vector)
         path.append((s, joint_action))
 
         # update the current state
-        for agent in reversed(range(policy.env.n_agents)):
+        for agent in reversed(policy.env.agents):
             # update q(s, agent, action) based on the last state
             policy.v_update(s)
             policy.q_update(agent, s, trajectory_actions[agent], joint_action)
@@ -188,7 +193,7 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             max_iterations: int,
             env: MapfEnv,
             info: Dict):
-    max_eval_steps = 100
+    max_eval_steps = 1000
     n_episodes_eval = 100
 
     # initialize V to an upper bound

@@ -1,13 +1,12 @@
 import itertools
+import math
 import time
+import numpy as np
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Callable
+from collections import defaultdict
 
-import numpy as np
-
-from gym_mapf.envs.mapf_env import (MapfEnv,
-                                    integer_action_to_vector,
-                                    vector_action_to_integer)
+from gym_mapf.envs.mapf_env import MapfEnv, MultiAgentState, MultiAgentAction
 from gym_mapf.envs.utils import get_local_view
 
 
@@ -18,14 +17,14 @@ class Policy(metaclass=ABCMeta):
         self.gamma = gamma
 
     @abstractmethod
-    def act(self, s):
+    def act(self, s: MultiAgentState) -> MultiAgentAction:
         """Return the policy action for a given state
 
         Args:
-            s (int): a state of self environment
+            s (MultiAgentState): a state of self environment
 
         Returns:
-            int. The best action according to that policy.
+            MultiAgentAction. The best action according to that policy.
         """
 
 
@@ -33,7 +32,7 @@ class CrossedPolicy(Policy):
     def __init__(self, env, policies, agents_groups):
         super().__init__(env, 1.0)  # This does not matter
         self.policies = policies
-        self.envs = [policy.env for policy in self.policies]
+        self.envs = [policy.grid for policy in self.policies]
         self.agents_groups = agents_groups
 
     def act(self, s):
@@ -177,18 +176,17 @@ def detect_conflict(env: MapfEnv,
     return None
 
 
-def might_conflict(clash_reward, transitions):
+def might_conflict(env, state, transitions):
     for prob, new_state, reward, done in transitions:
-        if reward == clash_reward and done:
-            # This is a conflict transition
+        if env.is_collision_transition(state, new_state):
             return True
 
     return False
 
 
 def safe_actions(env: MapfEnv, s):
-    return [a for a in range(env.nA)
-            if not might_conflict(env.reward_of_clash, env.P[s][a])]
+    return [a for a in env.action_space
+            if not might_conflict(env, s, env.P[s][a])]
 
 
 def solve_independently_and_cross(env,
@@ -241,16 +239,18 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
         steps = 0
         episode_reward = 0
         while not done and steps < max_steps:
-            # debug print
+            # # debug print
             # if debug:
             #     print(f'steps={steps}')
             #     policy.env.render()
+            #     print(f'action will be {policy.act(policy.env.s)}')
             #     time.sleep(0.1)
 
+            prev_state = policy.env.s
             new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
             episode_reward += reward
             steps += 1
-            if reward == policy.env.reward_of_clash and done:
+            if policy.env.is_collision_transition(prev_state, new_state):
                 clashed = True
 
         episodes_rewards.append(episode_reward)
@@ -266,22 +266,30 @@ class ValueFunctionPolicy(Policy):
         self.v = []
         self.policy_cache = {}
 
-    def act(self, s):
+    def _act_in_unfamiliar_state(self, s: MultiAgentState):
+        max_value = -math.inf
+        best_action = None
+        for a in self.env.action_space:
+            q_sa = 0
+            for p, s_, r, done in self.env.P[s][a]:
+                if self.env.is_collision_transition(s, s_) and done:
+                    q_sa = -math.inf
+                    break
+
+                q_sa += (p * (r + self.gamma * self.v[s_]))
+
+            if q_sa > max_value:
+                max_value = q_sa
+                best_action = a
+
+        # self.policy_cache[s] = best_action
+        return best_action
+
+    def act(self, s: MultiAgentState):
         if s in self.policy_cache:
             return self.policy_cache[s]
-
-        possible_actions_from_state = safe_actions(self.env, s)
-        q_sa = np.zeros(len(possible_actions_from_state))
-        for a_idx in range(len(possible_actions_from_state)):
-            a = possible_actions_from_state[a_idx]
-            for next_sr in self.env.P[s][a]:
-                # next_sr is a tuple of (probability, next state, reward, done)
-                p, s_, r, _ = next_sr
-                q_sa[a_idx] += (p * (r + self.gamma * self.v[s_]))
-
-        best_action = possible_actions_from_state[np.argmax(q_sa)]
-        self.policy_cache[s] = best_action
-        return best_action
+        else:
+            return self._act_in_unfamiliar_state(s)
 
 
 def group_of_agent(agents_groups, agent_idx):

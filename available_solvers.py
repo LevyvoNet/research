@@ -2,6 +2,7 @@ from collections import namedtuple
 from functools import partial
 
 from solvers import (value_iteration,
+                     prioritized_value_iteration,
                      stop_when_no_improvement_between_batches_rtdp,
                      fixed_iterations_count_rtdp,
                      ma_rtdp,
@@ -9,7 +10,6 @@ from solvers import (value_iteration,
                      id)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
-                          deterministic_relaxation_prioritized_value_iteration_heuristic,
                           dijkstra_min_heuristic,
                           dijkstra_sum_heuristic,
                           solution_heuristic_min,
@@ -106,13 +106,6 @@ local_sum_dijkstra_heuristic_describer = SolverDescriber(
     func=dijkstra_sum_heuristic,
     extra_info=default_extra_info,
     short_description='dijkstra'
-)
-
-deterministic_relaxation_pvi_heuristic_describer = SolverDescriber(
-    description="deterministic_pvi_heuristic(gamma=1.0)",
-    func=deterministic_relaxation_prioritized_value_iteration_heuristic,
-    extra_info=default_extra_info,
-    short_description='deter_pvi'
 )
 
 solution_heuristic_min_describer = SolverDescriber(
@@ -262,6 +255,13 @@ value_iteration_describer = SolverDescriber(
     short_description='vi'
 )
 
+prioritized_value_iteration_describer = SolverDescriber(
+    description='prioritized_value_iteration(gamma=1.0)',
+    func=partial(prioritized_value_iteration, 1.0),
+    extra_info=default_extra_info,
+    short_description='pvi'
+)
+
 policy_iteration_describer = SolverDescriber(
     description='policy_iteration(gamma=1.0)',
     func=partial(policy_iteration, 1.0),
@@ -372,36 +372,6 @@ long_rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
                  10000),
     extra_info=default_extra_info,
     short_description='long_sum_pvi_rtdp'
-)
-
-rtdp_stop_no_improvement_determinsitic_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{deterministic_relaxation_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=500)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 deterministic_relaxation_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 500),
-    extra_info=default_extra_info,
-    short_description='deter_rtdp'
-)
-
-long_rtdp_stop_no_improvement_determinsitic_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{deterministic_relaxation_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=500)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 deterministic_relaxation_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=default_extra_info,
-    short_description='long_deter_rtdp'
 )
 
 ma_rtdp_sum_describer = SolverDescriber(

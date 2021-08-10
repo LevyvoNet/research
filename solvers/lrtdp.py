@@ -15,7 +15,7 @@ class LrtdpPolicy(RtdpPolicy):
 def residual(policy, s):
     return abs(policy.v[s] -
                sum([prob * (reward + policy.gamma * policy.v[next_state])
-                    for prob, next_state, reward, done in policy.env.P[s][policy.act(s)]]))
+                    for prob, next_state, reward, done in policy.grid.P[s][policy.act(s)]]))
 
 
 def check_solved(policy: LrtdpPolicy, s: int, epsilon: float):

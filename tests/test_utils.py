@@ -9,11 +9,7 @@ from solvers.utils import (CrossedPolicy,
                            couple_detect_conflict)
 from solvers.vi import value_iteration
 from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
-from gym_mapf.envs.mapf_env import (MapfEnv,
-                                    vector_action_to_integer,
-                                    integer_action_to_vector,
-                                    DOWN, RIGHT, LEFT, STAY,
-                                    ACTIONS)
+from gym_mapf.envs.mapf_env import MapfEnv
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           fixed_iterations_count_rtdp)
 
