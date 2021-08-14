@@ -28,7 +28,7 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy = value_iteration(1.0, env, {})
 
         for s in env.observation_space:
-            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s.hash_value])
 
     def test_dijkstra_room_env(self):
         """Test dijkstra algorithm on a large, complex environment."""
@@ -39,7 +39,7 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy = value_iteration(1.0, env, {})
 
         for s in env.observation_space:
-            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s.hash_value])
 
     def test_dijkstra_large_goal_reward(self):
         grid = MapfGrid([
@@ -57,7 +57,7 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy = value_iteration(1.0, env, {})
 
         for s in env.observation_space:
-            self.assertEqual(dijkstra_func(s), vi_policy.v[s])
+            self.assertEqual(dijkstra_func(s), vi_policy.v[s.hash_value])
 
     def test_dijkstra_sum_sanity_room_env_large_goal_reward(self):
         env = create_mapf_env('sanity-2-8', None, 2, 0, -1000, 100, -1, OptimizationCriteria.Makespan)
@@ -69,8 +69,19 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy1 = prioritized_value_iteration(1.0, env1, {})
 
         for s in env.observation_space:
-            self.assertEqual(dijkstra_func(s),
-                             vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid)] + vi_policy1.v[MultiAgentState({1: s[1]}), env1.grid])
+            expected_reward = 0
+            someone_not_in_goal = False
+            if s[0] != env.goal_state[0]:
+                someone_not_in_goal = True
+                expected_reward += vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid).hash_value] - env.reward_of_goal
+            if s[1] != env.goal_state[1]:
+                someone_not_in_goal = True
+                expected_reward += vi_policy1.v[MultiAgentState({1: s[1]}, env1.grid).hash_value] - env.reward_of_goal
+
+            if someone_not_in_goal:
+                expected_reward += env.reward_of_goal
+
+            self.assertEqual(dijkstra_func(s), expected_reward)
 
     def test_pvi_sum_sanity_env_large_goal_reward(self):
         env = create_mapf_env('sanity-2-8', None, 2, 0.2, -1000, 100, -1, OptimizationCriteria.Makespan)
@@ -82,8 +93,19 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy1 = prioritized_value_iteration(1.0, env1, {})
 
         for s in env.observation_space:
-            self.assertEqual(heuristic_func(s),
-                             vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid)] + vi_policy1.v[MultiAgentState({1: s[1]}, env1.grid)])
+            expected_reward = 0
+            someone_not_in_goal = False
+            if s[0] != env.goal_state[0]:
+                someone_not_in_goal = True
+                expected_reward += vi_policy0.v[MultiAgentState({0: s[0]}, env0.grid).hash_value] - env.reward_of_goal
+            if s[1] != env.goal_state[1]:
+                someone_not_in_goal = True
+                expected_reward += vi_policy1.v[MultiAgentState({1: s[1]}, env1.grid).hash_value] - env.reward_of_goal
+
+            if someone_not_in_goal:
+                expected_reward += env.reward_of_goal
+
+            self.assertEqual(round(heuristic_func(s), 8), round(heuristic_func(s), 8))
 
     def test_pvi_min_sanity_env_large_goal_reward(self):
         env = create_mapf_env('sanity-2-8', None, 2, 0.2, -1000, 100, -1, OptimizationCriteria.Makespan)
@@ -93,7 +115,7 @@ class HeuristicsTest(unittest.TestCase):
         vi_policy = [prioritized_value_iteration(1.0, envs[i], {}) for i in env.agents]
 
         for s in env.observation_space:
-            relevant_values = [vi_policy[i].v[MultiAgentState({i: s[i]}, envs[i].grid)]
+            relevant_values = [vi_policy[i].v[MultiAgentState({i: s[i]}, envs[i].grid).hash_value]
                                for i in env.agents if s[i] != env.goal_state[i]]
             if not relevant_values:
                 expected_value = 0

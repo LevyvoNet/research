@@ -18,7 +18,6 @@ class MultiagentRtdpPolicy(RtdpPolicy):
     def __init__(self, env, gamma, heuristic):
         super(MultiagentRtdpPolicy, self).__init__(env, gamma, heuristic)
         self.q_partial_table = {i: defaultdict(dict) for i in env.agents}
-        self.local_env_aux = get_local_view(self.env, [0])
 
     def get_q(self, agent, joint_state: MultiAgentState, local_action: SingleAgentAction):
         local_action_value = local_action.value
@@ -125,14 +124,14 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
     steps = 0
     while not done and steps < 1000:
         steps += 1
-        trajectory_actions = []
+        trajectory_actions = {}
         forbidden_states = set()
         joint_action = MultiAgentAction({})
 
         # Calculate local action
         for agent in policy.env.agents:
             local_action = best_response(policy, s, agent, forbidden_states, False)
-            trajectory_actions.append(local_action)
+            trajectory_actions[agent]=local_action
             joint_action[agent] = local_action
 
         # # debug

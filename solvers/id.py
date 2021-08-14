@@ -89,7 +89,7 @@ def id(
                                          low_level_planner) if low_level_merger is None else low_level_merger
 
     start = time.time()  # TODO: use a decorator for updating info with time measurement
-    agents_groups = [[i] for i in range(env.n_agents)]
+    agents_groups = [[agent] for agent in env.agents]
     info['iterations'] = []
     curr_iter_info = {}
     info['iterations'].append(curr_iter_info)
@@ -107,13 +107,13 @@ def id(
         curr_iter_info['conflict'] = (
             (
                 i,
-                local_env_single_agent.state_to_locations(s_i),
-                local_env_single_agent.state_to_locations(new_s_i)
+                s_i,
+                new_s_i
             ),
             (
                 j,
-                local_env_single_agent.state_to_locations(s_j),
-                local_env_single_agent.state_to_locations(new_s_j)
+                s_j,
+                new_s_j
             )
         )
 

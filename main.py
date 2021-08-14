@@ -17,6 +17,7 @@ from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
 
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
+from gym_mapf.envs.mapf_env import OptimizationCriteria
 from solvers.utils import evaluate_policy
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic)
@@ -233,7 +234,7 @@ def insert_scenario_metadata(log_func, insert_to_db_func, scenario_metadata: Sce
 
     # Calculate single agent rewards
     scen_data['self_agent_reward'] = []
-    for i in range(env.n_agents):
+    for i in env.agents:
         pvi_plan_func = partial(prioritized_value_iteration, 1.0)
         local_env = get_local_view(env, [i])
         policy = pvi_plan_func(local_env, {})
@@ -460,7 +461,7 @@ def main():
 def restore_weird_stuff():
     """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
     print('start restoring')
-    env = create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1)
+    env = create_mapf_env('sanity-2-32', 1, 3, 0.2, -1000, -1, -1, OptimizationCriteria.Makespan)
     solver = long_id_ma_rtdp_sum_pvi_describer.func
 
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
@@ -470,8 +471,10 @@ def restore_weird_stuff():
         except stopit.utils.TimeoutException:
             print('got timeout!!!')
 
-
-
+    print(f"first iteration joint policy time: {info['iterations'][0]['joint_policy']['best_joint_policy_time']}")
+    print(f"first iteration conflict detection time: {info['iterations'][0]['detect_conflict_time']}")
+    print(f"second iteration joint policy time: {info['iterations'][1]['joint_policy']['total_time']}")
+    
     import ipdb
     ipdb.set_trace()
 

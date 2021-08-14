@@ -39,7 +39,7 @@ def greedy_action(policy: RtdpPolicy, s: MultiAgentState):
 
 def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[
     [MultiAgentState], float]:
-    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_envs = [get_local_view(env, [agent]) for agent in env.agents]
     local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
 
     def heuristic_function(s: MultiAgentState):
@@ -103,7 +103,7 @@ def _dijkstra_distance_single_env(env):
 
 
 def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
-    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_envs = [get_local_view(env, [agent]) for agent in env.agents]
     local_distance = [(_dijkstra_distance_single_env(local_env)) for local_env in local_envs]
 
     def f(s):
@@ -121,7 +121,7 @@ def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
 
 
 def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
-    local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    local_envs = [get_local_view(env, [agent]) for agent in env.agents]
     local_distance = [_dijkstra_distance_single_env(local_env) for local_env in local_envs]
 
     def f(s):
