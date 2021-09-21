@@ -5,7 +5,8 @@ from functools import partial
 from gym_mapf.envs.utils import MapfGrid, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
-                                    UP, DOWN, RIGHT, LEFT, STAY)
+                                    UP, DOWN, RIGHT, LEFT, STAY,
+                                    OptimizationCriteria)
 
 from solvers import (value_iteration,
                      id,
@@ -24,7 +25,7 @@ class IdTests(unittest.TestCase):
         agents_starts = ((0, 0), (0, 2))
         agents_goals = ((0, 2), (0, 0))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -1, 1, -0.01)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.2, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
         vi_plan_func = partial(value_iteration, 1.0)
         independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], vi_plan_func, {})
@@ -48,10 +49,10 @@ class IdTests(unittest.TestCase):
         agents_starts = ((0, 0), (0, 1))
         agents_goals = ((2, 0), (2, 1))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.01, -1, 1, -0.1)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.1, OptimizationCriteria.Makespan)
 
         vi_plan_func = partial(value_iteration, 1.0)
-        independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], vi_plan_func, {})
+        independent_joint_policy = solve_independently_and_cross(env, [[0], [1]], vi_plan_func, {})
         merged_joint_policy = solve_independently_and_cross(env, [[0, 1]], vi_plan_func, {})
 
         interesting_state = env.locations_to_state(((0, 0), (0, 1)))
@@ -59,7 +60,7 @@ class IdTests(unittest.TestCase):
         expected_possible_actions = [vector_action_to_integer((LEFT, RIGHT))]
 
         # Assert independent_joint_policy just choose the most efficient action
-        self.assertEqual(independent_joiont_policy.act(interesting_state), vector_action_to_integer((DOWN, DOWN)))
+        self.assertEqual(independent_joint_policy.act(interesting_state), vector_action_to_integer((DOWN, DOWN)))
 
         # Assert merged_joint_policy avoids collision
         self.assertIn(merged_joint_policy.act(interesting_state), expected_possible_actions)
@@ -70,7 +71,7 @@ class IdTests(unittest.TestCase):
         agents_starts = ((0, 1), (0, 2))
         agents_goals = ((0, 0), (0, 3))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.1, -1, 1, -0.01)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
         vi_plan_func = partial(value_iteration, 1.0)
         joint_policy = id(vi_plan_func, None, env, {})
@@ -78,7 +79,7 @@ class IdTests(unittest.TestCase):
         self.assertEqual(joint_policy.act(env.s), vector_action_to_integer((LEFT, RIGHT)))
 
     def test_env_with_switch_conflict_solved_properly(self):
-        env = create_mapf_env('room-32-32-4', 9, 2, 0, 0, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
         gamma = 1.0
         n_iterations = 100
 

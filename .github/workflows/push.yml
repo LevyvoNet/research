@@ -1,15 +1,28 @@
 on: push
 name: solvers test
 jobs:
-        UT:
-                name: unit tests
-                runs-on: ubuntu-latest
-                steps:
-                        - uses: actions/checkout@master
-                        - uses: actions/setup-python@v2
-                          with:
-                            python-version: '3.6'
-                        - run: pip install pytest stopit gym gym-mapf numpy colorama pandas
-                        - run: pytest --capture=no
-                          env:
-                            PYTHONPATH: "."
+  UT:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+      - run: pip install pytest stopit gym gym-mapf numpy colorama pandas scipy
+      - run: pytest --capture=no
+        env:
+          PYTHONPATH: "."
+
+  benchmark:
+    name: performance benchmark
+    runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@master
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.6'
+        - run: pip install stopit gym gym-mapf numpy colorama pandas scipy
+        - run: python tests/benchmark_solvers_on_envs.py
+        env:
+          PYTHONPATH: "."

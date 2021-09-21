@@ -412,7 +412,7 @@ long_rtdp_stop_no_improvement_determinsitic_heuristic_describer = SolverDescribe
     short_description='long_deter_rtdp'
 )
 
-ma_rtdp_sum_describer = SolverDescriber(
+ma_rtdp_pvi_sum_describer = SolverDescriber(
     description=f'ma_rtdp('
                 f'{local_sum_pvi_heuristic_describer.description,}'
                 f'gamma=1.0,'
@@ -427,7 +427,7 @@ ma_rtdp_sum_describer = SolverDescriber(
     short_description='ma_rtdp_pvi_sum'
 )
 
-ma_rtdp_min_describer = SolverDescriber(
+ma_rtdp_pvi_min_describer = SolverDescriber(
     description=f'ma_rtdp('
                 f'{local_min_pvi_heuristic_describer.description},'
                 f'gamma=1.0,'
@@ -439,7 +439,7 @@ ma_rtdp_min_describer = SolverDescriber(
                  100,
                  500),
     extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp'
+    short_description='ma_rtdp_pvi_min'
 )
 
 ma_rtdp_dijkstra_min_describer = SolverDescriber(
@@ -600,12 +600,12 @@ long_id_rtdp_sum_dijkstra_describer = SolverDescriber(
 )
 
 id_ma_rtdp_min_pvi_describer = SolverDescriber(
-    description=f'ID({ma_rtdp_min_describer.description})',
+    description=f'ID({ma_rtdp_pvi_min_describer.description})',
     func=partial(id,
-                 ma_rtdp_min_describer.func,
+                 ma_rtdp_pvi_min_describer.func,
                  ma_rtdp_min_merger_describer.func),
     extra_info=id_extra_info,
-    short_description='id_ma_rtdp'
+    short_description='id_ma_rtdp_pvi_min'
 )
 
 long_id_ma_rtdp_min_pvi_describer = SolverDescriber(
@@ -614,7 +614,7 @@ long_id_ma_rtdp_min_pvi_describer = SolverDescriber(
                  long_ma_rtdp_min_pvi_describer.func,
                  long_ma_rtdp_min_merger_describer.func),
     extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp'
+    short_description='long_id_ma_rtdp_pvi_min'
 )
 
 long_id_ma_rtdp_sum_pvi_describer = SolverDescriber(

@@ -17,6 +17,7 @@ from logger_process import start_logger_process, ERROR, INFO, DEBUG
 from db_process import start_db_process
 
 from gym_mapf.envs.utils import create_mapf_env, get_local_view
+from gym_mapf.envs.mapf_env import OptimizationCriteria
 from solvers.utils import evaluate_policy
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic)
@@ -460,7 +461,7 @@ def main():
 def restore_weird_stuff():
     """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
     print('start restoring')
-    env = create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1)
+    env = create_mapf_env('sanity-8-8', 1, 8, 0.2, -1000, -1, -1, OptimizationCriteria.Makespan)
     solver = long_ma_rtdp_sum_pvi_describer.func
 
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:

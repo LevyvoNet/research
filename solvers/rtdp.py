@@ -43,6 +43,8 @@ def greedy_action(policy: RtdpPolicy, s):
     # return np.random.choice(np.argwhere(q_s_a == max_value).flatten())
 
 
+# Heuristics #######################################################################################################
+
 def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
     local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
@@ -81,7 +83,7 @@ def local_views_prioritized_value_iteration_sum_heuristic(gamma: float, env: Map
         if not relevant_values:
             return 0
 
-        return sum(relevant_values)
+        return sum(relevant_values) - (len(relevant_values) - 1) * env.reward_of_goal
 
     return heuristic_function
 
@@ -93,10 +95,10 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
                                 env.agents_starts,
                                 env.agents_goals,
                                 0,
-                                0,
-                                env.reward_of_clash,
+                                env.reward_of_collision,
                                 env.reward_of_goal,
-                                env.reward_of_living)
+                                env.reward_of_living,
+                                env.optimization_criteria)
     # TODO: consider using RTDP instead of PVI here, this is theoretically bad but practically may give better results
     policy = prioritized_value_iteration(gamma, deterministic_env, {})
 
@@ -147,7 +149,7 @@ def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
         if not relevant_distances:
             return 0
 
-        return (max(relevant_distances) - 1) * env.reward_of_living + env.reward_of_goal
+        return max(relevant_distances) * env.reward_of_living + env.reward_of_goal
 
     return f
 
@@ -169,17 +171,18 @@ def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
         if not relevant_distances:
             return 0
 
-        return (sum(relevant_distances) - len(relevant_distances)) * env.reward_of_living + len(
-            relevant_distances) * env.reward_of_goal
+        return sum(relevant_distances) * env.reward_of_living + env.reward_of_goal
 
     return f
 
+
+# RTDP #############################################################################################################
 
 def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
     q_s_a = np.zeros(policy.env.nA)
     for a in range(policy.env.nA):
         for prob, next_state, reward, done in policy.env.P[s][a]:
-            if reward == policy.env.reward_of_clash and done:
+            if policy.env.is_collision_transition(s, next_state):
                 q_s_a[a] = -math.inf
                 break
 
@@ -421,6 +424,6 @@ def solution_heuristic_min(policy1: ValueFunctionPolicy,
         v1 = policy1.v[s1]
         v2 = policy2.v[s2]
 
-        return max(v1, v2)
+        return min(v1, v2)
 
     return func

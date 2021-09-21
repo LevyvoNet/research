@@ -1,5 +1,4 @@
 import unittest
-import json
 from functools import partial
 
 from solvers.utils import (CrossedPolicy,
@@ -13,7 +12,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     integer_action_to_vector,
                                     DOWN, RIGHT, LEFT, STAY,
-                                    ACTIONS)
+                                    ACTIONS,
+                                    OptimizationCriteria)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           fixed_iterations_count_rtdp)
 
@@ -36,7 +36,7 @@ class SolversUtilsTests(unittest.TestCase):
         agents_starts = ((0, 0), (0, 2))
         agents_goals = ((2, 0), (2, 2))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, 0, -1, 1, -0.01)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
         policy1 = {
             0: ACTIONS.index(RIGHT),
@@ -86,7 +86,7 @@ class SolversUtilsTests(unittest.TestCase):
         agents_starts = ((0, 0), (0, 2))
         agents_goals = ((2, 0), (2, 2))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, 0, -1, 1, -0.01)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
         policy1 = {
             0: ACTIONS.index(DOWN),
@@ -127,7 +127,7 @@ class SolversUtilsTests(unittest.TestCase):
         agents_starts = ((0, 0), (0, 2))
         agents_goals = ((2, 0), (2, 2))
 
-        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, 0.01, -1, 1, -0.1)
+        env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.1, OptimizationCriteria.Makespan)
 
         independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], partial(value_iteration, 1.0), {})
 
@@ -140,7 +140,7 @@ class SolversUtilsTests(unittest.TestCase):
         self.assertEqual(detect_conflict(env, independent_joiont_policy), None)
 
     def test_conflict_detected_for_room_scenario_with_crossed_policy(self):
-        env = create_mapf_env('room-32-32-4', 1, 2, 0.1, 0.1, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 1, 2, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
 
         policy1 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
                                               100,
@@ -158,7 +158,7 @@ class SolversUtilsTests(unittest.TestCase):
         * Cross the policies
         * Make sure the crossed policy behaves right
         """
-        env = create_mapf_env('room-32-32-4', 15, 3, 0, 0, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 15, 3,  0, -1000, 0, -1, OptimizationCriteria.Makespan)
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
         plan_func = partial(fixed_iterations_count_rtdp,
@@ -186,7 +186,7 @@ class SolversUtilsTests(unittest.TestCase):
         * Cross the policies
         * Make sure the crossed policy behaves right
         """
-        env = create_mapf_env('room-32-32-4', 15, 3, 0, 0, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 15, 3, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
         plan_func = partial(fixed_iterations_count_rtdp,
@@ -216,7 +216,7 @@ class SolversUtilsTests(unittest.TestCase):
         * Solve independently
         * Make sure the conflict is detected
         """
-        env = create_mapf_env('room-32-32-4', 9, 2, 0, 0, -1000, 0, -1)
+        env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
 
         low_level_plan_func = partial(fixed_iterations_count_rtdp,
                                       partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
@@ -253,7 +253,7 @@ class SolversUtilsTests(unittest.TestCase):
 
         agents_starts = ((0, 0), (2, 0), (2, 2))
         agents_goals = ((0, 2), (2, 2), (2, 0))
-        env = MapfEnv(grid, 3, agents_starts, agents_goals, 0, 0, -1, 1, -0.01)
+        env = MapfEnv(grid, 3, agents_starts, agents_goals, 0, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
         # >>S
         # SSS
@@ -341,8 +341,9 @@ class SolversUtilsTests(unittest.TestCase):
 
         agents_starts = ((0, 0), (2, 0), (2, 2))
         agents_goals = ((0, 2), (2, 2), (2, 0))
-        env = MapfEnv(grid, 3, agents_starts, agents_goals, 0, 0, -1, 1, -0.01)
-        single_agent_env = MapfEnv(grid, 1, (agents_starts[0],), (agents_goals[0],), 0, 0, -1, 1, -0.01)
+        env = MapfEnv(grid, 3, agents_starts, agents_goals, 0, -1, 1, -0.01, OptimizationCriteria.Makespan)
+        single_agent_env = MapfEnv(grid, 1, (agents_starts[0],), (agents_goals[0],), 0, -1, 1, -0.01,
+                                   OptimizationCriteria.Makespan)
         env01 = get_local_view(env, [0, 1])
 
         # >>S

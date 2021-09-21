@@ -29,7 +29,7 @@ def one_step_lookahead(env, state, V, discount_factor=1.0):
         # loop over the P_sa distribution.
         for probablity, next_state, reward, done in env.P[state][action]:
             # if we are in state s and take action a. then sum over all the possible states we can land into.
-            if reward == env.reward_of_clash and done:
+            if env.is_collision_transition(state, next_state):
                 action_values[action] = -math.inf
                 break
 

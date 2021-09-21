@@ -1,5 +1,6 @@
 import time
 import numpy as np
+# np.seterr(all='raise')
 import math
 from typing import Dict
 
@@ -50,7 +51,7 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFu
             for a in range(env.nA):
                 q_sa_a = 0
                 for p, s_, r, done in env.P[s][a]:
-                    if r == env.reward_of_clash and done:
+                    if env.is_collision_transition(s, s_):
                         # This is a dangerous action which might get to conflict
                         q_sa_a = -math.inf
                         break
@@ -107,7 +108,7 @@ def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs
                 for a in range(env.nA):
                     q_sa_a = 0
                     for p, s_, r, done in env.P[s][a]:
-                        if r == env.reward_of_clash and done:
+                        if env.is_collision_transition(s, s_):
                             # This is a dangerous action which might get to conflict
                             q_sa_a = -math.inf
                             break

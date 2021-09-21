@@ -177,9 +177,9 @@ def detect_conflict(env: MapfEnv,
     return None
 
 
-def might_conflict(clash_reward, transitions):
+def might_conflict(env, s, transitions):
     for prob, new_state, reward, done in transitions:
-        if reward == clash_reward and done:
+        if env.is_collision_transition(s, new_state):
             # This is a conflict transition
             return True
 
@@ -188,7 +188,7 @@ def might_conflict(clash_reward, transitions):
 
 def safe_actions(env: MapfEnv, s):
     return [a for a in range(env.nA)
-            if not might_conflict(env.reward_of_clash, env.P[s][a])]
+            if not might_conflict(env, s, env.P[s][a])]
 
 
 def solve_independently_and_cross(env,
@@ -247,10 +247,11 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
             #     policy.env.render()
             #     time.sleep(0.1)
 
+            prev_state = policy.env.s
             new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
             episode_reward += reward
             steps += 1
-            if reward == policy.env.reward_of_clash and done:
+            if policy.env.is_collision_transition(prev_state, new_state):
                 clashed = True
 
         episodes_rewards.append(episode_reward)
