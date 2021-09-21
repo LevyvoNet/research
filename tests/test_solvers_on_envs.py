@@ -17,6 +17,7 @@ TEST_SINGLE_SCENARIO_TIMEOUT = 300
 weak_tested_solvers = [
     value_iteration_describer,
     policy_iteration_describer,
+    prioritized_value_iteration_describer,
     fixed_iter_rtdp_min_describer,
     rtdp_stop_no_improvement_min_heuristic_describer,
     id_vi_describer,
@@ -27,19 +28,19 @@ weak_tested_solvers = [
 ]
 
 mid_tested_solvers = [
-    id_ma_rtdp_min_pvi_describer,
-    long_ma_rtdp_min_pvi_describer,
-    long_ma_rtdp_min_dijkstra_describer,
-    id_rtdp_describer,
+    # id_ma_rtdp_min_pvi_describer,
+    # long_ma_rtdp_min_pvi_describer,
+    # long_ma_rtdp_min_dijkstra_describer,
+    # id_rtdp_describer,
 ]
 
 strong_tested_solvers = [
-    long_rtdp_stop_no_improvement_sum_heuristic_describer,
-    long_ma_rtdp_sum_pvi_describer,
-    long_id_rtdp_sum_pvi_describer,
-    long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-    long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-    long_ma_rtdp_sum_dijkstra_describer
+    # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+    # long_ma_rtdp_sum_pvi_describer,
+    # long_id_rtdp_sum_pvi_describer,
+    # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+    # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+    # long_ma_rtdp_sum_dijkstra_describer
 ]
 
 all_tested_solvers = weak_tested_solvers + mid_tested_solvers + strong_tested_solvers
@@ -100,7 +101,7 @@ easy_envs = [
                           '..@..',
                           '.....',
                           '..@..'
-                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1),
+                          '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0.1, 0.1, -0.001, 100, -1),
         'Asymmetrical bottle-neck stochastic'
     ),
 ]
@@ -173,14 +174,14 @@ def test_solver_on_env(env: MapfEnv, env_name: str, solver_describer: SolverDesc
         try:
             policy = solver_describer.func(env, info)
         except stopit.utils.TimeoutException:
-            print(f'solver {solver_describer.description} got timeout on {env_name}', end=' ')
+            print(f'solver {solver_describer.short_description} got timeout on {env_name}', end=' ')
             assert False
 
     solve_time = round(time.time() - start, 2)
 
     reward, clashed, _ = evaluate_policy(policy, 100, 1000)
 
-    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.description}', end=' ')
+    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.short_description}', end=' ')
 
     assert not clashed
 
@@ -216,3 +217,35 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber):
 
     # Assert the reward is reasonable
     assert reward >= 100.0 * env.reward_of_living
+
+
+def main_profile():
+    import time
+    start = time.time()
+    env = MapfEnv(MapfGrid(['..@..',
+                            '..@..',
+                            '.....',
+                            '..@..'
+                            '..@..']), 2, ((2, 0), (2, 4)), ((2, 4), (2, 0)), 0, 0, -0.001, 100, -1)
+    env_name = 'symmetrical bottle-neck deterministic large goal reward'
+    solver_describer = ma_rtdp_sum_describer
+
+    # Try to solve with a time limit
+    # with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+    #     try:
+    info = {}
+    policy = solver_describer.func(env, info)
+    # except stopit.utils.TimeoutException:
+    #     print('timout')
+    #     assert False
+
+    solve_time = time.time() - start
+
+
+    reward, clashed, episode_rewards = evaluate_policy(policy, 100, 1000)
+
+    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.short_description}', end=' ')
+
+
+if __name__ == '__main__':
+    main_profile()

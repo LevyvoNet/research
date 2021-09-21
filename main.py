@@ -461,7 +461,7 @@ def restore_weird_stuff():
     """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
     print('start restoring')
     env = create_mapf_env('sanity-2-32', 1, 3, 0.1, 0.1, -1000, -1, -1)
-    solver = long_id_ma_rtdp_sum_pvi_describer.func
+    solver = long_ma_rtdp_sum_pvi_describer.func
 
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
         try:
@@ -469,8 +469,6 @@ def restore_weird_stuff():
             policy = solver(env, info)
         except stopit.utils.TimeoutException:
             print('got timeout!!!')
-
-
 
     import ipdb
     ipdb.set_trace()

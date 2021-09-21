@@ -6,7 +6,8 @@ from solvers import (value_iteration,
                      fixed_iterations_count_rtdp,
                      ma_rtdp,
                      policy_iteration,
-                     id)
+                     id,
+                     prioritized_value_iteration)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
                           deterministic_relaxation_prioritized_value_iteration_heuristic,
@@ -15,7 +16,7 @@ from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           solution_heuristic_min,
                           solution_heuristic_sum,
                           fixed_iterations_rtdp_merge,
-                          stop_when_no_improvement_between_batches_rtdp_merge)
+                          stop_when_no_improvement_between_batches_rtdp_merge,)
 
 from solvers.ma_rtdp import ma_rtdp_merge
 
@@ -260,6 +261,13 @@ value_iteration_describer = SolverDescriber(
     func=partial(value_iteration, 1.0),
     extra_info=default_extra_info,
     short_description='vi'
+)
+
+prioritized_value_iteration_describer = SolverDescriber(
+    description='prioritized_value_iteration(gamma=1.0)',
+    func=partial(prioritized_value_iteration, 1.0),
+    extra_info=default_extra_info,
+    short_description='pvi'
 )
 
 policy_iteration_describer = SolverDescriber(

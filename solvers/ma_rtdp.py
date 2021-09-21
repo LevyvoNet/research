@@ -188,7 +188,7 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             max_iterations: int,
             env: MapfEnv,
             info: Dict):
-    max_eval_steps = 100
+    max_eval_steps = 1000
     n_episodes_eval = 100
 
     # initialize V to an upper bound
@@ -240,3 +240,4 @@ def ma_rtdp_merge(
                    max_iterations,
                    env,
                    info)
+
