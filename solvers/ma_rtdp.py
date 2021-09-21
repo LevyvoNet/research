@@ -37,7 +37,7 @@ class MultiagentRtdpPolicy(RtdpPolicy):
         # Compute Q[s][a]. In case of a possible clash set the reward to -infinity
         q_value = 0
         for prob, next_state, reward, done in self.env.P[joint_state][joint_action]:
-            if env.is_collision_transition(s, s_):
+            if self.env.is_collision_transition(joint_state, next_state):
                 q_value = -math.inf
 
             q_value += prob * (reward + (self.gamma * self.v[next_state]))

@@ -1,5 +1,7 @@
-on: push
-name: solvers test
+name: research CI
+
+on: [push]
+
 jobs:
   UT:
     name: unit tests
@@ -24,5 +26,5 @@ jobs:
             python-version: '3.6'
         - run: pip install stopit gym gym-mapf numpy colorama pandas scipy
         - run: python tests/benchmark_solvers_on_envs.py
-        env:
-          PYTHONPATH: "."
+          env:
+            PYTHONPATH: "."
