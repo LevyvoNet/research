@@ -135,6 +135,7 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
 
         # Compose the joint action
         joint_action = vector_action_to_integer(joint_action_vector)
+        policy.policy_cache[s] = joint_action
         path.append((s, joint_action))
 
         # update the current state
@@ -176,7 +177,7 @@ def multi_agent_turn_based_rtdp_iterations_generator(policy,
         info['iterations'].append(iter_info)
         start = time.time()
         iter_reward = multi_agent_turn_based_rtdp_single_iteration(policy, {})
-        iter_info['time'] = time.time() - start
+        iter_info['time'] = round(time.time() - start, 4)
         iter_info['reward'] = iter_reward
         yield iter_reward
 

@@ -94,16 +94,16 @@ def sanity_general(n_rooms, n_agents, room_size, fail_prob, optimization_criteri
 
 lvl_to_solvers = {
     0: [
-        value_iteration_describer,
-        policy_iteration_describer,
-        prioritized_value_iteration_describer,
-        id_vi_describer,
-        fixed_iter_rtdp_min_describer,
-        rtdp_stop_no_improvement_min_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        ma_rtdp_pvi_sum_describer,
+        # value_iteration_describer,
+        # policy_iteration_describer,
+        # prioritized_value_iteration_describer,
+        # id_vi_describer,
+        # fixed_iter_rtdp_min_describer,
+        # rtdp_stop_no_improvement_min_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # ma_rtdp_pvi_sum_describer,
         ma_rtdp_dijkstra_min_describer,
-        ma_rtdp_dijkstra_sum_describer,
+        # ma_rtdp_dijkstra_sum_describer,
     ],
     1: [
         # id_ma_rtdp_min_pvi_describer,
@@ -199,7 +199,7 @@ TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 RESULT_CLASHED = 'CLASHED'
 RESULT_TIMEOUT = 'TIMEOUT'
 RESULT_NOT_CONVERGED = 'NOT_CONVERGED'
-RESULT_DANGEAROUS_ACTION = 'DANGEAROUS_ACTION'
+RESULT_DANGEROUS_ACTION = 'DANGEROUS_ACTION'
 RESULT_OK = 'OK'
 
 
@@ -282,7 +282,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     expected_possible_actions = [stay_up, down_up]
 
     if policy.act(interesting_state) not in expected_possible_actions:
-        return RESULT_DANGEAROUS_ACTION
+        return RESULT_DANGEROUS_ACTION
 
         # Check the policy performance
     reward, clashed, _ = evaluate_policy(policy, n_episodes, eval_max_steps)
@@ -314,9 +314,15 @@ def main():
 
     # Corridor switch
     for solver_describer, optimization_criteria in generate_all_solvers():
+        # Calculate the env_name
+        if optimization_criteria == OptimizationCriteria.Makespan:
+            env_name = f'corridor_switch_makespan'
+        if optimization_criteria == OptimizationCriteria.SoC:
+            env_name = f'corridor_switch_soc'
+
         result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
         if result != RESULT_OK:
-            bad_results.append((solver_describer.short_description, 'corridor_switch', result))
+            bad_results.append((solver_describer.short_description, env_name, result))
     print('')
 
     # All other envs
@@ -326,11 +332,12 @@ def main():
             bad_results.append((solver_describer.short_description, env_name, result))
     print('')
 
-    print('The errors are')
-    for solver_name, env_name, bad_result in bad_results:
-        print(f'{solver_name}, {env_name}, {bad_result}')
+    if len(bad_results) != 0:
+        print('The errors are')
+        for solver_name, env_name, bad_result in bad_results:
+            print(f'{solver_name}, {env_name}, {bad_result}')
 
-    assert len(bad_results) == 0
+        assert False, 'There have been failures'
 
 
 if __name__ == '__main__':
