@@ -194,20 +194,10 @@ def generate_all_solvers():
 ALL_SOLVERS = generate_all_solvers()
 TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 
-
-def cleanup_on_fail(cond, env, policy, test_done=False):
-    if not cond:
-        del policy.env
-        del policy
-        del env
-        gc.collect()
-
-    if not test_done:
-        assert cond
-
-
-def cleanup(env, policy):
-    cleanup_on_fail(False, env, policy, test_done=True)
+RESULT_CLASHED = 'CLASHED'
+RESULT_TIMEOUT = 'TIMEOUT'
+RESULT_NOT_CONVERGED = 'NOT_CONVERGED'
+RESULT_OK = 'OK'
 
 
 def print_status(env_name, reward, solve_time, solver_description):
@@ -235,8 +225,7 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
             policy = solver_describer.func(env, info)
         except stopit.utils.TimeoutException:
             print_status(env_name, -math.inf, 'timeout', solver_describer.short_description)
-            cleanup_on_fail(False, env, policy)
-            # assert False
+            return RESULT_TIMEOUT
 
     solve_time = round(time.time() - start, 2)
 
@@ -244,8 +233,8 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
 
     print_status(env_name, reward, solve_time, solver_describer.short_description)
 
-    cleanup_on_fail(not clashed, env, policy)
-    # assert not clashed
+    if clashed:
+        return RESULT_CLASHED
 
     # Assert some kind of convergence
     if optimization_criteria == OptimizationCriteria.Makespan:
@@ -253,9 +242,10 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
     else:
         min_converged_reward = (eval_max_steps - 1) * env.reward_of_living * env.n_agents + env.reward_of_goal  # SoC
 
-    cleanup_on_fail(reward >= min_converged_reward, env, policy)
+    if reward < min_converged_reward:
+        return RESULT_NOT_CONVERGED
 
-    cleanup(env, policy)
+    return RESULT_OK
 
 
 def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
@@ -297,8 +287,8 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 
     # Make sure no clash happened
     assert not clashed
+
     # Assert the reward is reasonable
-    # Assert some kind of convergence
     if optimization_criteria == OptimizationCriteria.Makespan:
         min_converged_reward = (eval_max_steps - 1) * env.reward_of_living + env.reward_of_goal  # Makespan
     else:
@@ -312,14 +302,22 @@ def main_profile():
 
     n_items = len(list(generate_all_solvers())) + len(list(generate_solver_env_combinations(max_env_lvl)))
     print(f'running {n_items} items')
+    bad_results = []
 
     for solver_describer, optimization_criteria in generate_all_solvers():
         test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
     print('')
 
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
-        test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+        result = test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+        if result != RESULT_OK:
+            bad_results.append((solver_describer.short_description, env_name, result))
     print('')
+
+    for solver_name, env_name, bad_result in bad_results:
+        print(f'{solver_name}, {env_name}, {bad_result}')
+
+    assert len(bad_results) == 0
 
 
 if __name__ == '__main__':
