@@ -50,8 +50,8 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFu
             q_sa = []
             for a in range(env.nA):
                 q_sa_a = 0
-                for p, s_, r, done in env.P[s][a]:
-                    if env.is_collision_transition(s, s_):
+                for (p, collision), s_, r, done in env.P[s][a]:
+                    if collision:
                         # This is a dangerous action which might get to conflict
                         q_sa_a = -math.inf
                         break
@@ -107,8 +107,8 @@ def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs
                 q_sa = []
                 for a in range(env.nA):
                     q_sa_a = 0
-                    for p, s_, r, done in env.P[s][a]:
-                        if env.is_collision_transition(s, s_):
+                    for (p, collision), s_, r, done in env.P[s][a]:
+                        if collision:
                             # This is a dangerous action which might get to conflict
                             q_sa_a = -math.inf
                             break

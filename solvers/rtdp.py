@@ -181,8 +181,8 @@ def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
 def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
     q_s_a = np.zeros(policy.env.nA)
     for a in range(policy.env.nA):
-        for prob, next_state, reward, done in policy.env.P[s][a]:
-            if policy.env.is_collision_transition(s, next_state):
+        for (prob, collision), next_state, reward, done in policy.env.P[s][a]:
+            if collision:
                 q_s_a[a] = -math.inf
                 break
 

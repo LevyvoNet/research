@@ -15,7 +15,7 @@ class LrtdpPolicy(RtdpPolicy):
 def residual(policy, s):
     return abs(policy.v[s] -
                sum([prob * (reward + policy.gamma * policy.v[next_state])
-                    for prob, next_state, reward, done in policy.env.P[s][policy.act(s)]]))
+                    for (prob, collision), next_state, reward, done in policy.env.P[s][policy.act(s)]]))
 
 
 def check_solved(policy: LrtdpPolicy, s: int, epsilon: float):
@@ -32,7 +32,7 @@ def check_solved(policy: LrtdpPolicy, s: int, epsilon: float):
 
         # expand state
         action = policy.act(expanded_state)
-        for prob, next_state, reward, done in policy.env.P[expanded_state][action]:
+        for (prob, collision), next_state, reward, done in policy.env.P[expanded_state][action]:
             if all([next_state not in policy.solved,
                     next_state not in open,
                     next_state not in closed]):
@@ -48,7 +48,7 @@ def check_solved(policy: LrtdpPolicy, s: int, epsilon: float):
             s = closed.pop()
             a = greedy_action(policy.env, s, policy.v, policy.gamma)
             new_v_s = sum([prob * (reward + policy.gamma * policy.v[next_state])
-                           for prob, next_state, reward, done in policy.env.P[s][a]])
+                           for (prob, collision), next_state, reward, done in policy.env.P[s][a]])
             policy.v_partial_table[s] = new_v_s
 
     return ret
@@ -79,7 +79,7 @@ def lrtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]], max_i
             # print(f'action {integer_action_to_vector(a, env.n_agents)} chosen')
             # time.sleep(1)
             new_v_s = sum([prob * (reward + gamma * policy.v[next_state])
-                           for prob, next_state, reward, done in env.P[s][a]])
+                           for (prob, collision), next_state, reward, done in env.P[s][a]])
             policy.v_partial_table[s] = new_v_s
 
             # simulate the step and sample a new state

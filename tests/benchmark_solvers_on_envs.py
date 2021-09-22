@@ -96,14 +96,14 @@ lvl_to_solvers = {
     0: [
         value_iteration_describer,
         policy_iteration_describer,
-        prioritized_value_iteration_describer,
-        id_vi_describer,
-        fixed_iter_rtdp_min_describer,
-        rtdp_stop_no_improvement_min_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        ma_rtdp_pvi_sum_describer,
-        ma_rtdp_dijkstra_min_describer,
-        ma_rtdp_dijkstra_sum_describer,
+        # prioritized_value_iteration_describer,
+        # id_vi_describer,
+        # fixed_iter_rtdp_min_describer,
+        # rtdp_stop_no_improvement_min_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # ma_rtdp_pvi_sum_describer,
+        # ma_rtdp_dijkstra_min_describer,
+        # ma_rtdp_dijkstra_sum_describer,
     ],
     1: [
         # id_ma_rtdp_min_pvi_describer,
@@ -312,17 +312,19 @@ def main():
     print(f'running {n_items} items')
     bad_results = []
 
+    # Corridor switch
     for solver_describer, optimization_criteria in generate_all_solvers():
         result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
         if result != RESULT_OK:
             bad_results.append((solver_describer.short_description, 'corridor_switch', result))
     print('')
 
-    for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
-        result = test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
-        if result != RESULT_OK:
-            bad_results.append((solver_describer.short_description, env_name, result))
-    print('')
+    # # All other envs
+    # for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+    #     result = test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+    #     if result != RESULT_OK:
+    #         bad_results.append((solver_describer.short_description, env_name, result))
+    # print('')
 
     for solver_name, env_name, bad_result in bad_results:
         print(f'{solver_name}, {env_name}, {bad_result}')

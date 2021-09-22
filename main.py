@@ -461,7 +461,7 @@ def main():
 def restore_weird_stuff():
     """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
     print('start restoring')
-    env = create_mapf_env('sanity-8-8', 1, 8, 0.2, -1000, -1, -1, OptimizationCriteria.Makespan)
+    env = create_mapf_env('sanity-2-32', 1, 3, 0.2, -1000, -1, -1, OptimizationCriteria.Makespan)
     solver = long_ma_rtdp_sum_pvi_describer.func
 
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:

@@ -27,9 +27,9 @@ def one_step_lookahead(env, state, V, discount_factor=1.0):
     # loop over the actions we can take in an enviorment
     for action in range(env.nA):
         # loop over the P_sa distribution.
-        for probablity, next_state, reward, done in env.P[state][action]:
+        for (probablity, collision), next_state, reward, done in env.P[state][action]:
             # if we are in state s and take action a. then sum over all the possible states we can land into.
-            if env.is_collision_transition(state, next_state):
+            if collision:
                 action_values[action] = -math.inf
                 break
 
@@ -75,7 +75,7 @@ def policy_eval(env, policy, V, discount_factor):
     """
     policy_value = np.zeros(env.nS, dtype=V_TYPE)
     for state, action in enumerate(policy):
-        for probablity, next_state, reward, info in env.P[state][action]:
+        for (probablity, collision), next_state, reward, info in env.P[state][action]:
             policy_value[state] += probablity * (reward + (discount_factor * V[next_state]))
 
     return policy_value

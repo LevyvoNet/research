@@ -178,8 +178,8 @@ def detect_conflict(env: MapfEnv,
 
 
 def might_conflict(env, s, transitions):
-    for prob, new_state, reward, done in transitions:
-        if env.is_collision_transition(s, new_state):
+    for (prob, collision), new_state, reward, done in transitions:
+        if collision:
             # This is a conflict transition
             return True
 
@@ -247,11 +247,11 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
             #     policy.env.render()
             #     time.sleep(0.1)
 
-            prev_state = policy.env.s
-            new_state, reward, done, info = policy.env.step(policy.act(policy.env.s))
+            _, reward, done, info = policy.env.step(policy.act(policy.env.s))
             episode_reward += reward
             steps += 1
-            if policy.env.is_collision_transition(prev_state, new_state):
+
+            if info['collision']:
                 clashed = True
 
         episodes_rewards.append(episode_reward)
@@ -277,7 +277,7 @@ class ValueFunctionPolicy(Policy):
             a = possible_actions_from_state[a_idx]
             for next_sr in self.env.P[s][a]:
                 # next_sr is a tuple of (probability, next state, reward, done)
-                p, s_, r, _ = next_sr
+                (p, collision), s_, r, _ = next_sr
                 q_sa[a_idx] += (p * (r + self.gamma * self.v[s_]))
 
         best_action = possible_actions_from_state[np.argmax(q_sa)]

@@ -35,8 +35,8 @@ class MultiagentRtdpPolicy(RtdpPolicy):
 
         # Compute Q[s][a]. In case of a possible clash set the reward to -infinity
         q_value = 0
-        for prob, next_state, reward, done in self.env.P[joint_state][joint_action]:
-            if self.env.is_collision_transition(joint_state, next_state):
+        for (prob, collision), next_state, reward, done in self.env.P[joint_state][joint_action]:
+            if collision:
                 q_value = -math.inf
 
             q_value += prob * (reward + (self.gamma * self.v[next_state]))
@@ -52,7 +52,7 @@ class MultiagentRtdpPolicy(RtdpPolicy):
         # fake_joint_action = vector_action_to_integer(all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:])
 
         self.q_partial_table[agent][joint_state][local_action] = sum([prob * (reward + self.gamma * self.v[next_state])
-                                                                      for prob, next_state, reward, done in
+                                                                      for (prob, collision), next_state, reward, done in
                                                                       self.env.P[joint_state][joint_action]])
 
     def v_update(self, joint_state):
