@@ -7,11 +7,16 @@ import pytest
 import stopit
 import itertools
 from gym_mapf.envs.grid import MapfGrid
-from gym_mapf.envs.mapf_env import MapfEnv, OptimizationCriteria
+from gym_mapf.envs.mapf_env import (MapfEnv,
+                                    OptimizationCriteria,
+                                    vector_action_to_integer,
+                                    STAY,
+                                    UP,
+                                    DOWN)
 from gym_mapf.envs.utils import create_mapf_env
 from solvers.utils import evaluate_policy
 from available_solvers import *
-from tests.performance_utils import *
+# from tests.performance_utils import *
 from typing import Callable
 
 TEST_SINGLE_SCENARIO_TIMEOUT = 300
@@ -37,8 +42,8 @@ def symmetrical_bottleneck(fail_prob, goal_reward, optimization_criteria):
                      '..@...'])
     return MapfEnv(grid,
                    2,
-                   MultiAgentState({0: SingleAgentState(2, 0), 1: SingleAgentState(2, 5)}, grid),
-                   MultiAgentState({0: SingleAgentState(2, 5), 1: SingleAgentState(2, 0)}, grid),
+                   ((2, 0), (2, 5)),
+                   ((2, 5), (2, 0)),
                    fail_prob,
                    -0.001, goal_reward, -1,
                    optimization_criteria)
@@ -52,8 +57,8 @@ def asymmetrical_bottleneck(fail_prob, goal_reward, optimization_criteria):
                      '..@..'])
     return MapfEnv(grid,
                    2,
-                   MultiAgentState({0: SingleAgentState(2, 0), 1: SingleAgentState(2, 4)}, grid),
-                   MultiAgentState({0: SingleAgentState(2, 4), 1: SingleAgentState(2, 0)}, grid),
+                   ((2, 0), (2, 4)),
+                   ((2, 4), (2, 0)),
                    fail_prob,
                    -0.001, goal_reward, -1,
                    optimization_criteria)
@@ -68,10 +73,10 @@ def long_bottleneck(optimization_criteria):
                      '@.@',
                      '@.@',
                      '...'])
-    start_state = MultiAgentState({0: SingleAgentState(0, 0), 1: SingleAgentState(0, 2)}, grid)
-    goal_state = MultiAgentState({0: SingleAgentState(3, 0), 1: SingleAgentState(3, 2)}, grid)
+    start_locations = ((0, 0), (0, 2))
+    goal_locations = ((3, 0), (3, 2))
 
-    return MapfEnv(grid, 2, start_state, goal_state, 0, -1000, 0, -1, optimization_criteria)
+    return MapfEnv(grid, 2, start_locations, goal_locations, 0, -1000, 0, -1, optimization_criteria)
 
 
 def sanity_3_8(optimization_criteria):
@@ -88,16 +93,16 @@ def sanity_general(n_rooms, n_agents, room_size, fail_prob, optimization_criteri
 
 lvl_to_solvers = {
     0: [
-        # value_iteration_describer,
-        # policy_iteration_describer,
-        # prioritized_value_iteration_describer,
-        # id_vi_describer,
-        # fixed_iter_rtdp_min_describer,
-        # rtdp_stop_no_improvement_min_heuristic_describer,
-        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        value_iteration_describer,
+        policy_iteration_describer,
+        prioritized_value_iteration_describer,
+        id_vi_describer,
+        fixed_iter_rtdp_min_describer,
+        rtdp_stop_no_improvement_min_heuristic_describer,
+        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
         ma_rtdp_pvi_sum_describer,
-        # ma_rtdp_dijkstra_min_describer,
-        # ma_rtdp_dijkstra_sum_describer,
+        ma_rtdp_dijkstra_min_describer,
+        ma_rtdp_dijkstra_sum_describer,
     ],
     1: [
         # id_ma_rtdp_min_pvi_describer,
@@ -163,13 +168,11 @@ def generate_solver_env_combinations(max_env_lvl):
                         all_soc.append((env_func,
                                         f'{env_name}_soc',
                                         solver_describer,
-                                        solver_describer.short_description,
                                         OptimizationCriteria.SoC))
 
                         all_makespan.append((env_func,
                                              f'{env_name}_makespan',
                                              solver_describer,
-                                             solver_describer.short_description,
                                              OptimizationCriteria.Makespan))
 
     return all_makespan + all_soc
@@ -177,12 +180,12 @@ def generate_solver_env_combinations(max_env_lvl):
 
 def generate_all_solvers():
     all_makespan = [
-        (solver_describer, solver_describer.short_description, OptimizationCriteria.Makespan)
+        (solver_describer, OptimizationCriteria.Makespan)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
     ]
 
     all_soc = [
-        (solver_describer, solver_describer.short_description, OptimizationCriteria.SoC)
+        (solver_describer, OptimizationCriteria.SoC)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
     ]
 
@@ -213,11 +216,10 @@ def print_status(env_name, reward, solve_time, solver_description):
     print(f'\n{now_str} env:{env_name}, reward:{reward}, time:{solve_time}, solver:{solver_description}', end=' ')
 
 
-@pytest.mark.parametrize('env_func, env_name, solver_describer, solver_name, optimization_criteria', TEST_DATA)
+# @pytest.mark.parametrize('env_func, env_name, solver_describer, optimization_criteria', TEST_DATA)
 def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
                        env_name: str,
                        solver_describer: SolverDescriber,
-                       solver_name: str,
                        optimization_criteria: OptimizationCriteria):
     # Parameters and Constants
     env = env_func(optimization_criteria)
@@ -258,9 +260,8 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
     cleanup(env, policy)
 
 
-@pytest.mark.parametrize('solver_describer, solver_name, optimization_criteria', ALL_SOLVERS)
+@pytest.mark.parametrize('solver_describer, optimization_criteria', ALL_SOLVERS)
 def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
-                                           solver_name: str,
                                            optimization_criteria: OptimizationCriteria):
     optimization_criteria_to_str = {
         OptimizationCriteria.Makespan: 'makespan',
@@ -272,11 +273,11 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 
     grid = MapfGrid(['...',
                      '@.@'])
-    start_state = MultiAgentState({0: SingleAgentState(0, 0), 1: SingleAgentState(0, 2)}, grid)
-    goal_state = MultiAgentState({0: SingleAgentState(0, 2), 1: SingleAgentState(0, 0)}, grid)
+    start_locations = ((0, 0), (0, 2))
+    goal_locations = ((0, 2), (0, 0))
 
     # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
-    env = MapfEnv(grid, 2, start_state, goal_state, 0.2, -0.001, 0, -1, optimization_criteria)
+    env = MapfEnv(grid, 2, start_locations, goal_locations, 0.2, -0.001, 0, -1, optimization_criteria)
 
     info = {}
     start = time.time()
@@ -284,11 +285,11 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     solve_time = round(time.time() - start, 2)
 
     # Assert no conflict is possible
-    interesting_state = MultiAgentState({0: SingleAgentState(1, 1), 1: SingleAgentState(0, 1)}, grid)
-    expected_possible_actions = [
-        MultiAgentAction({0: SingleAgentAction.STAY, 1: SingleAgentAction.UP}),
-        MultiAgentAction({0: SingleAgentAction.DOWN, 1: SingleAgentAction.UP})
-    ]
+    interesting_locations = ((1, 1), (0, 1))
+    interesting_state = env.locations_to_state(interesting_locations)
+    stay_up = vector_action_to_integer((STAY, UP))
+    down_up = vector_action_to_integer((DOWN, UP))
+    expected_possible_actions = [stay_up, down_up]
 
     assert policy.act(interesting_state) in expected_possible_actions
 
@@ -310,37 +311,18 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 
 
 def main_profile():
-    start = time.time()
-    grid = MapfGrid(['..@..',
-                     '..@..',
-                     '.....',
-                     '..@..'
-                     '..@..'])
-    env = MapfEnv(grid,
-                  2,
-                  MultiAgentState({0: SingleAgentState(2, 0), 1: SingleAgentState(2, 4)}, grid),
-                  MultiAgentState({0: SingleAgentState(2, 4), 1: SingleAgentState(2, 0)}, grid),
-                  0,
-                  -0.001, 100, -1,
-                  OptimizationCriteria.Makespan)
-    env_name = 'symmetrical bottle-neck deterministic large goal reward'
+    max_env_lvl = max(lvl_to_env.keys())
 
-    solver_describer = ma_rtdp_sum_pvi_describer
+    n_items = len(list(generate_all_solvers())) + len(list(generate_solver_env_combinations(max_env_lvl)))
+    print(f'running {n_items} items')
 
-    # Try to solve with a time limit
-    with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT * 1.5, swallow_exc=False) as timeout_ctx:
-        try:
-            info = {}
-            policy = solver_describer.func(env, info)
-        except stopit.utils.TimeoutException:
-            print('timout')
-            assert False
+    for solver_describer, optimization_criteria in generate_all_solvers():
+        test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
+    print('')
 
-    solve_time = time.time() - start
-
-    reward, clashed, episode_rewards = evaluate_policy(policy, 100, 1000)
-
-    print(f'env:{env_name}, reward:{reward}, time: {solve_time}, solver:{solver_describer.short_description}', end=' ')
+    for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+        test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+    print('')
 
 
 if __name__ == '__main__':

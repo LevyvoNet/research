@@ -8,24 +8,6 @@ from solvers.utils import evaluate_policy
 
 pd.options.display.max_columns = 20
 
-EXCLUDED_SOLVERS = [
-    rtdp_stop_no_improvement_determinsitic_heuristic_describer,
-]
-
-WEAK_SOLVERS = [
-    value_iteration_describer,
-    policy_iteration_describer,
-]
-
-STRONG_SOLVERS = [
-    rtdp_stop_no_improvement_min_heuristic_describer,
-    id_rtdp_describer,
-    ma_rtdp_min_describer,
-    fixed_iter_rtdp_min_describer,
-    id_ma_rtdp_min_pvi_describer,
-
-]
-
 EXPERIMENT_SOLVERS = [
     long_ma_rtdp_min_pvi_describer,
     long_id_ma_rtdp_min_pvi_describer,
