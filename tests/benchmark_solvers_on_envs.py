@@ -13,6 +13,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     UP,
                                     DOWN)
 from gym_mapf.envs.utils import create_mapf_env
+from scipy.sparse.data import _minmax_mixin
+
 from solvers.utils import evaluate_policy
 from available_solvers import *
 # from tests.performance_utils import *
@@ -197,6 +199,7 @@ TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 RESULT_CLASHED = 'CLASHED'
 RESULT_TIMEOUT = 'TIMEOUT'
 RESULT_NOT_CONVERGED = 'NOT_CONVERGED'
+RESULT_DANGEAROUS_ACTION = 'DANGEAROUS_ACTION'
 RESULT_OK = 'OK'
 
 
@@ -278,15 +281,17 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     down_up = vector_action_to_integer((DOWN, UP))
     expected_possible_actions = [stay_up, down_up]
 
-    assert policy.act(interesting_state) in expected_possible_actions
+    if policy.act(interesting_state) not in expected_possible_actions:
+        return RESULT_DANGEAROUS_ACTION
 
-    # Check the policy performance
+        # Check the policy performance
     reward, clashed, _ = evaluate_policy(policy, n_episodes, eval_max_steps)
 
     print_status(env_name, reward, solve_time, solver_describer.short_description)
 
     # Make sure no clash happened
-    assert not clashed
+    if clashed:
+        return RESULT_CLASHED
 
     # Assert the reward is reasonable
     if optimization_criteria == OptimizationCriteria.Makespan:
@@ -294,10 +299,13 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     else:
         min_converged_reward = (eval_max_steps - 1) * env.reward_of_living * env.n_agents + env.reward_of_goal  # SoC
 
-    assert reward >= min_converged_reward
+    if reward < min_converged_reward:
+        return RESULT_NOT_CONVERGED
+
+    return RESULT_OK
 
 
-def main_profile():
+def main():
     max_env_lvl = max(lvl_to_env.keys())
 
     n_items = len(list(generate_all_solvers())) + len(list(generate_solver_env_combinations(max_env_lvl)))
@@ -305,7 +313,9 @@ def main_profile():
     bad_results = []
 
     for solver_describer, optimization_criteria in generate_all_solvers():
-        test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
+        result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
+        if result != RESULT_OK:
+            bad_results.append((solver_describer.short_description, 'corridor_switch', result))
     print('')
 
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
@@ -321,4 +331,4 @@ def main_profile():
 
 
 if __name__ == '__main__':
-    main_profile()
+    main()
