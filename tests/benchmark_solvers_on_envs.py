@@ -3,7 +3,6 @@ import time
 import gc
 import datetime
 
-import pytest
 import stopit
 import itertools
 from gym_mapf.envs.grid import MapfGrid
@@ -216,7 +215,6 @@ def print_status(env_name, reward, solve_time, solver_description):
     print(f'\n{now_str} env:{env_name}, reward:{reward}, time:{solve_time}, solver:{solver_description}', end=' ')
 
 
-# @pytest.mark.parametrize('env_func, env_name, solver_describer, optimization_criteria', TEST_DATA)
 def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
                        env_name: str,
                        solver_describer: SolverDescriber,
@@ -260,7 +258,6 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
     cleanup(env, policy)
 
 
-@pytest.mark.parametrize('solver_describer, optimization_criteria', ALL_SOLVERS)
 def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
                                            optimization_criteria: OptimizationCriteria):
     optimization_criteria_to_str = {
