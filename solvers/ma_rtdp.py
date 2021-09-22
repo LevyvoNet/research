@@ -4,7 +4,6 @@ import math
 from typing import Dict, Callable
 from collections import defaultdict
 import numpy as np
-from numpy.core.tests.test_nditer import iter_iterindices
 
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     function_to_get_item_of_object,
