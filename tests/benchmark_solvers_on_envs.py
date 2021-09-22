@@ -326,6 +326,7 @@ def main():
             bad_results.append((solver_describer.short_description, env_name, result))
     print('')
 
+    print('The errors are')
     for solver_name, env_name, bad_result in bad_results:
         print(f'{solver_name}, {env_name}, {bad_result}')
 
