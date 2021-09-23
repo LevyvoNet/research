@@ -6,7 +6,7 @@ import math
 from typing import Callable, Dict, Iterable
 from collections import defaultdict
 
-from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, integer_action_to_vector
+from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, vector_action_to_integer, STAY
 from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
@@ -28,9 +28,11 @@ class RtdpPolicy(ValueFunctionPolicy):
         self.v_partial_table[s] = value
         return value
 
+    def _act_in_unfamiliar_state(self, s: int):
+        all_stay_action_vector = (STAY,) * self.env.n_agents
+        return vector_action_to_integer(all_stay_action_vector)
 
-# TODO: Is really important to get a random greedy action (instead of just the first index?).
-#  I wish I could delete this function and just use `policy.act(s)` instead
+
 def greedy_action(policy: RtdpPolicy, s):
     q_s_a = calc_q_s_no_clash_possible(policy, s)
 
@@ -194,7 +196,10 @@ def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
 def bellman_update(policy: RtdpPolicy, s: int):
     q_s_a = calc_q_s_no_clash_possible(policy, s)
     policy.v_partial_table[s] = max(q_s_a)
-    # policy.policy_cache[s] = np.argmax(q_s_a)
+
+    # TODO: this is wrong, when a state change there might be more states which depend on this state's value and need
+    #   to be updated in the policy cache as well
+    policy.policy_cache[s] = np.argmax(q_s_a)
 
 
 def rtdp_single_iteration(policy: RtdpPolicy,
@@ -280,7 +285,6 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     if iter_count % iterations_batch_size != 0:
         return False
 
-    # policy.policy_cache.clear()
     reward, _, _ = evaluate_policy(policy, n_episodes, max_eval_steps)
     if reward == policy.env.reward_of_living * max_eval_steps:
         return False

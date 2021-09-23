@@ -61,22 +61,6 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                       for a in range(len(ACTIONS))])
                                                  for agent_idx in range(self.env.n_agents)])
 
-    def act(self, joint_state):
-        if joint_state in self.policy_cache:
-            return self.policy_cache[joint_state]
-
-        joint_action = ()
-        forbidden_states = set()
-        for agent in range(self.env.n_agents):
-            # TODO: the problem is that the best response is according to joint state even though we are in state s.
-            # TODO: we shouldn't actually step in this part...
-            local_action = best_response(self, joint_state, agent, forbidden_states, False)
-            joint_action = joint_action + (ACTIONS[local_action],)
-
-        best_action = vector_action_to_integer(joint_action)
-        self.policy_cache[joint_state] = best_action
-        return best_action
-
 
 def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int, forbidden_states, stochastic=True):
     action_values = [policy.get_q(agent, joint_state, local_action)
@@ -136,9 +120,7 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
 
         # Compose the joint action
         joint_action = vector_action_to_integer(joint_action_vector)
-        # import ipdb
-        # ipdb.set_trace()
-        # policy.policy_cache[s] = joint_action
+        policy.policy_cache[s] = joint_action
         path.append((s, joint_action))
 
         # update the current state

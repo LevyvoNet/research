@@ -16,8 +16,12 @@ class Policy(metaclass=ABCMeta):
         # TODO: deep copy env, don't just copy the reference
         self.env = env
         self.gamma = gamma
+        self.policy_cache = {}
 
     @abstractmethod
+    def _act_in_unfamiliar_state(self, s: int):
+        pass
+
     def act(self, s):
         """Return the policy action for a given state
 
@@ -27,6 +31,10 @@ class Policy(metaclass=ABCMeta):
         Returns:
             int. The best action according to that policy.
         """
+        if s in self.policy_cache:
+            return self.policy_cache[s]
+
+        return self._act_in_unfamiliar_state(s)
 
 
 class CrossedPolicy(Policy):
@@ -35,6 +43,11 @@ class CrossedPolicy(Policy):
         self.policies = policies
         self.envs = [policy.env for policy in self.policies]
         self.agents_groups = agents_groups
+
+    def _act_in_unfamiliar_state(self, s: int):
+        a = self.act(s)
+        self.policy_cache[s] = a
+        return a
 
     def act(self, s):
         agent_locations = self.env.state_to_locations(s)
@@ -265,12 +278,8 @@ class ValueFunctionPolicy(Policy):
     def __init__(self, env, gamma):
         super().__init__(env, gamma)
         self.v = []
-        self.policy_cache = {}
 
-    def act(self, s):
-        if s in self.policy_cache:
-            return self.policy_cache[s]
-
+    def _act_in_unfamiliar_state(self, s: int):
         possible_actions_from_state = safe_actions(self.env, s)
         q_sa = np.zeros(len(possible_actions_from_state))
         for a_idx in range(len(possible_actions_from_state)):
