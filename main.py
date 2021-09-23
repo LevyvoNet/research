@@ -461,8 +461,11 @@ def main():
 def restore_weird_stuff():
     """Restore weird performance of ID-MA-RTDP on sanity envs from the heuristics experiment"""
     print('start restoring')
-    env = create_mapf_env('sanity-2-32', 1, 3, 0.2, -1000, -1, -1, OptimizationCriteria.Makespan)
-    solver = long_ma_rtdp_sum_pvi_describer.func
+    env = create_mapf_env('sanity-3-8', None, 3, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
+    solver = long_ma_rtdp_min_dijkstra_describer.func
+
+    # import ipdb
+    # ipdb.set_trace()
 
     with stopit.SignalTimeout(SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
         try:
@@ -473,6 +476,11 @@ def restore_weird_stuff():
 
     import ipdb
     ipdb.set_trace()
+
+    policy.act(6896653)
+
+    
+    reward, clashed, episode_rewards = evaluate_policy(policy, 100, 100)
 
     print('OMG')
 

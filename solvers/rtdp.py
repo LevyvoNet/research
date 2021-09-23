@@ -95,7 +95,7 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
                                 env.agents_starts,
                                 env.agents_goals,
                                 0,
-                                env.reward_of_collision,
+                                env.reward_of_clash,
                                 env.reward_of_goal,
                                 env.reward_of_living,
                                 env.optimization_criteria)
@@ -194,7 +194,7 @@ def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
 def bellman_update(policy: RtdpPolicy, s: int):
     q_s_a = calc_q_s_no_clash_possible(policy, s)
     policy.v_partial_table[s] = max(q_s_a)
-    policy.policy_cache[s] = np.argmax(q_s_a)
+    # policy.policy_cache[s] = np.argmax(q_s_a)
 
 
 def rtdp_single_iteration(policy: RtdpPolicy,
@@ -282,7 +282,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
 
     # policy.policy_cache.clear()
     reward, _, _ = evaluate_policy(policy, n_episodes, max_eval_steps)
-    if reward == policy.env.reward_of_living * 1000:
+    if reward == policy.env.reward_of_living * max_eval_steps:
         return False
 
     if not hasattr(policy, 'last_eval'):

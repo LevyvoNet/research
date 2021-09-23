@@ -364,7 +364,7 @@ rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
                  100,
                  500),
     extra_info=default_extra_info,
-    short_description='sum_rtdp'
+    short_description='rtdp_pvi_sum'
 )
 
 long_rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
@@ -379,7 +379,7 @@ long_rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
                  100,
                  10000),
     extra_info=default_extra_info,
-    short_description='long_sum_pvi_rtdp'
+    short_description='long_rtdp_sum_pvi'
 )
 
 rtdp_stop_no_improvement_determinsitic_heuristic_describer = SolverDescriber(

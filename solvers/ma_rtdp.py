@@ -51,9 +51,10 @@ class MultiagentRtdpPolicy(RtdpPolicy):
         # all_stay = (STAY,) * self.env.n_agents
         # fake_joint_action = vector_action_to_integer(all_stay[:agent] + (ACTIONS[local_action],) + all_stay[agent + 1:])
 
-        self.q_partial_table[agent][joint_state][local_action] = sum([prob * (reward + self.gamma * self.v[next_state])
-                                                                      for (prob, collision), next_state, reward, done in
-                                                                      self.env.P[joint_state][joint_action]])
+        self.q_partial_table[agent][joint_state][local_action] = sum(
+            [prob * (reward + self.gamma * self.v[next_state])
+             for (prob, collision), next_state, reward, done in
+             self.env.P[joint_state][joint_action]])
 
     def v_update(self, joint_state):
         self.v_partial_table[joint_state] = max([max([self.get_q(agent_idx, joint_state, a)
@@ -135,7 +136,9 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
 
         # Compose the joint action
         joint_action = vector_action_to_integer(joint_action_vector)
-        policy.policy_cache[s] = joint_action
+        # import ipdb
+        # ipdb.set_trace()
+        # policy.policy_cache[s] = joint_action
         path.append((s, joint_action))
 
         # update the current state
@@ -240,4 +243,3 @@ def ma_rtdp_merge(
                    max_iterations,
                    env,
                    info)
-
