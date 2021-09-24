@@ -205,20 +205,28 @@ RESULT_DANGEROUS_ACTION = 'DANGEROUS_ACTION'
 RESULT_OK = 'OK'
 
 
-def print_status(env_name, reward, solve_time, solver_description, success_rate):
+def print_status(env_name, reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    print(f'\n{now_str} env:{env_name}, reward:{reward}, rate:{success_rate} time:{solve_time}, '
-          f'solver:{solver_description}', end=' ')
+    print(f'\n{now_str} '
+          f'env:{env_name}, '
+          f'reward:{reward}, '
+          f'rate:{success_rate} '
+          f'time:{solve_time}, '
+          f'solver:{solver_description}, '
+          f'init_time:{extra_info.solver_init_time}, '
+          f'eval_time:{extra_info.total_evaluation_time}, '
+          f'n_conflicts:{extra_info.n_conflicts}, '
+          f'conflict_detection_time:{extra_info.conflict_detection_time}, ',
+          end=' ')
 
 
-def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
-                       env_name: str,
-                       solver_describer: SolverDescriber,
-                       optimization_criteria: OptimizationCriteria):
+def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
+                            env_name: str,
+                            solver_describer: SolverDescriber,
+                            optimization_criteria: OptimizationCriteria):
     # Parameters and Constants
     env = env_func(optimization_criteria)
-    policy = None
-    info = {}
+    train_info = {}
     eval_max_steps = 1000
     eval_n_episodes = 100
 
@@ -226,23 +234,29 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
     start = time.time()
 
     # Try to solve with a time limit
-    with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False) as timeout_ctx:
+    with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
         try:
-            policy = solver_describer.func(env, info)
+            policy = solver_describer.func(env, train_info)
         except stopit.utils.TimeoutException:
             print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0)
             return RESULT_TIMEOUT
 
     solve_time = round(time.time() - start, 2)
 
-    info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    extra_info = solver_describer.extra_info(train_info)
 
-    print_status(env_name, info['MDR'], solve_time, solver_describer.short_description, info['success_rate'])
+    print_status(env_name,
+                 eval_info['MDR'],
+                 solve_time,
+                 solver_describer.short_description,
+                 eval_info['success_rate'],
+                 extra_info)
 
-    if info['clashed']:
+    if eval_info['clashed']:
         return RESULT_CLASHED
 
-    if info['success_rate'] == 0:
+    if eval_info['success_rate'] == 0:
         return RESULT_NOT_CONVERGED
 
     return RESULT_OK
@@ -266,9 +280,9 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
     env = MapfEnv(grid, 2, start_locations, goal_locations, 0.2, -0.001, 0, -1, optimization_criteria)
 
-    info = {}
+    train_info = {}
     start = time.time()
-    policy = solver_describer.func(env, info)
+    policy = solver_describer.func(env, train_info)
     solve_time = round(time.time() - start, 2)
 
     # Assert no conflict is possible
@@ -283,14 +297,14 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 
         # Check the policy performance
 
-    info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
 
-    print_status(env_name, info['MDR'], solve_time, solver_describer.short_description, info['success_rate'])
+    print_status(env_name, eval_info['MDR'], solve_time, solver_describer.short_description, eval_info['success_rate'])
 
-    if info['clashed']:
+    if eval_info['clashed']:
         return RESULT_CLASHED
 
-    if info['success_rate'] == 0:
+    if eval_info['success_rate'] == 0:
         return RESULT_NOT_CONVERGED
 
     return RESULT_OK
@@ -318,7 +332,7 @@ def main():
 
     # All other envs
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
-        result = test_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+        result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
         if result != RESULT_OK:
             bad_results.append((solver_describer.short_description, env_name, result))
     print('')
