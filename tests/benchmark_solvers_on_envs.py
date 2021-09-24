@@ -207,20 +207,24 @@ RESULT_OK = 'OK'
 
 def print_status(env_name, reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    status_str = f'\n{now_str} '
-    f'env:{env_name}, '
-    f'reward:{reward}, '
-    f'rate:{success_rate} '
-    f'time:{solve_time}, '
-    f'solver:{solver_description}, '
+    status_str = ''.join([
+        f'\n{now_str} ',
+        f'env:{env_name}, ',
+        f'reward:{reward}, ',
+        f'rate:{success_rate} ',
+        f'time:{solve_time}, ',
+        f'solver:{solver_description}, ',
+    ])
 
     if extra_info is None:
         extra_info_str = ''
     else:
-        extra_info_str = f'init_time:{extra_info.solver_init_time}, '
-        f'eval_time:{extra_info.total_evaluation_time}, '
-        f'n_conflicts:{extra_info.n_conflicts}, '
-        f'conflict_detection_time:{extra_info.conflict_detection_time}, '
+        extra_info_str = ''.join([
+            f'init_time:{extra_info.solver_init_time}, ',
+            f'eval_time:{extra_info.total_evaluation_time}, ',
+            f'n_conflicts:{extra_info.n_conflicts}, ',
+            f'conflict_detection_time:{extra_info.conflict_detection_time}, ',
+        ])
 
     print(status_str + extra_info_str, end=' ')
 

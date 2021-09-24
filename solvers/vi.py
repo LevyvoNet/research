@@ -32,6 +32,7 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFu
     """ Value-iteration algorithm"""
     info['converged'] = False
     info['n_iterations'] = 0
+    info['initialization_time'] = 0
     start = time.time()  # TODO: use a decorator for updating info with time measurement
     gamma = kwargs.get('gamma', 1.0)
     if V_TYPE_SIZE * env.nS > MAXIMUM_RAM:
