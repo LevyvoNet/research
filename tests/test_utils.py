@@ -23,6 +23,9 @@ class DictPolicy(Policy):
         super().__init__(env, 1.0)
         self.dict_policy = dict_policy
 
+    def _act_in_unfamiliar_state(self, s: int):
+        return self.act(s)
+
     def act(self, s):
         return self.dict_policy[s]
 

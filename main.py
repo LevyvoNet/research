@@ -288,10 +288,11 @@ def solve_single_instance(log_func, insert_to_db_func, instance: InstanceMetaDat
             policy = instance.plan_func(env, instance_data['solver_data'])
             if policy is not None:
                 # policy might be None if the problem is too big for the solver
-                reward, clashed, all_rewards = evaluate_policy(policy, 100, MAX_STEPS)
-                instance_data['average_reward'] = reward
-                instance_data['reward_std'] = np.std(all_rewards)
-                instance_data['clashed'] = clashed
+                info = evaluate_policy(policy, 100, MAX_STEPS)
+                instance_data['average_reward'] = info['MDR']
+                instance_data['reward_std'] = np.std(info['episodes_rewards'])
+                instance_data['clashed'] = info['clashed']
+                instance_data['success_rate'] = info['success_rate']
         except stopit.utils.TimeoutException:
             instance_data['end_reason'] = 'timeout'
             log_func(DEBUG, f'{configuration_string} got timeout')
@@ -479,8 +480,7 @@ def restore_weird_stuff():
 
     policy.act(6896653)
 
-    
-    reward, clashed, episode_rewards = evaluate_policy(policy, 100, 100)
+    info = evaluate_policy(policy, 100, 100)
 
     print('OMG')
 

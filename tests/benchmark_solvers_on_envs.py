@@ -205,9 +205,10 @@ RESULT_DANGEROUS_ACTION = 'DANGEROUS_ACTION'
 RESULT_OK = 'OK'
 
 
-def print_status(env_name, reward, solve_time, solver_description):
+def print_status(env_name, reward, solve_time, solver_description, success_rate):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    print(f'\n{now_str} env:{env_name}, reward:{reward}, time:{solve_time}, solver:{solver_description}', end=' ')
+    print(f'\n{now_str} env:{env_name}, reward:{reward}, rate:{success_rate} time:{solve_time}, '
+          f'solver:{solver_description}', end=' ')
 
 
 def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
@@ -229,25 +230,19 @@ def test_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         try:
             policy = solver_describer.func(env, info)
         except stopit.utils.TimeoutException:
-            print_status(env_name, -math.inf, 'timeout', solver_describer.short_description)
+            print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0)
             return RESULT_TIMEOUT
 
     solve_time = round(time.time() - start, 2)
 
-    reward, clashed, _ = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
 
-    print_status(env_name, reward, solve_time, solver_describer.short_description)
+    print_status(env_name, info['MDR'], solve_time, solver_describer.short_description, info['success_rate'])
 
-    if clashed:
+    if info['clashed']:
         return RESULT_CLASHED
 
-    # Assert some kind of convergence
-    if optimization_criteria == OptimizationCriteria.Makespan:
-        min_converged_reward = (eval_max_steps - 1) * env.reward_of_living + env.reward_of_goal  # Makespan
-    else:
-        min_converged_reward = (eval_max_steps - 1) * env.reward_of_living * env.n_agents + env.reward_of_goal  # SoC
-
-    if reward < min_converged_reward:
+    if info['success_rate'] == 0:
         return RESULT_NOT_CONVERGED
 
     return RESULT_OK
@@ -261,7 +256,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     }
     env_name = f'corridor_switch_{optimization_criteria_to_str[optimization_criteria]}'
     eval_max_steps = 200
-    n_episodes = 100
+    eval_n_episodes = 100
 
     grid = MapfGrid(['...',
                      '@.@'])
@@ -287,21 +282,15 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
         return RESULT_DANGEROUS_ACTION
 
         # Check the policy performance
-    reward, clashed, _ = evaluate_policy(policy, n_episodes, eval_max_steps)
 
-    print_status(env_name, reward, solve_time, solver_describer.short_description)
+    info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
 
-    # Make sure no clash happened
-    if clashed:
+    print_status(env_name, info['MDR'], solve_time, solver_describer.short_description, info['success_rate'])
+
+    if info['clashed']:
         return RESULT_CLASHED
 
-    # Assert the reward is reasonable
-    if optimization_criteria == OptimizationCriteria.Makespan:
-        min_converged_reward = (eval_max_steps - 1) * env.reward_of_living + env.reward_of_goal  # Makespan
-    else:
-        min_converged_reward = (eval_max_steps - 1) * env.reward_of_living * env.n_agents + env.reward_of_goal  # SoC
-
-    if reward < min_converged_reward:
+    if info['success_rate'] == 0:
         return RESULT_NOT_CONVERGED
 
     return RESULT_OK

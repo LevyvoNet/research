@@ -90,12 +90,13 @@ class IdTests(unittest.TestCase):
         rtdp_merge_func = functools.partial(fixed_iterations_rtdp_merge, solution_heuristic_min, gamma, n_iterations)
         policy = id(rtdp_plan_func, rtdp_merge_func, env, {})
 
-        reward, clashed, _ = evaluate_policy(policy, 1, 1000)
+        info = evaluate_policy(policy, 1, 1000)
 
-        self.assertFalse(clashed)
+        self.assertFalse(info['clashed'])
 
         # Assert that the solution is reasonable (actually solving)
-        self.assertGreater(reward, -1000)
+        self.assertGreater(info['MDR'], -1000)
+        self.assertGreater(info['success_rate'] > 0.5)
 
 
 if __name__ == '__main__':

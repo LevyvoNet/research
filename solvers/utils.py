@@ -1,5 +1,6 @@
 import itertools
 import time
+import math
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Callable
 
@@ -7,7 +8,8 @@ import numpy as np
 
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector,
-                                    vector_action_to_integer)
+                                    vector_action_to_integer,
+                                    STAY)
 from gym_mapf.envs.utils import get_local_view
 
 
@@ -246,32 +248,53 @@ def render_states(env, states):
 
 
 def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False):
-    episodes_rewards = []
-    clashed = False
+    all_stay_action = vector_action_to_integer((STAY,) * policy.env.n_agents)
+    stats = {
+        'episodes_rewards': [],
+        'clashed': False,
+        'MDR': 0,
+    }
+
     for i in range(n_episodes):
         policy.env.reset()
-        done = False
         steps = 0
         episode_reward = 0
-        while not done and steps < max_steps:
+
+        while steps < max_steps:
             # debug print
             # if debug:
             #     print(f'steps={steps}')
             #     policy.env.render()
             #     time.sleep(0.1)
+            a = policy.act(policy.env.s)
+            if a == all_stay_action:
+                break
 
-            _, reward, done, info = policy.env.step(policy.act(policy.env.s))
+            _, reward, done, info = policy.env.step(a)
             episode_reward += reward
             steps += 1
 
-            if info['collision']:
-                clashed = True
+            # Check for goal
+            if done:
+                if not info['collision']:
+                    stats['episodes_rewards'].append(episode_reward)
+                    stats['MDR'] += episode_reward
+                else:
+                    stats['clashed'] = True
+                break
 
-        episodes_rewards.append(episode_reward)
+    # Calculate MDR
+    if len(stats['episodes_rewards']) == 0:
+        stats['MDR'] = -math.inf
+    else:
+        stats['MDR'] = round(stats['MDR'] / len(stats['episodes_rewards']), 1)
+
+    # Calculate success rate
+    stats['success_rate'] = round((len(stats['episodes_rewards']) / n_episodes) * 100)
 
     policy.env.reset()
 
-    return sum(episodes_rewards) / n_episodes, clashed, episodes_rewards
+    return stats
 
 
 class ValueFunctionPolicy(Policy):

@@ -285,16 +285,16 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     if iter_count % iterations_batch_size != 0:
         return False
 
-    reward, _, _ = evaluate_policy(policy, n_episodes, max_eval_steps)
-    if reward == policy.env.reward_of_living * max_eval_steps:
+    info = evaluate_policy(policy, n_episodes, max_eval_steps)
+    if info['sucess_rate'] == 0:
         return False
 
     if not hasattr(policy, 'last_eval'):
-        policy.last_eval = reward
+        policy.last_eval = info['MDR']
         return False
     else:
         prev_eval = policy.last_eval
-        policy.last_eval = reward
+        policy.last_eval = info['MDR']
         return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
 
 
