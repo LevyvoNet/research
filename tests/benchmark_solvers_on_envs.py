@@ -223,7 +223,7 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
             f'init_time:{extra_info.solver_init_time}, ',
             f'eval_time:{extra_info.total_evaluation_time}, ',
             f'n_conflicts:{extra_info.n_conflicts}, ',
-            f'conflict_detection_time:{extra_info.conflict_detection_time}, ',
+            f'conflicts_time:{extra_info.conflict_detection_time}, ',
         ])
 
     print(status_str + extra_info_str, end=' ')

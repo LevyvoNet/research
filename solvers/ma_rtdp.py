@@ -173,13 +173,14 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             max_iterations: int,
             env: MapfEnv,
             info: Dict):
+    # TODO: remove the code duplication from rtdp.py
     max_eval_steps = 1000
     n_episodes_eval = 100
 
     # initialize V to an upper bound
     start = time.time()
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
-    info['initialization_time'] = time.time() - start
+    info['initialization_time'] = round(time.time() - start, 1)
     info['total_evaluation_time'] = 0
 
     # Run RTDP iterations
@@ -196,6 +197,7 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
         if no_improvement or iter_count >= max_iterations:
             break
 
+    info['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
     info['n_iterations'] = iter_count
     info['total_time'] = time.time() - start
 
