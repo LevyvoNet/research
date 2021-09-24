@@ -286,7 +286,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
         return False
 
     info = evaluate_policy(policy, n_episodes, max_eval_steps)
-    if info['sucess_rate'] == 0:
+    if info['success_rate'] == 0:
         return False
 
     if not hasattr(policy, 'last_eval'):

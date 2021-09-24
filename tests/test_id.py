@@ -95,8 +95,7 @@ class IdTests(unittest.TestCase):
         self.assertFalse(info['clashed'])
 
         # Assert that the solution is reasonable (actually solving)
-        self.assertGreater(info['MDR'], -1000)
-        self.assertGreater(info['success_rate'] > 0.5)
+        self.assertGreater(info['success_rate'], 0.5)
 
 
 if __name__ == '__main__':
