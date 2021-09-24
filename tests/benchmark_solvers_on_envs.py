@@ -340,7 +340,13 @@ def main():
     print('')
 
     # All other envs
+    prev_env_func = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+        # Just nicer to view
+        if prev_env_func != env_func:
+            print('')
+        prev_env_func = env_func
+
         result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
         if result != RESULT_OK:
             bad_results.append((solver_describer.short_description, env_name, result))
