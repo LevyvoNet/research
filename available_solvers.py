@@ -44,10 +44,10 @@ def ma_rtdp_extra_info(info):
     extra_info_dict = dict(extra_info._asdict())
 
     # Set initialization time
-    extra_info_dict['solver_init_time'] = info.get('initialization_time', '*')
+    extra_info_dict['solver_init_time'] = round(info.get('initialization_time', '*'), 1)
 
     # Set evaluation time
-    extra_info_dict['total_evaluation_time'] = info.get('total_evaluation_time', '*')
+    extra_info_dict['total_evaluation_time'] = round(info.get('total_evaluation_time', '*'), 1)
 
     return SolverExtraInfo(**extra_info_dict)
 
@@ -61,16 +61,16 @@ def id_extra_info(info):
 
     # Total time for conflicts detection,
     # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
-    extra_info_dict['conflict_detection_time'] = sum([info['iterations'][i].get('detect_conflict_time', 0)
-                                                      for i in range(len(info['iterations']))])
+    extra_info_dict['conflict_detection_time'] = round(sum([info['iterations'][i].get('detect_conflict_time', 0)
+                                                            for i in range(len(info['iterations']))]), 1)
 
     # This time mostly matters for heuristics calculation (on RTDP for example)
-    extra_info_dict['solver_init_time'] = sum(
+    extra_info_dict['solver_init_time'] = round(sum(
         [sum([info['iterations'][j]['joint_policy'][key]['initialization_time']
               for key in info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['),
                                                                               key.endswith(']')])
               ])
-         for j in range(len(info['iterations']))])
+         for j in range(len(info['iterations']))]), 1)
 
     return SolverExtraInfo(**extra_info_dict)
 

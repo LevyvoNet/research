@@ -59,10 +59,8 @@ def _default_low_level_merger_abstract(low_level_planner,
                                        policy2,
                                        info):
     """This will casue ID to behave the old way - just solve from the beginning"""
-    new_agents_groups = merge_agent_groups(agents_groups,
-                                           group1,
-                                           group2)
-    return solve_independently_and_cross(env, new_agents_groups, low_level_planner, info)
+
+    return low_level_planner(env, info)
 
 
 def id(
