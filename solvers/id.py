@@ -43,7 +43,7 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
                                       old_group_j_idx,
                                       joint_policy.policies[old_group_i_idx],
                                       joint_policy.policies[old_group_j_idx],
-                                      info)
+                                      info[f'{group}'])
 
         policies.append(policy)
 
