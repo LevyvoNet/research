@@ -270,7 +270,10 @@ def fixed_iterations_count_rtdp(heuristic_function: Callable[[MapfEnv], Callable
                                 env: MapfEnv,
                                 info: Dict) -> Policy:
     # initialize V to an upper bound
+    start = time.time()
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
+    info['initialization_time'] = round(time.time() - start, 1)
+    info['total_evaluation_time'] = 0
 
     for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
                                         start=1):

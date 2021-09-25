@@ -22,6 +22,13 @@ from typing import Callable
 
 TEST_SINGLE_SCENARIO_TIMEOUT = 300
 
+RESULT_CLASHED = 'CLASHED'
+RESULT_TIMEOUT = 'TIMEOUT'
+RESULT_NOT_CONVERGED = 'NOT_CONVERGED'
+RESULT_DANGEROUS_ACTION = 'DANGEROUS_ACTION'
+RESULT_EXCEPTION = 'EXCEPTION'
+RESULT_OK = 'OK'
+
 
 # Envs
 def empty_grid_single_agent(optimization_criteria):
@@ -198,12 +205,6 @@ def generate_all_solvers():
 ALL_SOLVERS = generate_all_solvers()
 TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 
-RESULT_CLASHED = 'CLASHED'
-RESULT_TIMEOUT = 'TIMEOUT'
-RESULT_NOT_CONVERGED = 'NOT_CONVERGED'
-RESULT_DANGEROUS_ACTION = 'DANGEROUS_ACTION'
-RESULT_OK = 'OK'
-
 
 def print_status(env_name, reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -233,42 +234,47 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
                             env_name: str,
                             solver_describer: SolverDescriber,
                             optimization_criteria: OptimizationCriteria):
-    # Parameters and Constants
-    env = env_func(optimization_criteria)
-    train_info = {}
-    eval_max_steps = 1000
-    eval_n_episodes = 100
+    try:
+        # Parameters and Constants
+        env = env_func(optimization_criteria)
+        train_info = {}
+        eval_max_steps = 1000
+        eval_n_episodes = 100
 
-    # Start the test
-    start = time.time()
+        # Start the test
+        start = time.time()
 
-    # Try to solve with a time limit
-    with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
-        try:
-            policy = solver_describer.func(env, train_info)
-        except stopit.utils.TimeoutException:
-            print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0)
-            return RESULT_TIMEOUT
+        # Try to solve with a time limit
+        with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
+            try:
+                policy = solver_describer.func(env, train_info)
+            except stopit.utils.TimeoutException:
+                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0)
+                return RESULT_TIMEOUT
 
-    solve_time = round(time.time() - start, 2)
+        solve_time = round(time.time() - start, 2)
 
-    eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
-    extra_info = solver_describer.extra_info(train_info)
+        eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+        extra_info = solver_describer.extra_info(train_info)
 
-    print_status(env_name,
-                 eval_info['MDR'],
-                 solve_time,
-                 solver_describer.short_description,
-                 eval_info['success_rate'],
-                 extra_info)
+        print_status(env_name,
+                     eval_info['MDR'],
+                     solve_time,
+                     solver_describer.short_description,
+                     eval_info['success_rate'],
+                     extra_info)
 
-    if eval_info['clashed']:
-        return RESULT_CLASHED
+        if eval_info['clashed']:
+            return RESULT_CLASHED
 
-    if eval_info['success_rate'] == 0:
-        return RESULT_NOT_CONVERGED
+        if eval_info['success_rate'] == 0:
+            return RESULT_NOT_CONVERGED
 
-    return RESULT_OK
+        return RESULT_OK
+
+    except Exception as e:
+        print(e)
+        return RESULT_EXCEPTION
 
 
 def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
@@ -322,7 +328,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 def main():
     max_env_lvl = max(lvl_to_env.keys())
 
-    n_items = len(list(generate_all_solvers())) + len(list(generate_solver_env_combinations(max_env_lvl)))
+    n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
     print(f'running {n_items} items')
     bad_results = []
 
