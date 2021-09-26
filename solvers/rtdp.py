@@ -288,37 +288,37 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     if iter_count % iterations_batch_size != 0:
         return False
 
-    info = evaluate_policy(policy, n_episodes, max_eval_steps)
-    if info['success_rate'] == 0:
+    eval_info = evaluate_policy(policy, n_episodes, max_eval_steps)
+    if eval_info['success_rate'] == 0:
         return False
 
     if not hasattr(policy, 'last_eval'):
-        policy.last_eval = info['MDR']
+        policy.last_eval = eval_info['MDR']
         return False
     else:
         prev_eval = policy.last_eval
-        policy.last_eval = info['MDR']
+        policy.last_eval = eval_info['MDR']
         return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
 
 
-def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
-                                                  gamma: float,
-                                                  iterations_batch_size: int,
-                                                  max_iterations: int,
-                                                  env: MapfEnv,
-                                                  info: Dict):
+def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
+                                                   gamma: float,
+                                                   iterations_batch_size: int,
+                                                   max_iterations: int,
+                                                   env: MapfEnv,
+                                                   policy: Policy,
+                                                   iterations_generator: Iterable,
+                                                   info: Dict):
     max_eval_steps = 1000
     n_episodes_eval = 100
 
     # initialize V to an upper bound
     start = time.time()
-    policy = RtdpPolicy(env, gamma, heuristic_function(env))
     info['initialization_time'] = round(time.time() - start, 1)
     info['total_evaluation_time'] = 0
 
     # Run RTDP iterations
-    for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
-                                        start=1):
+    for iter_count, reward in enumerate(iterations_generator, start=1):
         # Stop when no improvement or when we have exceeded maximum number of iterations
         eval_start = time.time()
         no_improvement = no_improvement_from_last_batch(policy,
@@ -333,7 +333,27 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
     info['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
     info['n_iterations'] = iter_count
     info['total_time'] = time.time() - start
+    info['n_visited_states'] = len(policy.policy_cache)
+
     return policy
+
+
+def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
+                                                  gamma: float,
+                                                  iterations_batch_size: int,
+                                                  max_iterations: int,
+                                                  env: MapfEnv,
+                                                  info: Dict):
+    policy = RtdpPolicy(env, gamma, heuristic_function(env))
+    iterations_generator = rtdp_iterations_generator(policy, greedy_action, bellman_update, info)
+    return _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
+                                                          gamma,
+                                                          iterations_batch_size,
+                                                          max_iterations,
+                                                          env,
+                                                          policy,
+                                                          iterations_generator,
+                                                          info)
 
 
 def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],

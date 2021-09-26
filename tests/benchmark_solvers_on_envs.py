@@ -112,22 +112,23 @@ lvl_to_solvers = {
         ma_rtdp_dijkstra_sum_describer,
     ],
     1: [
-        id_ma_rtdp_min_pvi_describer,
-        long_id_ma_rtdp_sum_pvi_describer,
-        id_rtdp_describer,
+        id_ma_rtdp_pvi_min_describer,
+        id_ma_rtdp_pvi_sum_describer,
+        id_rtdp_pvi_min_describer,
+        id_rtdp_pvi_sum_describer,
     ],
     2: [
         long_rtdp_stop_no_improvement_sum_heuristic_describer,
         long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
         long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        long_ma_rtdp_min_pvi_describer,
+        long_ma_rtdp_pvi_min_describer,
         long_ma_rtdp_min_dijkstra_describer,
         long_id_ma_rtdp_min_dijkstra_describer,
         long_id_ma_rtdp_min_pvi_describer,
         # long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
-        long_ma_rtdp_sum_pvi_describer,
+        long_ma_rtdp_pvi_sum_describer,
         long_ma_rtdp_sum_dijkstra_describer,
         # long_ma_rtdp_sum_rtdp_dijkstra_describer,
         long_id_rtdp_sum_pvi_describer,
@@ -185,7 +186,8 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan + all_soc
+    return all_soc
+    # return all_makespan + all_soc
 
 
 def generate_all_solvers():
@@ -207,27 +209,26 @@ TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 
 
 def print_status(env_name, reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    status_str = ''.join([
-        f'\n{now_str} ',
-        f'env:{env_name}, ',
-        f'reward:{reward}, ',
-        f'rate:{success_rate} ',
-        f'time:{solve_time}, ',
-        f'solver:{solver_description}, ',
+    status_str = ', '.join([
+        f'reward:{reward}',
+        f'rate:{success_rate}',
+        f'time:{solve_time}',
+        f'solver:{solver_description}',
     ])
 
     if extra_info is None:
         extra_info_str = ''
     else:
-        extra_info_str = ''.join([
-            f'init_time:{extra_info.solver_init_time}, ',
-            f'eval_time:{extra_info.total_evaluation_time}, ',
-            f'n_conflicts:{extra_info.n_conflicts}, ',
-            f'conflicts_time:{extra_info.conflict_detection_time}, ',
+        extra_info_str = ', '.join([
+            f'init_time:{extra_info.solver_init_time}',
+            f'eval_time:{extra_info.total_evaluation_time}',
+            f'n_conflicts:{extra_info.n_conflicts}',
+            f'conflicts_time:{extra_info.conflict_detection_time}',
+            f'iters:{extra_info.n_iterations}',
+            f'visited:{extra_info.n_visited_states}',
         ])
 
-    print(status_str + extra_info_str, end=' ')
+    print(status_str + extra_info_str)
 
 
 def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
@@ -328,29 +329,31 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 def main():
     max_env_lvl = max(lvl_to_env.keys())
 
-    n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
+    n_items = len(list(generate_solver_env_combinations(max_env_lvl)))  # + len(list(generate_all_solvers()))
     print(f'running {n_items} items')
     bad_results = []
 
-    # Corridor switch
-    for solver_describer, optimization_criteria in generate_all_solvers():
-        # Calculate the env_name
-        if optimization_criteria == OptimizationCriteria.Makespan:
-            env_name = f'corridor_switch_makespan'
-        if optimization_criteria == OptimizationCriteria.SoC:
-            env_name = f'corridor_switch_soc'
-
-        result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
-        if result != RESULT_OK:
-            bad_results.append((solver_describer.short_description, env_name, result))
-    print('')
+    # # Corridor switch
+    # for solver_describer, optimization_criteria in generate_all_solvers():
+    #     # Calculate the env_name
+    #     if optimization_criteria == OptimizationCriteria.Makespan:
+    #         env_name = f'corridor_switch_makespan'
+    #     if optimization_criteria == OptimizationCriteria.SoC:
+    #         env_name = f'corridor_switch_soc'
+    #
+    #     result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
+    #     if result != RESULT_OK:
+    #         bad_results.append((solver_describer.short_description, env_name, result))
+    # print('')
 
     # All other envs
     prev_env_func = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
         # Just nicer to view
         if prev_env_func != env_func:
-            print('')
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            print(f'\n{now_str} env:{env_name}')
+
         prev_env_func = env_func
 
         result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)

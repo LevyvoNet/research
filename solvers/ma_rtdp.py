@@ -14,7 +14,9 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
 from gym_mapf.envs.utils import get_local_view
 
 from solvers.utils import evaluate_policy, Policy
-from solvers.rtdp import RtdpPolicy, no_improvement_from_last_batch
+from solvers.rtdp import (RtdpPolicy,
+                          no_improvement_from_last_batch,
+                          _stop_when_no_improvement_between_batches_rtdp)
 
 
 class MultiagentRtdpPolicy(RtdpPolicy):
@@ -92,7 +94,6 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
                                                  info: Dict):
     s = policy.env.reset()
     done = False
-    start = time.time()
     path = []
     total_reward = 0
 
@@ -102,9 +103,10 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
     steps = 0
     while not done and steps < 1000:
         steps += 1
+
         trajectory_actions = []
         forbidden_states = set()
-        joint_action_vector = (STAY,) * policy.env.n_agents
+        joint_action_vector = ()
 
         # Calculate local action
         for agent in range(policy.env.n_agents):
@@ -134,6 +136,9 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
         # step
         s, r, done, _ = policy.env.step(joint_action)
         total_reward += r
+
+        # # debug
+        # print(f'got reward {r}')
 
     # # debug
     # policy.env.render()
@@ -173,35 +178,16 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             max_iterations: int,
             env: MapfEnv,
             info: Dict):
-    # TODO: remove the code duplication from rtdp.py
-    max_eval_steps = 1000
-    n_episodes_eval = 100
-
-    # initialize V to an upper bound
-    start = time.time()
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
-    info['initialization_time'] = round(time.time() - start, 1)
-    info['total_evaluation_time'] = 0
-
-    # Run RTDP iterations
-    for iter_count, reward in enumerate(multi_agent_turn_based_rtdp_iterations_generator(policy, info),
-                                        start=1):
-        # Stop when no improvement or when we have exceeded maximum number of iterations
-        eval_start = time.time()
-        no_improvement = no_improvement_from_last_batch(policy,
-                                                        iter_count,
-                                                        iterations_batch_size,
-                                                        n_episodes_eval,
-                                                        max_eval_steps)
-        info['total_evaluation_time'] += time.time() - eval_start
-        if no_improvement or iter_count >= max_iterations:
-            break
-
-    info['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
-    info['n_iterations'] = iter_count
-    info['total_time'] = time.time() - start
-
-    return policy
+    iterations_generator = multi_agent_turn_based_rtdp_iterations_generator(policy, info)
+    return _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
+                                                          gamma,
+                                                          iterations_batch_size,
+                                                          max_iterations,
+                                                          env,
+                                                          policy,
+                                                          iterations_generator,
+                                                          info)
 
 
 def ma_rtdp_merge(
