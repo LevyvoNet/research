@@ -110,6 +110,7 @@ lvl_to_solvers = {
         ma_rtdp_pvi_sum_describer,
         ma_rtdp_dijkstra_min_describer,
         ma_rtdp_dijkstra_sum_describer,
+        ma_rtdp_pvi_min_describer,
     ],
     1: [
         id_ma_rtdp_pvi_min_describer,
@@ -151,6 +152,7 @@ lvl_to_env = {
     1: [
         (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
         (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
+        # TODO: fix me for long_ma_rtdp_pvi_min_describer
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
@@ -163,7 +165,7 @@ lvl_to_env = {
 
     ],
     3: [
-        (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
+        # (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
     ]
 }
 
@@ -186,8 +188,7 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_soc
-    # return all_makespan + all_soc
+    return all_makespan + all_soc
 
 
 def generate_all_solvers():
@@ -213,7 +214,7 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
         f'reward:{reward}',
         f'rate:{success_rate}',
         f'time:{solve_time}',
-        f'solver:{solver_description}',
+        f'solver:{solver_description}, ',
     ])
 
     if extra_info is None:
@@ -329,22 +330,28 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 def main():
     max_env_lvl = max(lvl_to_env.keys())
 
-    n_items = len(list(generate_solver_env_combinations(max_env_lvl)))  # + len(list(generate_all_solvers()))
+    n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
     print(f'running {n_items} items')
     bad_results = []
 
-    # # Corridor switch
-    # for solver_describer, optimization_criteria in generate_all_solvers():
-    #     # Calculate the env_name
-    #     if optimization_criteria == OptimizationCriteria.Makespan:
-    #         env_name = f'corridor_switch_makespan'
-    #     if optimization_criteria == OptimizationCriteria.SoC:
-    #         env_name = f'corridor_switch_soc'
-    #
-    #     result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
-    #     if result != RESULT_OK:
-    #         bad_results.append((solver_describer.short_description, env_name, result))
-    # print('')
+    # Corridor switch
+    prev_env_name = None
+    for solver_describer, optimization_criteria in generate_all_solvers():
+        # Calculate the env_name
+        if optimization_criteria == OptimizationCriteria.Makespan:
+            env_name = f'corridor_switch_makespan'
+        if optimization_criteria == OptimizationCriteria.SoC:
+            env_name = f'corridor_switch_soc'
+        # Just nicer to view
+        if prev_env_name != env_name:
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            print(f'\n{now_str} env:{env_name}')
+        prev_env_name = env_name
+
+        result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
+        if result != RESULT_OK:
+            bad_results.append((solver_describer.short_description, env_name, result))
+    print('')
 
     # All other envs
     prev_env_func = None
@@ -353,7 +360,6 @@ def main():
         if prev_env_func != env_func:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             print(f'\n{now_str} env:{env_name}')
-
         prev_env_func = env_func
 
         result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)

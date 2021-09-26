@@ -63,6 +63,26 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                       for a in range(len(ACTIONS))])
                                                  for agent_idx in range(self.env.n_agents)])
 
+    def agent_by_agent_action(self, s):
+        joint_action_vector = ()
+        forbidden_states = set()
+        for agent in range(self.env.n_agents):
+            local_action = best_response(self, s, agent, forbidden_states, False)
+            joint_action_vector = joint_action_vector[:agent] + (ACTIONS[local_action],) + joint_action_vector[
+                                                                                           agent + 1:]
+        joint_action = vector_action_to_integer(joint_action_vector)
+
+        return joint_action
+
+    def _act_in_unfamiliar_state(self, s: int):
+        if self.in_train or s in self.v_partial_table:
+            a = self.agent_by_agent_action(s)
+            self.policy_cache[s] = a
+            return a
+
+        all_stay_action_vector = (STAY,) * self.env.n_agents
+        return vector_action_to_integer(all_stay_action_vector)
+
 
 def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int, forbidden_states, stochastic=True):
     action_values = [policy.get_q(agent, joint_state, local_action)
@@ -122,7 +142,6 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
 
         # Compose the joint action
         joint_action = vector_action_to_integer(joint_action_vector)
-        policy.policy_cache[s] = joint_action
         path.append((s, joint_action))
 
         # update the current state

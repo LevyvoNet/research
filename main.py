@@ -118,11 +118,11 @@ SCENES_PER_MAP_COUNT = 1
 POSSIBLE_SCEN_IDS = list(range(1, SCENES_PER_MAP_COUNT + 1))
 
 POSSIBLE_SOLVERS = [
-    long_ma_rtdp_min_pvi_describer,
+    long_ma_rtdp_pvi_min_describer,
     long_id_ma_rtdp_min_pvi_describer,
     long_id_rtdp_min_pvi_describer,
 
-    long_ma_rtdp_sum_pvi_describer,
+    long_ma_rtdp_pvi_sum_describer,
     long_id_ma_rtdp_sum_pvi_describer,
     long_id_rtdp_sum_pvi_describer,
 

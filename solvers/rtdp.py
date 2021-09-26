@@ -19,6 +19,7 @@ class RtdpPolicy(ValueFunctionPolicy):
         self.v = function_to_get_item_of_object(self._get_value)
         self.heuristic = heuristic
         self.visited_states = defaultdict(lambda: 0)
+        self.in_train = True
 
     def _get_value(self, s):
         if s in self.v_partial_table:
@@ -29,6 +30,11 @@ class RtdpPolicy(ValueFunctionPolicy):
         return value
 
     def _act_in_unfamiliar_state(self, s: int):
+        if self.in_train or s in self.v_partial_table:
+            a = greedy_action(self, s)
+            self.policy_cache[s] = a
+            return a
+
         all_stay_action_vector = (STAY,) * self.env.n_agents
         return vector_action_to_integer(all_stay_action_vector)
 
@@ -63,6 +69,7 @@ def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: Map
 
         if not relevant_values:
             return 0
+
         return min(relevant_values)
 
     return heuristic_function
@@ -197,10 +204,6 @@ def bellman_update(policy: RtdpPolicy, s: int):
     q_s_a = calc_q_s_no_clash_possible(policy, s)
     policy.v_partial_table[s] = max(q_s_a)
 
-    # TODO: this is wrong, when a state change there might be more states which depend on this state's value and need
-    #   to be updated in the policy cache as well
-    policy.policy_cache[s] = np.argmax(q_s_a)
-
 
 def rtdp_single_iteration(policy: RtdpPolicy,
                           select_action: Callable[[RtdpPolicy, int], int],
@@ -288,7 +291,11 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     if iter_count % iterations_batch_size != 0:
         return False
 
+    policy.in_train = False
     eval_info = evaluate_policy(policy, n_episodes, max_eval_steps)
+    policy.in_train = True
+    policy.policy_cache.clear()
+
     if eval_info['success_rate'] == 0:
         return False
 
@@ -306,7 +313,7 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
                                                    iterations_batch_size: int,
                                                    max_iterations: int,
                                                    env: MapfEnv,
-                                                   policy: Policy,
+                                                   policy: RtdpPolicy,
                                                    iterations_generator: Iterable,
                                                    info: Dict):
     max_eval_steps = 1000
@@ -333,8 +340,9 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
     info['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
     info['n_iterations'] = iter_count
     info['total_time'] = time.time() - start
-    info['n_visited_states'] = len(policy.policy_cache)
+    info['n_visited_states'] = len(policy.v_partial_table)
 
+    policy.in_train = False
     return policy
 
 
@@ -425,7 +433,19 @@ def solution_heuristic_sum(policy1: ValueFunctionPolicy,
         v1 = policy1.v[s1]
         v2 = policy2.v[s2]
 
-        return v1 + v2
+        g1 = policy1.env.locations_to_state(policy1.env.agents_goals)
+        g2 = policy2.env.locations_to_state(policy2.env.agents_goals)
+
+        relevant_values = []
+        if s1 != g1:
+            relevant_values.append(v1)
+        if s2 != g2:
+            relevant_values.append(v2)
+
+        if not relevant_values:
+            return 0
+
+        return sum(relevant_values) - (len(relevant_values) - 1) * env.reward_of_goal
 
     return func
 
@@ -440,6 +460,7 @@ def solution_heuristic_min(policy1: ValueFunctionPolicy,
     group2 = old_groups[old_group_2_idx]
 
     def func(s: int):
+
         # Get the locations of each agent in the given state
         locations = env.state_to_locations(s)
 
@@ -453,6 +474,18 @@ def solution_heuristic_min(policy1: ValueFunctionPolicy,
         v1 = policy1.v[s1]
         v2 = policy2.v[s2]
 
-        return min(v1, v2)
+        g1 = policy1.env.locations_to_state(policy1.env.agents_goals)
+        g2 = policy2.env.locations_to_state(policy2.env.agents_goals)
+
+        relevant_values = []
+        if s1 != g1:
+            relevant_values.append(v1)
+        if s2 != g2:
+            relevant_values.append(v2)
+
+        if not relevant_values:
+            return 0
+
+        return min(relevant_values)
 
     return func
