@@ -305,7 +305,10 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     else:
         prev_eval = policy.last_eval
         policy.last_eval = eval_info['MDR']
-        return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.01
+        if policy.last_eval <  prev_eval:
+            return False
+
+        return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.1
 
 
 def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
