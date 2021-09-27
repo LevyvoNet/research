@@ -101,40 +101,40 @@ def sanity_general(n_rooms, n_agents, room_size, fail_prob, optimization_criteri
 
 lvl_to_solvers = {
     0: [
-        # value_iteration_describer,
-        # policy_iteration_describer,
-        # prioritized_value_iteration_describer,
-        # id_vi_describer,
-        # fixed_iter_rtdp_min_describer,
-        # rtdp_stop_no_improvement_min_heuristic_describer,
-        # ma_rtdp_pvi_sum_describer,
-        # ma_rtdp_dijkstra_min_describer,
-        # ma_rtdp_dijkstra_sum_describer,
-        # ma_rtdp_pvi_min_describer,
+        value_iteration_describer,
+        policy_iteration_describer,
+        prioritized_value_iteration_describer,
+        id_vi_describer,
+        fixed_iter_rtdp_min_describer,
+        rtdp_stop_no_improvement_min_heuristic_describer,
+        ma_rtdp_pvi_sum_describer,
+        ma_rtdp_dijkstra_min_describer,
+        ma_rtdp_dijkstra_sum_describer,
+        ma_rtdp_pvi_min_describer,
     ],
     1: [
-        # id_ma_rtdp_pvi_min_describer,
+        id_ma_rtdp_pvi_min_describer,
         id_ma_rtdp_pvi_sum_describer,
-        # id_rtdp_pvi_min_describer,
-        # id_rtdp_pvi_sum_describer,
+        id_rtdp_pvi_min_describer,
+        id_rtdp_pvi_sum_describer,
     ],
     2: [
-        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        # long_ma_rtdp_pvi_min_describer,
-        # long_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_pvi_describer,
-        # long_ma_rtdp_min_rtdp_dijkstra_describer
+        long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        long_ma_rtdp_pvi_min_describer,
+        long_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_pvi_describer,
+        long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
-        # long_ma_rtdp_pvi_sum_describer,
-        # long_ma_rtdp_sum_dijkstra_describer,
-        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
-        # long_id_rtdp_sum_pvi_describer,
-        # long_id_ma_rtdp_sum_dijkstra_describer,
-        # long_id_ma_rtdp_sum_pvi_describer
+        long_ma_rtdp_pvi_sum_describer,
+        long_ma_rtdp_sum_dijkstra_describer,
+        long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        long_id_rtdp_sum_pvi_describer,
+        long_id_ma_rtdp_sum_dijkstra_describer,
+        long_id_ma_rtdp_sum_pvi_describer
     ]
 }
 lvl_to_env = {
