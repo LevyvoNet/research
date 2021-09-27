@@ -126,12 +126,12 @@ lvl_to_solvers = {
         long_ma_rtdp_min_dijkstra_describer,
         long_id_ma_rtdp_min_dijkstra_describer,
         long_id_ma_rtdp_min_pvi_describer,
-        long_ma_rtdp_min_rtdp_dijkstra_describer
+       #  long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
         long_ma_rtdp_pvi_sum_describer,
         long_ma_rtdp_sum_dijkstra_describer,
-        long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
         long_id_rtdp_sum_pvi_describer,
         long_id_ma_rtdp_sum_dijkstra_describer,
         long_id_ma_rtdp_sum_pvi_describer
