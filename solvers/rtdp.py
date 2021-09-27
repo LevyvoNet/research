@@ -287,28 +287,29 @@ def fixed_iterations_count_rtdp(heuristic_function: Callable[[MapfEnv], Callable
 
 
 def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iterations_batch_size: int, n_episodes: int,
-                                   max_eval_steps: int):
+                                   max_eval_steps: int, info: Dict):
     if iter_count % iterations_batch_size != 0:
         return False
 
     policy.in_train = False
+    policy.policy_cache.clear()
     eval_info = evaluate_policy(policy, n_episodes, max_eval_steps)
     policy.in_train = True
-    policy.policy_cache.clear()
+    info['last_MDR'] = eval_info['MDR']
 
     if eval_info['success_rate'] == 0:
         return False
 
     if not hasattr(policy, 'last_eval'):
-        policy.last_eval = eval_info['MDR']
+        policy.last_eval = eval_info
         return False
     else:
         prev_eval = policy.last_eval
-        policy.last_eval = eval_info['MDR']
-        if policy.last_eval <  prev_eval:
+        policy.last_eval = eval_info
+        if policy.last_eval['MDR'] < prev_eval['MDR']:
             return False
 
-        return abs(policy.last_eval - prev_eval) / abs(prev_eval) <= 0.1
+        return abs(policy.last_eval['MDR'] - prev_eval['MDR']) / abs(prev_eval['MDR']) <= 0.1
 
 
 def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
@@ -335,7 +336,8 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
                                                         iter_count,
                                                         iterations_batch_size,
                                                         n_episodes_eval,
-                                                        max_eval_steps)
+                                                        max_eval_steps,
+                                                        info)
         info['total_evaluation_time'] += time.time() - eval_start
         if no_improvement or iter_count >= max_iterations:
             break

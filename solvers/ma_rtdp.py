@@ -59,9 +59,15 @@ class MultiagentRtdpPolicy(RtdpPolicy):
              self.env.P[joint_state][joint_action]])
 
     def v_update(self, joint_state):
-        self.v_partial_table[joint_state] = max([max([self.get_q(agent_idx, joint_state, a)
-                                                      for a in range(len(ACTIONS))])
-                                                 for agent_idx in range(self.env.n_agents)])
+        new_v = max([max([self.get_q(agent_idx, joint_state, a)
+                          for a in range(len(ACTIONS))])
+                     for agent_idx in range(self.env.n_agents)])
+
+        # if round(new_v, 2) > round(self._get_value(joint_state), 2):
+        #     import ipdb
+        #     ipdb.set_trace()
+
+        self.v_partial_table[joint_state] = new_v
 
     def agent_by_agent_action(self, s):
         joint_action_vector = ()

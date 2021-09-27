@@ -101,40 +101,40 @@ def sanity_general(n_rooms, n_agents, room_size, fail_prob, optimization_criteri
 
 lvl_to_solvers = {
     0: [
-        value_iteration_describer,
-        policy_iteration_describer,
-        prioritized_value_iteration_describer,
-        id_vi_describer,
-        fixed_iter_rtdp_min_describer,
-        rtdp_stop_no_improvement_min_heuristic_describer,
-        ma_rtdp_pvi_sum_describer,
-        ma_rtdp_dijkstra_min_describer,
-        ma_rtdp_dijkstra_sum_describer,
-        ma_rtdp_pvi_min_describer,
+        # value_iteration_describer,
+        # policy_iteration_describer,
+        # prioritized_value_iteration_describer,
+        # id_vi_describer,
+        # fixed_iter_rtdp_min_describer,
+        # rtdp_stop_no_improvement_min_heuristic_describer,
+        # ma_rtdp_pvi_sum_describer,
+        # ma_rtdp_dijkstra_min_describer,
+        # ma_rtdp_dijkstra_sum_describer,
+        # ma_rtdp_pvi_min_describer,
     ],
     1: [
-        id_ma_rtdp_pvi_min_describer,
+        # id_ma_rtdp_pvi_min_describer,
         id_ma_rtdp_pvi_sum_describer,
-        id_rtdp_pvi_min_describer,
-        id_rtdp_pvi_sum_describer,
+        # id_rtdp_pvi_min_describer,
+        # id_rtdp_pvi_sum_describer,
     ],
     2: [
-        long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        long_ma_rtdp_pvi_min_describer,
-        long_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_pvi_describer,
+        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        # long_ma_rtdp_pvi_min_describer,
+        # long_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_pvi_describer,
         # long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
-        long_ma_rtdp_pvi_sum_describer,
-        long_ma_rtdp_sum_dijkstra_describer,
+        # long_ma_rtdp_pvi_sum_describer,
+        # long_ma_rtdp_sum_dijkstra_describer,
         # long_ma_rtdp_sum_rtdp_dijkstra_describer,
-        long_id_rtdp_sum_pvi_describer,
-        long_id_ma_rtdp_sum_dijkstra_describer,
-        long_id_ma_rtdp_sum_pvi_describer
+        # long_id_rtdp_sum_pvi_describer,
+        # long_id_ma_rtdp_sum_dijkstra_describer,
+        # long_id_ma_rtdp_sum_pvi_describer
     ]
 }
 lvl_to_env = {
@@ -152,7 +152,6 @@ lvl_to_env = {
     1: [
         (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
         (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        # TODO: fix me for long_ma_rtdp_pvi_min_describer
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
@@ -165,7 +164,7 @@ lvl_to_env = {
 
     ],
     3: [
-        # (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
+        (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
     ]
 }
 
@@ -226,7 +225,8 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
             f'n_conflicts:{extra_info.n_conflicts}',
             f'conflicts_time:{extra_info.conflict_detection_time}',
             f'iters:{extra_info.n_iterations}',
-            f'visited:{extra_info.n_visited_states}',
+            f'visited:{extra_info.n_visited_states}'
+            f'last:{extra_info.last_MDR}',
         ])
 
     print(status_str + extra_info_str)
@@ -251,7 +251,8 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
             try:
                 policy = solver_describer.func(env, train_info)
             except stopit.utils.TimeoutException:
-                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0)
+                extra_info = solver_describer.extra_info(train_info)
+                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
                 return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
@@ -315,8 +316,10 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
         # Check the policy performance
 
     eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    extra_info = solver_describer.extra_info(train_info)
 
-    print_status(env_name, eval_info['MDR'], solve_time, solver_describer.short_description, eval_info['success_rate'])
+    print_status(env_name, eval_info['MDR'], solve_time, solver_describer.short_description, eval_info['success_rate'],
+                 extra_info)
 
     if eval_info['clashed']:
         return RESULT_CLASHED
@@ -369,8 +372,8 @@ def main():
 
     if len(bad_results) != 0:
         print('The errors are')
-        for solver_name, env_name, bad_result in bad_results:
-            print(f'{solver_name}, {env_name}, {bad_result}')
+        for i, (solver_name, env_name, bad_result) in enumerate(bad_results):
+            print(f'{i}. {solver_name}, {env_name}, {bad_result}')
 
         assert False, 'There have been failures'
 
