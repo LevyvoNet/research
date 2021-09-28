@@ -185,8 +185,7 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan
-    # return all_makespan + all_soc
+    return all_makespan + all_soc
 
 
 def generate_all_solvers():
@@ -224,7 +223,7 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
             f'n_conflicts:{extra_info.n_conflicts}',
             f'conflicts_time:{extra_info.conflict_detection_time}',
             f'iters:{extra_info.n_iterations}',
-            f'visited:{extra_info.n_visited_states}'
+            f'visited:{extra_info.n_visited_states}',
             f'last:{extra_info.last_MDR}',
         ])
 
