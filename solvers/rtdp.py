@@ -338,14 +338,16 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
                                                         n_episodes_eval,
                                                         max_eval_steps,
                                                         info)
+
+        # Update information
         info['total_evaluation_time'] += time.time() - eval_start
+        info['n_iterations'] = iter_count
+        info['total_time'] = time.time() - start
+        info['n_visited_states'] = len(policy.v_partial_table)
+
+
         if no_improvement or iter_count >= max_iterations:
             break
-
-    info['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
-    info['n_iterations'] = iter_count
-    info['total_time'] = time.time() - start
-    info['n_visited_states'] = len(policy.v_partial_table)
 
     policy.in_train = False
     return policy

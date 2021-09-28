@@ -2,6 +2,7 @@ import math
 import time
 import gc
 import datetime
+import traceback
 
 import stopit
 import itertools
@@ -114,7 +115,7 @@ lvl_to_solvers = {
     ],
     1: [
         # id_ma_rtdp_pvi_min_describer,
-        id_ma_rtdp_pvi_sum_describer,
+        # id_ma_rtdp_pvi_sum_describer,
         # id_rtdp_pvi_min_describer,
         # id_rtdp_pvi_sum_describer,
     ],
@@ -123,7 +124,7 @@ lvl_to_solvers = {
         # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
         # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
         # long_ma_rtdp_pvi_min_describer,
-        # long_ma_rtdp_min_dijkstra_describer,
+        long_ma_rtdp_min_dijkstra_describer,
         # long_id_ma_rtdp_min_dijkstra_describer,
         # long_id_ma_rtdp_min_pvi_describer,
         # long_ma_rtdp_min_rtdp_dijkstra_describer
@@ -139,32 +140,32 @@ lvl_to_solvers = {
 }
 lvl_to_env = {
     0: [
-        (empty_grid_single_agent, 'empty_grid_single_agent'),
-        (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
-        (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
-        (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
-        (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
-        (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
+        # (empty_grid_single_agent, 'empty_grid_single_agent'),
+        # (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
+        # (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
+        # (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
+        # (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
+        # (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
     ],
     1: [
-        (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
-        (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        (long_bottleneck, 'long_bottleneck_deterministic'),
-        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
+        # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
+        # (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
+        # (long_bottleneck, 'long_bottleneck_deterministic'),
+        # (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
-        (sanity_3_8, 'sanity_3_agents_stochastic'),
+        # (sanity_3_8, 'sanity_3_agents_stochastic'),
 
     ],
     2: [
-        (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
 
     ],
     3: [
-        (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
+        # (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
     ]
 }
 
@@ -187,10 +188,13 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan + all_soc
+    return all_makespan
+    # return all_makespan + all_soc
 
 
 def generate_all_solvers():
+    return []
+
     all_makespan = [
         (solver_describer, OptimizationCriteria.Makespan)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
@@ -276,7 +280,7 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         return RESULT_OK
 
     except Exception as e:
-        print(e)
+        print(repr(e))
         return RESULT_EXCEPTION
 
 
