@@ -33,6 +33,7 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
             # We already have a solution for this group, don't calculate it again.
             policy = joint_policy.policies[old_groups.index(group)]
             info[f'{group}']['total_time'] = 0
+            info[f'{group}']['initialization_time'] = 0
         else:
             # We need to solve a new environment, use previous solutions as a heuristic
             old_group_i_idx = group_of_agent(old_groups, i)
