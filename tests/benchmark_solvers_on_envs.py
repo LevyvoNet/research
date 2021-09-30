@@ -85,12 +85,16 @@ def long_bottleneck(optimization_criteria):
     return MapfEnv(grid, 2, start_locations, goal_locations, 0, -1000, 0, -1, optimization_criteria)
 
 
-def sanity_3_8(optimization_criteria):
+def sanity_independent(room_size, n_agents, optimization_criteria):
+    return create_mapf_env(f'sanity-{n_agents}-{room_size}', None, n_agents, 0.2, -1000, 0, -1, optimization_criteria)
+
+
+def sanity_3_agents_room_size_8_independent(optimization_criteria):
     return create_mapf_env('sanity-3-8', None, 3, 0.2, -1000, 0, -1, optimization_criteria)
 
 
-def sanity_2_32(optimization_criteria):
-    return create_mapf_env('sanity-2-32', 1, 3, 0.2, -1000, 0, -1, optimization_criteria)
+def sanity_2_32_3_agents(optimization_criteria):
+    return create_mapf_env('sanity-2-32', None, 3, 0.2, -1000, 0, -1, optimization_criteria)
 
 
 def sanity_general(n_rooms, n_agents, room_size, fail_prob, optimization_criteria):
@@ -156,15 +160,21 @@ lvl_to_env = {
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
-        (sanity_3_8, 'sanity_3_agents_stochastic'),
+        (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
     ],
     2: [
         (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
         (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
+        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ],
     3: [
-        (sanity_2_32, 'conflict_between_pair_and_single_large_map'),
+        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
+        (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
+        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
+        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-32-agents'),
     ]
 }
 
