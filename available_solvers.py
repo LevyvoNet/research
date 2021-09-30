@@ -726,10 +726,7 @@ long_id_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
     description=f'ID({long_ma_rtdp_sum_rtdp_dijkstra_describer.description})',
     func=partial(id,
                  long_ma_rtdp_sum_rtdp_dijkstra_describer.func,
-                 local_sum_rtdp_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
+                 local_sum_rtdp_dijkstra_heuristic_describer.func),
     extra_info=ma_rtdp_extra_info,
     short_description='long_id_ma_rtdp_rtdp_dijkstra_sum'
 )
