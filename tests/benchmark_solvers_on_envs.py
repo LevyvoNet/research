@@ -127,14 +127,15 @@ lvl_to_solvers = {
         # # long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
-        # long_ma_rtdp_pvi_sum_describer,
-        # long_ma_rtdp_sum_dijkstra_describer,
-        # # long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        long_ma_rtdp_pvi_sum_describer,
+        long_ma_rtdp_sum_dijkstra_describer,
+        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
         # long_id_rtdp_sum_pvi_describer,
-        # long_id_ma_rtdp_sum_dijkstra_describer,
-        long_id_ma_rtdp_sum_pvi_describer
+        long_id_ma_rtdp_sum_pvi_describer,
+        long_id_ma_rtdp_sum_dijkstra_describer,
     ]
 }
+
 lvl_to_env = {
     0: [
         # (empty_grid_single_agent, 'empty_grid_single_agent'),
@@ -356,13 +357,13 @@ def main():
     print('')
 
     # All other envs
-    prev_env_func = None
+    prev_env_name = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
         # Just nicer to view
-        if prev_env_func != env_func:
+        if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             print(f'\n{now_str} env:{env_name}')
-        prev_env_func = env_func
+        prev_env_name = env_name
 
         result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
         if result != RESULT_OK:
