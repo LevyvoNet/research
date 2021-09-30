@@ -10,7 +10,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     STAY,
                                     ACTIONS,
                                     vector_action_to_integer,
-                                    integer_action_to_vector)
+                                    integer_action_to_vector,
+                                    ALL_STAY_JOINT_ACTION)
 from gym_mapf.envs.utils import get_local_view
 
 from solvers.utils import evaluate_policy, Policy
@@ -86,8 +87,9 @@ class MultiagentRtdpPolicy(RtdpPolicy):
             self.policy_cache[s] = a
             return a
 
-        all_stay_action_vector = (STAY,) * self.env.n_agents
-        return vector_action_to_integer(all_stay_action_vector)
+        return ALL_STAY_JOINT_ACTION
+        # all_stay_action_vector = (STAY,) * self.env.n_agents
+        # return vector_action_to_integer(all_stay_action_vector)
 
 
 def best_response(policy: MultiagentRtdpPolicy, joint_state: int, agent: int, forbidden_states, stochastic=True):

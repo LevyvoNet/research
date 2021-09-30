@@ -178,7 +178,6 @@ def couple_detect_conflict(env: MapfEnv,
     intersection = reachable_states1.intersection(reachable_states2)
     if intersection:
         return intersection, len(reachable_states1), len(reachable_states2)
-        # return (agent1, intersection, intersection), (agent2, intersection, intersection)
 
     return None
 

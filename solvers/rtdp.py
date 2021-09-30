@@ -6,7 +6,11 @@ import math
 from typing import Callable, Dict, Iterable
 from collections import defaultdict
 
-from gym_mapf.envs.mapf_env import MapfEnv, function_to_get_item_of_object, vector_action_to_integer, STAY
+from gym_mapf.envs.mapf_env import (MapfEnv,
+                                    function_to_get_item_of_object,
+                                    vector_action_to_integer,
+                                    STAY,
+                                    ALL_STAY_JOINT_ACTION)
 from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
@@ -26,7 +30,11 @@ class RtdpPolicy(ValueFunctionPolicy):
             return self.v_partial_table[s]
 
         value = self.heuristic(s)
-        self.v_partial_table[s] = value
+
+        # Add this states to 'seen states' only during training
+        if self.in_train:
+            self.v_partial_table[s] = value
+
         return value
 
     def _act_in_unfamiliar_state(self, s: int):
@@ -35,8 +43,9 @@ class RtdpPolicy(ValueFunctionPolicy):
             self.policy_cache[s] = a
             return a
 
-        all_stay_action_vector = (STAY,) * self.env.n_agents
-        return vector_action_to_integer(all_stay_action_vector)
+        return ALL_STAY_JOINT_ACTION
+        # all_stay_action_vector = (STAY,) * self.env.n_agents
+        # return vector_action_to_integer(all_stay_action_vector)
 
 
 def greedy_action(policy: RtdpPolicy, s):

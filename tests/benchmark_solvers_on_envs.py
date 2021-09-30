@@ -189,6 +189,7 @@ def generate_solver_env_combinations(max_env_lvl):
 
 
 def generate_all_solvers():
+    return []
     all_makespan = [
         (solver_describer, OptimizationCriteria.Makespan)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
