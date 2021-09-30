@@ -133,14 +133,14 @@ deterministic_relaxation_pvi_heuristic_describer = SolverDescriber(
 
 local_sum_rtdp_dijkstra_heuristic_describer = SolverDescriber(
     description='sum_rtdp_dijkstra_heuristic',
-    func=partial(rtdp_dijkstra_sum_heuristic, 1.0, 500),
+    func=partial(rtdp_dijkstra_sum_heuristic, 1.0, 1000),
     extra_info=default_extra_info,
     short_description='sum_rtdp_dijkstra'
 )
 
 local_min_rtdp_dijkstra_heuristic_describer = SolverDescriber(
     description='min_rtdp_dijkstra_heuristic',
-    func=partial(rtdp_dijkstra_min_heuristic, 1.0, 500),
+    func=partial(rtdp_dijkstra_min_heuristic, 1.0, 1000),
     extra_info=default_extra_info,
     short_description='min_rtdp_dijkstra'
 )
