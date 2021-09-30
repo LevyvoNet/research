@@ -203,7 +203,9 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
             max_iterations: int,
             env: MapfEnv,
             info: Dict):
+    start = time.time()
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
+    info['initialization_time'] = round(time.time() - start, 1)
     iterations_generator = multi_agent_turn_based_rtdp_iterations_generator(policy, info)
     return _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
                                                           gamma,

@@ -474,11 +474,13 @@ def restore_weird_stuff():
             policy = solver(env, info)
         except stopit.utils.TimeoutException:
             print('got timeout!!!')
+            return
 
-    import ipdb
-    ipdb.set_trace()
+    # import ipdb
+    # ipdb.set_trace()
 
-    info = evaluate_policy(policy, 100, 100)
+    eval_info = evaluate_policy(policy, 100, 100)
+    print(f'reward is {eval_info["MDR"]}, success rate: {eval_info["success_rate"]}, took {info["total_time"]}')
 
     print('OMG')
 

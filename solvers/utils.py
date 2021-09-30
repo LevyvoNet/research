@@ -81,87 +81,105 @@ def print_path_to_state(path: dict, state: int, env: MapfEnv):
                                              integer_action_to_vector(action, env.n_agents)))
 
 
+#
+# def couple_detect_conflict(env: MapfEnv,
+#                            joint_policy: CrossedPolicy,
+#                            a1: int,
+#                            a2: int,
+#                            **kwargs):
+#     """Detect a conflict for two specific agents"""
+#     info = kwargs.get('info', {})
+#     start = time.time()
+#
+#     a1_group_idx = group_of_agent(joint_policy.agents_groups, a1)
+#     a2_group_idx = group_of_agent(joint_policy.agents_groups, a2)
+#
+#     a1_group = joint_policy.agents_groups[a1_group_idx]
+#     a2_group = joint_policy.agents_groups[a2_group_idx]
+#
+#     a1_idx_in_group = a1_group.index(a1)
+#     a2_idx_in_group = a2_group.index(a2)
+#
+#     a1_group_policy = joint_policy.policies[a1_group_idx]
+#     a2_group_policy = joint_policy.policies[a2_group_idx]
+#
+#     env1 = get_local_view(env, a1_group)
+#     env2 = get_local_view(env, a2_group)
+#
+#     state_pairs_to_expand = {(env1.s, env2.s)}
+#     visited_state_pairs = set()
+#
+#     while len(state_pairs_to_expand) > 0:
+#         (s1, s2) = state_pairs_to_expand.pop()
+#         loc1 = env1.state_to_locations(s1)[a1_idx_in_group]
+#         loc2 = env2.state_to_locations(s2)[a2_idx_in_group]
+#         visited_state_pairs.add((s1, s2))
+#
+#         next_states1 = [next_state
+#                         for _, next_state, _, _ in env1.P[s1][a1_group_policy.act(s1)]]
+#         next_states2 = [next_state
+#                         for _, next_state, _, _ in env2.P[s2][a2_group_policy.act(s2)]]
+#
+#         next_locs1 = set([env1.state_to_locations(n1)[a1_idx_in_group] for n1 in next_states1])
+#         next_locs2 = set([env2.state_to_locations(n2)[a2_idx_in_group] for n2 in next_states2])
+#
+#         # Check for a clash conflict
+#         clash_locs = next_locs1.intersection(next_locs2)
+#         if clash_locs:
+#             clash_loc = clash_locs.pop()
+#             single_agent_local_env = get_local_view(env, [0])
+#             info['detect_conflict_time'] = round(time.time() - start, 2)
+#
+#             return (
+#                 (a1,
+#                  single_agent_local_env.locations_to_state((loc1,)),
+#                  single_agent_local_env.locations_to_state((clash_loc,))
+#                  ),
+#                 (a2,
+#                  single_agent_local_env.locations_to_state((loc2,)),
+#                  single_agent_local_env.locations_to_state((clash_loc,))
+#                  )
+#             )
+#
+#         # Check for a switch conflict
+#         if loc1 in next_locs2 and loc2 in next_locs1:
+#             info['detect_conflict_time'] = round(time.time() - start, 2)
+#             single_agent_local_env = get_local_view(env, [0])
+#
+#             return (
+#                 (a1,
+#                  single_agent_local_env.locations_to_state((loc1,)),
+#                  single_agent_local_env.locations_to_state((loc2,))
+#                  ),
+#                 (a2,
+#                  single_agent_local_env.locations_to_state((loc2,)),
+#                  single_agent_local_env.locations_to_state((loc1,))
+#                  )
+#             )
+#
+#         # No conflict detected yet, add states to expand and keep searching
+#         next_pairs = set(itertools.product(next_states1, next_states2))
+#         state_pairs_to_expand.update(next_pairs.difference(visited_state_pairs))
+#
+#     # Done expanding all pairs without a clash, return no conflict is possible
+#     info['detect_conflict_time'] = round(time.time() - start, 2)
+#     return None
+
 def couple_detect_conflict(env: MapfEnv,
                            joint_policy: CrossedPolicy,
-                           a1: int,
-                           a2: int,
-                           **kwargs):
-    """Detect a conflict for two specific agents"""
-    info = kwargs.get('info', {})
-    start = time.time()
+                           agent1: int,
+                           agent2: int,
+                           info: Dict):
+    info[f'{agent1}'] = {}
+    reachable_states1 = get_reachable_states(env, joint_policy, agent1, info[f'{agent1}'])
+    info[f'{agent2}'] = {}
+    reachable_states2 = get_reachable_states(env, joint_policy, agent2, info[f'{agent2}'])
 
-    a1_group_idx = group_of_agent(joint_policy.agents_groups, a1)
-    a2_group_idx = group_of_agent(joint_policy.agents_groups, a2)
+    intersection = reachable_states1.intersection(reachable_states2)
+    if intersection:
+        return intersection, len(reachable_states1), len(reachable_states2)
+        # return (agent1, intersection, intersection), (agent2, intersection, intersection)
 
-    a1_group = joint_policy.agents_groups[a1_group_idx]
-    a2_group = joint_policy.agents_groups[a2_group_idx]
-
-    a1_idx_in_group = a1_group.index(a1)
-    a2_idx_in_group = a2_group.index(a2)
-
-    a1_group_policy = joint_policy.policies[a1_group_idx]
-    a2_group_policy = joint_policy.policies[a2_group_idx]
-
-    env1 = get_local_view(env, a1_group)
-    env2 = get_local_view(env, a2_group)
-
-    state_pairs_to_expand = {(env1.s, env2.s)}
-    visited_state_pairs = set()
-
-    while len(state_pairs_to_expand) > 0:
-        (s1, s2) = state_pairs_to_expand.pop()
-        loc1 = env1.state_to_locations(s1)[a1_idx_in_group]
-        loc2 = env2.state_to_locations(s2)[a2_idx_in_group]
-        visited_state_pairs.add((s1, s2))
-
-        next_states1 = [next_state
-                        for _, next_state, _, _ in env1.P[s1][a1_group_policy.act(s1)]]
-        next_states2 = [next_state
-                        for _, next_state, _, _ in env2.P[s2][a2_group_policy.act(s2)]]
-
-        next_locs1 = set([env1.state_to_locations(n1)[a1_idx_in_group] for n1 in next_states1])
-        next_locs2 = set([env2.state_to_locations(n2)[a2_idx_in_group] for n2 in next_states2])
-
-        # Check for a clash conflict
-        clash_locs = next_locs1.intersection(next_locs2)
-        if clash_locs:
-            clash_loc = clash_locs.pop()
-            single_agent_local_env = get_local_view(env, [0])
-            info['detect_conflict_time'] = round(time.time() - start, 2)
-
-            return (
-                (a1,
-                 single_agent_local_env.locations_to_state((loc1,)),
-                 single_agent_local_env.locations_to_state((clash_loc,))
-                 ),
-                (a2,
-                 single_agent_local_env.locations_to_state((loc2,)),
-                 single_agent_local_env.locations_to_state((clash_loc,))
-                 )
-            )
-
-        # Check for a switch conflict
-        if loc1 in next_locs2 and loc2 in next_locs1:
-            info['detect_conflict_time'] = round(time.time() - start, 2)
-            single_agent_local_env = get_local_view(env, [0])
-
-            return (
-                (a1,
-                 single_agent_local_env.locations_to_state((loc1,)),
-                 single_agent_local_env.locations_to_state((loc2,))
-                 ),
-                (a2,
-                 single_agent_local_env.locations_to_state((loc2,)),
-                 single_agent_local_env.locations_to_state((loc1,))
-                 )
-            )
-
-        # No conflict detected yet, add states to expand and keep searching
-        next_pairs = set(itertools.product(next_states1, next_states2))
-        state_pairs_to_expand.update(next_pairs.difference(visited_state_pairs))
-
-    # Done expanding all pairs without a clash, return no conflict is possible
-    info['detect_conflict_time'] = round(time.time() - start, 2)
     return None
 
 
@@ -183,13 +201,51 @@ def detect_conflict(env: MapfEnv,
 
     for (g1, g2) in itertools.combinations(range(len(joint_policy.agents_groups)), 2):
         for (a1, a2) in itertools.product(joint_policy.agents_groups[g1], joint_policy.agents_groups[g2]):
-            conflict = couple_detect_conflict(env, joint_policy, a1, a2)
+            info[f'{a1}_{a2}'] = {}
+            conflict = couple_detect_conflict(env, joint_policy, a1, a2, info[f'{a1}_{a2}'])
             if conflict is not None:
                 info['detect_conflict_time'] = round(time.time() - start, 2)
-                return conflict
+                return a1, a2, conflict
 
     info['detect_conflict_time'] = round(time.time() - start, 2)
     return None
+
+
+def get_reachable_states(env: MapfEnv,
+                         joint_policy: CrossedPolicy,
+                         agent: int,
+                         info: Dict):
+    agent_group_idx = group_of_agent(joint_policy.agents_groups, agent)
+    agent_group = joint_policy.agents_groups[agent_group_idx]
+    agent_idx_in_group = agent_group.index(agent)
+    agent_group_policy = joint_policy.policies[agent_group_idx]
+    agent_group_env = get_local_view(env, agent_group)
+
+    reachable_states = set()
+    joint_states_to_expand = {agent_group_env.locations_to_state(agent_group_env.agents_starts)}
+    expanded_states = set()
+
+    while len(joint_states_to_expand) > 0:
+        # Pop the next joint state to expand
+        expanded_joint_state = joint_states_to_expand.pop()
+
+        # Add the state of our examined agent to the reachable states set
+        locations = agent_group_env.state_to_locations(expanded_joint_state)
+        agent_location = locations[agent_idx_in_group]
+        agent_state = agent_group_env.loc_to_int[agent_location]
+        reachable_states.add(agent_state)
+
+        # Mark the current expanded joint state
+        expanded_states.add(expanded_joint_state)
+
+        joint_action = agent_group_policy.act(expanded_joint_state)
+        next_joint_states = [next_state
+                             for _, next_state, _, _ in agent_group_env.P[expanded_joint_state][joint_action]]
+
+        joint_states_to_expand.update(filter(lambda joint_state: joint_state not in expanded_states,
+                                             next_joint_states))
+
+    return reachable_states
 
 
 def might_conflict(env, s, transitions):

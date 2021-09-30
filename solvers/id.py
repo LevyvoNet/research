@@ -101,20 +101,9 @@ def id(
 
     conflict = detect_conflict(env, curr_joint_policy, **{'info': curr_iter_info})
     while conflict:
-        ((i, s_i, new_s_i), (j, s_j, new_s_j)) = conflict
-        local_env_single_agent = get_local_view(env, [i])
-        curr_iter_info['conflict'] = (
-            (
-                i,
-                local_env_single_agent.state_to_locations(s_i),
-                local_env_single_agent.state_to_locations(new_s_i)
-            ),
-            (
-                j,
-                local_env_single_agent.state_to_locations(s_j),
-                local_env_single_agent.state_to_locations(new_s_j)
-            )
-        )
+        i, j, (intersection_set, n_states1, n_states2) = conflict
+        # local_env_single_agent = get_local_view(env, [i])
+        curr_iter_info['conflict'] = (len(intersection_set), n_states1, n_states2)
 
         # merge groups of i and j
         curr_iter_info = {}

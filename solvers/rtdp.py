@@ -297,7 +297,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     policy.in_train = True
     info['last_MDR'] = eval_info['MDR']
 
-    if eval_info['success_rate'] == 0:
+    if eval_info['success_rate'] < 50:
         return False
 
     if not hasattr(policy, 'last_eval'):
@@ -306,8 +306,6 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     else:
         prev_eval = policy.last_eval
         policy.last_eval = eval_info
-        if policy.last_eval['MDR'] < prev_eval['MDR']:
-            return False
 
         return abs(policy.last_eval['MDR'] - prev_eval['MDR']) / abs(prev_eval['MDR']) <= 0.1
 
@@ -345,7 +343,6 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
         info['total_time'] = time.time() - start
         info['n_visited_states'] = len(policy.v_partial_table)
 
-
         if no_improvement or iter_count >= max_iterations:
             break
 
@@ -359,7 +356,9 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
                                                   max_iterations: int,
                                                   env: MapfEnv,
                                                   info: Dict):
+    start = time.time()
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
+    info['initialization_time'] = round(time.time() - start, 1)
     iterations_generator = rtdp_iterations_generator(policy, greedy_action, bellman_update, info)
     return _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
                                                           gamma,
