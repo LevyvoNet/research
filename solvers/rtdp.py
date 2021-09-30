@@ -194,6 +194,78 @@ def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
     return f
 
 
+def rtdp_dijkstra_sum_heuristic(gamma, max_iters, env: MapfEnv):
+    local_envs = {
+        agent: get_local_view(env, [agent])
+        for agent in range(env.n_agents)
+    }
+
+    local_policies = {
+        agent: stop_when_no_improvement_between_batches_rtdp(dijkstra_sum_heuristic,
+                                                             gamma,
+                                                             100,
+                                                             max_iters,
+                                                             local_envs[agent],
+                                                             {})
+        for agent in range(env.n_agents)
+    }
+
+    local_v = {agent: local_policies[agent].v for agent in range(env.n_agents)}
+
+    def f(s: int):
+        locations = env.state_to_locations(s)
+        local_states = tuple([env.loc_to_int[loc] for loc in locations])
+        relevant_values = [
+            local_v[agent][local_states[agent]]
+            for agent in range(env.n_agents) if env.loc_to_int[env.agents_goals[agent]] != local_states[agent]
+        ]
+
+        if not relevant_values:
+            return 0
+
+        # Each relevant value is composed of the reward of living until goal, and the reward for reaching the goal.
+        # We only want to count the reward of the goal once.
+        return sum(relevant_values) - (len(relevant_values) - 1) * env.reward_of_goal
+
+    return f
+
+
+def rtdp_dijkstra_min_heuristic(gamma, n_iters, env: MapfEnv):
+    local_envs = {
+        agent: get_local_view(env, [agent])
+        for agent in range(env.n_agents)
+    }
+
+    local_policies = {
+        agent: stop_when_no_improvement_between_batches_rtdp(dijkstra_sum_heuristic,
+                                                             gamma,
+                                                             100,
+                                                             max_iters,
+                                                             local_envs[agent],
+                                                             {})
+        for agent in range(env.n_agents)
+    }
+
+    local_v = {agent: local_policies[agent].v for agent in range(env.n_agents)}
+
+    def f(s: int):
+        locations = env.state_to_locations(s)
+        local_states = tuple([env.loc_to_int[loc] for loc in locations])
+        relevant_values = [
+            local_v[agent][local_states[agent]]
+            for agent in range(env.n_agents) if env.loc_to_int[env.agents_goals[agent]] != local_states[agent]
+        ]
+
+        if not relevant_values:
+            return 0
+
+        # Each relevant value is composed of the reward of living until goal, and the reward for reaching the goal.
+        # We only want to count the reward of the goal once.
+        return min(relevant_values)
+
+    return f
+
+
 # RTDP #############################################################################################################
 
 def calc_q_s_no_clash_possible(policy: RtdpPolicy, s: int):
@@ -332,7 +404,6 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
 
     # initialize V to an upper bound
     start = time.time()
-    info['initialization_time'] = round(time.time() - start, 1)
     info['total_evaluation_time'] = 0
 
     # Run RTDP iterations

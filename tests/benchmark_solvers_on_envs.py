@@ -129,10 +129,11 @@ lvl_to_solvers = {
     3: [
         long_ma_rtdp_pvi_sum_describer,
         long_ma_rtdp_sum_dijkstra_describer,
-        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        long_ma_rtdp_sum_rtdp_dijkstra_describer,
         # long_id_rtdp_sum_pvi_describer,
         long_id_ma_rtdp_sum_pvi_describer,
         long_id_ma_rtdp_sum_dijkstra_describer,
+        long_id_ma_rtdp_sum_rtdp_dijkstra_describer
     ]
 }
 
@@ -375,7 +376,7 @@ def main():
         for i, (solver_name, env_name, bad_result) in enumerate(bad_results):
             print(f'{i}. {solver_name}, {env_name}, {bad_result}')
 
-        assert False, 'There have been failures'
+        exit(1)
 
 
 if __name__ == '__main__':
