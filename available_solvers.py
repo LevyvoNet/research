@@ -721,7 +721,6 @@ long_id_ma_rtdp_sum_dijkstra_describer = SolverDescriber(
     short_description='long_id_ma_rtdp_dijkstra_sum'
 )
 
-
 long_id_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
     description=f'ID({long_ma_rtdp_sum_rtdp_dijkstra_describer.description})',
     func=partial(id,
@@ -729,4 +728,13 @@ long_id_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
                  long_ma_rtdp_sum_merger_describer.func),
     extra_info=id_extra_info,
     short_description='long_id_ma_rtdp_rtdp_dijkstra_sum'
+)
+
+long_id_ma_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
+    description=f'ID({long_ma_rtdp_sum_rtdp_dijkstra_describer.description})',
+    func=partial(id,
+                 long_ma_rtdp_min_rtdp_dijkstra_describer.func,
+                 long_ma_rtdp_min_merger_describer.func),
+    extra_info=id_extra_info,
+    short_description='long_id_ma_rtdp_rtdp_dijkstra_min'
 )
