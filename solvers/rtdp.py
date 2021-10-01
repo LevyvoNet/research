@@ -230,7 +230,7 @@ def rtdp_dijkstra_sum_heuristic(gamma, max_iters, env: MapfEnv):
     return f
 
 
-def rtdp_dijkstra_min_heuristic(gamma, n_iters, env: MapfEnv):
+def rtdp_dijkstra_min_heuristic(gamma, max_iters, env: MapfEnv):
     local_envs = {
         agent: get_local_view(env, [agent])
         for agent in range(env.n_agents)
@@ -259,8 +259,6 @@ def rtdp_dijkstra_min_heuristic(gamma, n_iters, env: MapfEnv):
         if not relevant_values:
             return 0
 
-        # Each relevant value is composed of the reward of living until goal, and the reward for reaching the goal.
-        # We only want to count the reward of the goal once.
         return min(relevant_values)
 
     return f
