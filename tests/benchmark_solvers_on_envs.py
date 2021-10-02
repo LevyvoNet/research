@@ -241,7 +241,7 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
             f'last:{extra_info.last_MDR}',
         ])
 
-    print(status_str + extra_info_str)
+    print(f'{os.getpid()} ' + status_str + extra_info_str)
 
 
 def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
@@ -375,7 +375,7 @@ def main():
         # Just nicer to view
         if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            print(f'\n{now_str} env:{env_name}')
+            print(f'\n{os.getpid()} {now_str} env:{env_name}')
         prev_env_name = env_name
 
         # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
