@@ -1,6 +1,7 @@
 import math
 import time
 import datetime
+import os
 
 import stopit
 import itertools
@@ -115,66 +116,66 @@ lvl_to_solvers = {
         ma_rtdp_pvi_min_describer,
     ],
     1: [
-        id_ma_rtdp_pvi_min_describer,
+        # id_ma_rtdp_pvi_min_describer,
         id_ma_rtdp_pvi_sum_describer,
-        id_rtdp_pvi_min_describer,
+        # id_rtdp_pvi_min_describer,
         id_rtdp_pvi_sum_describer,
     ],
     2: [
-        long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        long_ma_rtdp_pvi_min_describer,
-        long_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_pvi_describer,
-        long_id_ma_rtdp_min_rtdp_dijkstra_describer,
-        long_ma_rtdp_min_rtdp_dijkstra_describer
+        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        # long_ma_rtdp_pvi_min_describer,
+        # long_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_pvi_describer,
+        # long_id_ma_rtdp_min_rtdp_dijkstra_describer,
+        # long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
-        long_ma_rtdp_pvi_sum_describer,
-        long_ma_rtdp_sum_dijkstra_describer,
-        long_ma_rtdp_sum_rtdp_dijkstra_describer,
-        long_id_rtdp_sum_pvi_describer,
-        long_id_ma_rtdp_sum_pvi_describer,
-        long_id_ma_rtdp_sum_dijkstra_describer,
-        long_id_ma_rtdp_sum_rtdp_dijkstra_describer
+        # long_ma_rtdp_pvi_sum_describer,
+        # long_ma_rtdp_sum_dijkstra_describer,
+        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        # long_id_rtdp_sum_pvi_describer,
+        # long_id_ma_rtdp_sum_pvi_describer,
+        # long_id_ma_rtdp_sum_dijkstra_describer,
+        # long_id_ma_rtdp_sum_rtdp_dijkstra_describer
     ]
 }
 
 lvl_to_env = {
     0: [
-        (empty_grid_single_agent, 'empty_grid_single_agent'),
-        (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
-        (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
-        (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
-        (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
-        (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
+        # (empty_grid_single_agent, 'empty_grid_single_agent'),
+        # (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
+        # (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
+        # (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
+        # (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
+        # (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
     ],
     1: [
-        (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
-        (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        (long_bottleneck, 'long_bottleneck_deterministic'),
-        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
-        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
+        # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
+        # (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
+        # (long_bottleneck, 'long_bottleneck_deterministic'),
+        # (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
+        # (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
         (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
     ],
     2: [
-        (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
-        (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
-        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
-        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+        # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        # (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
+        # (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        # (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ],
     3: [
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
-        (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
-        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
-        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-32-agents'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
+        # (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
+        # (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
+        # (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-32-agents'),
     ]
 }
 
@@ -201,6 +202,7 @@ def generate_solver_env_combinations(max_env_lvl):
 
 
 def generate_all_solvers():
+    return []
     all_makespan = [
         (solver_describer, OptimizationCriteria.Makespan)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
@@ -257,13 +259,13 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         start = time.time()
 
         # Try to solve with a time limit
-        with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
-            try:
-                policy = solver_describer.func(env, train_info)
-            except stopit.utils.TimeoutException:
-                extra_info = solver_describer.extra_info(train_info)
-                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
-                return RESULT_TIMEOUT
+        # with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
+        try:
+            policy = solver_describer.func(env, train_info)
+        except stopit.utils.TimeoutException:
+            extra_info = solver_describer.extra_info(train_info)
+            print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
+            return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
 
@@ -369,13 +371,31 @@ def main():
     # All other envs
     prev_env_name = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+
         # Just nicer to view
         if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             print(f'\n{now_str} env:{env_name}')
         prev_env_name = env_name
 
-        result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+        read_fd, write_fd = os.pipe()
+        pid = os.fork()
+
+        # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
+        if pid == 0:
+            os.close(read_fd)
+            result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+            write_file = os.fdopen(write_fd, 'w')
+            write_file.write(result)
+            exit(0)
+        else:
+            os.close(write_fd)
+            os.waitpid(pid, 0)
+            read_file = os.fdopen(read_fd, 'r')
+            result = read_file.read()
+            os.close(read_fd)
+
+        # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
         if result != RESULT_OK:
             bad_results.append((solver_describer.short_description, env_name, result))
     print('')
