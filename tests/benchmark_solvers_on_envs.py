@@ -202,6 +202,7 @@ def generate_solver_env_combinations(max_env_lvl):
 
 
 def generate_all_solvers():
+    return []
     all_makespan = [
         (solver_describer, OptimizationCriteria.Makespan)
         for solver_describer in itertools.chain(*lvl_to_solvers.values())
@@ -377,26 +378,26 @@ def main():
             print(f'\n{now_str} env:{env_name}')
         prev_env_name = env_name
 
+        # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
         read_fd, write_fd = os.pipe()
         pid = os.fork()
-
-        # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
         if pid == 0:
             os.close(read_fd)
             result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
             write_file = os.fdopen(write_fd, 'w')
             write_file.write(result)
+            write_file.close()
             exit(0)
         else:
             os.close(write_fd)
             os.waitpid(pid, 0)
             read_file = os.fdopen(read_fd, 'r')
             result = read_file.read()
-            os.close(read_fd)
+            read_file.close()
 
-        # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
-        if result != RESULT_OK:
-            bad_results.append((solver_describer.short_description, env_name, result))
+            # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+            if result != RESULT_OK:
+                bad_results.append((solver_describer.short_description, env_name, result))
     print('')
 
     if len(bad_results) != 0:
