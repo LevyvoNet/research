@@ -346,7 +346,7 @@ def main():
     max_env_lvl = max(lvl_to_env.keys())
 
     n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
-    print(f'running {n_items} items')
+    print(f'{os.getpid()} running {n_items} items')
     bad_results = []
 
     # Corridor switch
@@ -387,7 +387,7 @@ def main():
             write_file = os.fdopen(write_fd, 'w')
             write_file.write(result)
             write_file.close()
-            return 
+            exit(0)
         else:
             os.close(write_fd)
             os.waitpid(pid, 0)
