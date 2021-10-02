@@ -241,7 +241,7 @@ def print_status(env_name, reward, solve_time, solver_description, success_rate,
             f'last:{extra_info.last_MDR}',
         ])
 
-    print(f'{os.getpid()} ' + status_str + extra_info_str)
+    print(status_str + extra_info_str)
 
 
 def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
@@ -346,7 +346,7 @@ def main():
     max_env_lvl = max(lvl_to_env.keys())
 
     n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
-    print(f'{os.getpid()} running {n_items} items')
+    print(f'running {n_items} items')
     bad_results = []
 
     # Corridor switch
@@ -371,11 +371,10 @@ def main():
     # All other envs
     prev_env_name = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
-
         # Just nicer to view
         if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            print(f'\n{os.getpid()} {now_str} env:{env_name}')
+            print(f'\n{now_str} env:{env_name}')
         prev_env_name = env_name
 
         # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
@@ -387,17 +386,13 @@ def main():
             write_file = os.fdopen(write_fd, 'w')
             write_file.write(result)
             write_file.close()
-            print(f'{os.getpid()} exit')
             exit(0)
-            print(f'{os.getpid()} exited')
         else:
             os.close(write_fd)
             os.waitpid(pid, 0)
             read_file = os.fdopen(read_fd, 'r')
             result = read_file.read()
             read_file.close()
-            print(f'{os.getpid()} done with {env_name} and {solver_describer.short_description}')
-            exit(0)
 
             # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
             if result != RESULT_OK:

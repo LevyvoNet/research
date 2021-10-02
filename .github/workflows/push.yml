@@ -18,7 +18,7 @@ jobs:
 
   benchmark:
     name: performance benchmark
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-python@v2
