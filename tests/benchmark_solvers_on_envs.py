@@ -259,13 +259,13 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         start = time.time()
 
         # Try to solve with a time limit
-        # with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
-        try:
-            policy = solver_describer.func(env, train_info)
-        except stopit.utils.TimeoutException:
-            extra_info = solver_describer.extra_info(train_info)
-            print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
-            return RESULT_TIMEOUT
+        with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
+            try:
+                policy = solver_describer.func(env, train_info)
+            except stopit.utils.TimeoutException:
+                extra_info = solver_describer.extra_info(train_info)
+                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
+                return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
 
