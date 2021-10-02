@@ -396,6 +396,7 @@ def main():
             read_file = os.fdopen(read_fd, 'r')
             result = read_file.read()
             read_file.close()
+            print(f'{os.getpid()} done with {env_name} and {solver_describer.short_description}')
 
             # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
             if result != RESULT_OK:
