@@ -2,6 +2,7 @@ import math
 import time
 import datetime
 import os
+import sys
 
 import stopit
 import itertools
@@ -379,6 +380,7 @@ def main():
 
         # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
         read_fd, write_fd = os.pipe()
+        sys.stdout.flush()
         pid = os.fork()
         if pid == 0:
             os.close(read_fd)
@@ -394,9 +396,9 @@ def main():
             result = read_file.read()
             read_file.close()
 
-            # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
-            if result != RESULT_OK:
-                bad_results.append((solver_describer.short_description, env_name, result))
+        # result = benchmark_solver_on_env(env_func, env_name, solver_describer, optimization_criteria)
+        if result != RESULT_OK:
+            bad_results.append((solver_describer.short_description, env_name, result))
     print('')
 
     if len(bad_results) != 0:
