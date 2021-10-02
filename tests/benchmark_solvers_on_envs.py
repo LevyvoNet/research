@@ -387,7 +387,9 @@ def main():
             write_file = os.fdopen(write_fd, 'w')
             write_file.write(result)
             write_file.close()
+            print(f'{os.getpid()} exit')
             exit(0)
+            print(f'{os.getpid()} exited')
         else:
             os.close(write_fd)
             os.waitpid(pid, 0)
