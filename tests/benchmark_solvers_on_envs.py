@@ -298,8 +298,6 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         return RESULT_OK
 
     except Exception as e:
-        import ipdb
-        ipdb.set_trace()
         print(repr(e))
         return RESULT_EXCEPTION
 
