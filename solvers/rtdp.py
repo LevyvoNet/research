@@ -14,6 +14,9 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
 from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
+MDR_EPSILON = 0.1
+MIN_SUCCESS_RATE = 80
+
 
 class RtdpPolicy(ValueFunctionPolicy):
     def __init__(self, env, gamma, heuristic):
@@ -372,11 +375,11 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
 
     policy.in_train = False
     policy.policy_cache.clear()
-    eval_info = evaluate_policy(policy, n_episodes, max_eval_steps)
+    eval_info = evaluate_policy(policy, n_episodes, max_eval_steps, min_success_rate=MIN_SUCCESS_RATE)
     policy.in_train = True
     info['last_MDR'] = eval_info['MDR']
 
-    if eval_info['success_rate'] < 50:
+    if eval_info['success_rate'] < MIN_SUCCESS_RATE:
         return False
 
     if not hasattr(policy, 'last_eval'):
@@ -386,7 +389,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
         prev_eval = policy.last_eval
         policy.last_eval = eval_info
 
-        return abs(policy.last_eval['MDR'] - prev_eval['MDR']) / abs(prev_eval['MDR']) <= 0.1
+        return abs(policy.last_eval['MDR'] - prev_eval['MDR']) / abs(prev_eval['MDR']) <= MDR_EPSILON
 
 
 def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],

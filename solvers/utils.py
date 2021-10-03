@@ -302,7 +302,7 @@ def render_states(env, states):
     env.s = s_initial
 
 
-def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False):
+def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success_rate=0, debug=False):
     all_stay_action = vector_action_to_integer((STAY,) * policy.env.n_agents)
     stats = {
         'episodes_rewards': [],
@@ -337,6 +337,10 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, debug=False
                 else:
                     stats['clashed'] = True
                 break
+
+        # If we don't have a chance to be in the minimum success rate, just give up
+        if (n_episodes - i - 1) + len(stats['episodes_rewards']) < n_episodes * min_success_rate:
+            break
 
     # Calculate MDR
     if len(stats['episodes_rewards']) == 0:
