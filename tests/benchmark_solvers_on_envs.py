@@ -124,15 +124,15 @@ lvl_to_solvers = {
         # id_rtdp_pvi_sum_describer,
     ],
     2: [
-        long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        long_ma_rtdp_pvi_min_describer,
-        long_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_pvi_describer,
-        long_id_ma_rtdp_min_rtdp_dijkstra_describer,
-        long_ma_rtdp_min_rtdp_dijkstra_describer
+        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        # long_ma_rtdp_pvi_min_describer,
+        # long_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_pvi_describer,
+        # long_id_ma_rtdp_min_rtdp_dijkstra_describer,
+        # long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
         long_ma_rtdp_pvi_sum_describer,

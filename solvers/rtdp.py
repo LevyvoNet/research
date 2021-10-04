@@ -15,7 +15,7 @@ from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
 MDR_EPSILON = 0.1
-MIN_SUCCESS_RATE = 80
+MIN_SUCCESS_RATE = 50
 
 
 class RtdpPolicy(ValueFunctionPolicy):
