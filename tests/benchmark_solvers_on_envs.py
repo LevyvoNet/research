@@ -1,24 +1,18 @@
-import math
-import time
 import datetime
+import math
 import os
 import sys
+import time
+from typing import Callable
 
 import stopit
-import itertools
+
+from available_solvers import *
 from gym_mapf.envs.grid import MapfGrid
 from gym_mapf.envs.mapf_env import (MapfEnv,
-                                    OptimizationCriteria,
-                                    vector_action_to_integer,
-                                    STAY,
-                                    UP,
-                                    DOWN)
+                                    OptimizationCriteria)
 from gym_mapf.envs.utils import create_mapf_env
-
 from solvers.utils import evaluate_policy
-from available_solvers import *
-# from tests.performance_utils import *
-from typing import Callable
 
 TEST_SINGLE_SCENARIO_TIMEOUT = 300
 
@@ -147,44 +141,44 @@ lvl_to_solvers = {
 
 lvl_to_env = {
     0: [
-        # (empty_grid_single_agent, 'empty_grid_single_agent'),
-        # (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
-        # (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
-        # (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
-        # (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
-        # (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
-        # (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
-        # (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
-        # (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
+        (empty_grid_single_agent, 'empty_grid_single_agent'),
+        (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
+        (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
+        (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
+        (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
+        (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
+        (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
+        (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
+        (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
     ],
     1: [
-        # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
-        # (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        # (long_bottleneck, 'long_bottleneck_deterministic'),
-        # (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
-        # (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
-        # (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
+        (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
+        (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
+        (long_bottleneck, 'long_bottleneck_deterministic'),
+        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
+        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
+        (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
     ],
     2: [
-        # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
-        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
+        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
         (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
-        # (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
-        # (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ],
     3: [
-        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
-        # (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
-        # (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
-        # (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
-        # (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
-        # (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
-        # (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
-        # (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
-        # (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
-        # (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
-        # (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
+        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
+        (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
+        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
+        (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
+        (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
+        (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
+        (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
+        (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
+        (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
+        (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
+        (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
 
     ]
 }
@@ -208,7 +202,6 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan
     return all_makespan + all_soc
 
 
