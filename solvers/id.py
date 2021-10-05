@@ -99,12 +99,9 @@ def id(
                                                       low_level_planner,
                                                       curr_iter_info['joint_policy'])
 
-    conflict = detect_conflict(env, curr_joint_policy, **{'info': curr_iter_info})
+    conflict = detect_conflict(env, curr_joint_policy, curr_iter_info)
     while conflict:
-        i, j, (intersection_set, n_states1, n_states2) = conflict
-        # local_env_single_agent = get_local_view(env, [i])
-        curr_iter_info['conflict'] = (len(intersection_set), n_states1, n_states2)
-
+        i, j, conflict_details = conflict
         # merge groups of i and j
         curr_iter_info = {}
         info['iterations'].append(curr_iter_info)

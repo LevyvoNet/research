@@ -106,33 +106,33 @@ def sanity_general(n_rooms, room_size, n_agents, optimization_criteria):
 
 lvl_to_solvers = {
     0: [
-        # value_iteration_describer,
-        # policy_iteration_describer,
-        # prioritized_value_iteration_describer,
-        # id_vi_describer,
-        # fixed_iter_rtdp_min_describer,
-        # rtdp_stop_no_improvement_min_heuristic_describer,
-        # ma_rtdp_pvi_sum_describer,
-        # ma_rtdp_dijkstra_min_describer,
-        # ma_rtdp_dijkstra_sum_describer,
-        # ma_rtdp_pvi_min_describer,
+        value_iteration_describer,
+        policy_iteration_describer,
+        prioritized_value_iteration_describer,
+        id_vi_describer,
+        fixed_iter_rtdp_min_describer,
+        rtdp_stop_no_improvement_min_heuristic_describer,
+        ma_rtdp_pvi_sum_describer,
+        ma_rtdp_dijkstra_min_describer,
+        ma_rtdp_dijkstra_sum_describer,
+        ma_rtdp_pvi_min_describer,
     ],
     1: [
-        # id_ma_rtdp_pvi_min_describer,
-        # id_ma_rtdp_pvi_sum_describer,
-        # id_rtdp_pvi_min_describer,
-        # id_rtdp_pvi_sum_describer,
+        id_ma_rtdp_pvi_min_describer,
+        id_ma_rtdp_pvi_sum_describer,
+        id_rtdp_pvi_min_describer,
+        id_rtdp_pvi_sum_describer,
     ],
     2: [
-        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        # long_ma_rtdp_pvi_min_describer,
-        # long_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_pvi_describer,
-        # long_id_ma_rtdp_min_rtdp_dijkstra_describer,
-        # long_ma_rtdp_min_rtdp_dijkstra_describer
+        long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        long_ma_rtdp_pvi_min_describer,
+        long_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_pvi_describer,
+        long_id_ma_rtdp_min_rtdp_dijkstra_describer,
+        long_ma_rtdp_min_rtdp_dijkstra_describer
     ],
     3: [
         long_ma_rtdp_pvi_sum_describer,
@@ -167,24 +167,24 @@ lvl_to_env = {
 
     ],
     2: [
-        (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
         (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
-        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
-        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+        # (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        # (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ],
     3: [
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
-        (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
-        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
-        (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
-        (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
-        (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
-        (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
-        (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
-        (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
-        (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
-        (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
+        # (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
+        # (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
+        # (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
+        # (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
+        # (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
+        # (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
+        # (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
+        # (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
+        # (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
+        # (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
 
     ]
 }
@@ -208,29 +208,14 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
+    return all_makespan
     return all_makespan + all_soc
 
 
-def generate_all_solvers():
-    return []
-    all_makespan = [
-        (solver_describer, OptimizationCriteria.Makespan)
-        for solver_describer in itertools.chain(*lvl_to_solvers.values())
-    ]
-
-    all_soc = [
-        (solver_describer, OptimizationCriteria.SoC)
-        for solver_describer in itertools.chain(*lvl_to_solvers.values())
-    ]
-
-    return all_makespan + all_soc
-
-
-ALL_SOLVERS = generate_all_solvers()
 TEST_DATA = generate_solver_env_combinations(max(lvl_to_env.keys()))
 
 
-def print_status(env_name, reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
+def print_status(reward, solve_time, solver_description, success_rate, extra_info: SolverExtraInfo = None):
     status_str = ', '.join([
         f'reward:{reward}',
         f'rate:{success_rate}',
@@ -274,7 +259,7 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
                 policy = solver_describer.func(env, train_info)
             except stopit.utils.TimeoutException:
                 extra_info = solver_describer.extra_info(train_info)
-                print_status(env_name, -math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
+                print_status(-math.inf, 'timeout', solver_describer.short_description, 0, extra_info)
                 return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
@@ -282,8 +267,7 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
         extra_info = solver_describer.extra_info(train_info)
 
-        print_status(env_name,
-                     eval_info['MDR'],
+        print_status(eval_info['MDR'],
                      solve_time,
                      solver_describer.short_description,
                      eval_info['success_rate'],
@@ -302,83 +286,13 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         return RESULT_EXCEPTION
 
 
-def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
-                                           optimization_criteria: OptimizationCriteria):
-    optimization_criteria_to_str = {
-        OptimizationCriteria.Makespan: 'makespan',
-        OptimizationCriteria.SoC: 'soc'
-    }
-    env_name = f'corridor_switch_{optimization_criteria_to_str[optimization_criteria]}'
-    eval_max_steps = 200
-    eval_n_episodes = 100
-
-    grid = MapfGrid(['...',
-                     '@.@'])
-    start_locations = ((0, 0), (0, 2))
-    goal_locations = ((0, 2), (0, 0))
-
-    # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
-    env = MapfEnv(grid, 2, start_locations, goal_locations, 0.2, -0.001, 0, -1, optimization_criteria)
-
-    train_info = {}
-    start = time.time()
-    policy = solver_describer.func(env, train_info)
-    solve_time = round(time.time() - start, 2)
-
-    # Assert no conflict is possible
-    interesting_locations = ((1, 1), (0, 1))
-    interesting_state = env.locations_to_state(interesting_locations)
-    stay_up = vector_action_to_integer((STAY, UP))
-    down_up = vector_action_to_integer((DOWN, UP))
-    expected_possible_actions = [stay_up, down_up]
-
-    if policy.act(interesting_state) not in expected_possible_actions:
-        return RESULT_DANGEROUS_ACTION
-
-        # Check the policy performance
-
-    eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
-    extra_info = solver_describer.extra_info(train_info)
-
-    print_status(env_name, eval_info['MDR'], solve_time, solver_describer.short_description, eval_info['success_rate'],
-                 extra_info)
-
-    if eval_info['clashed']:
-        return RESULT_CLASHED
-
-    if eval_info['success_rate'] == 0:
-        return RESULT_NOT_CONVERGED
-
-    return RESULT_OK
-
-
 def main():
     max_env_lvl = max(lvl_to_env.keys())
 
-    n_items = len(list(generate_solver_env_combinations(max_env_lvl))) + len(list(generate_all_solvers()))
+    n_items = len(list(generate_solver_env_combinations(max_env_lvl)))
     print(f'running {n_items} items')
     bad_results = []
 
-    # Corridor switch
-    prev_env_name = None
-    for solver_describer, optimization_criteria in generate_all_solvers():
-        # Calculate the env_name
-        if optimization_criteria == OptimizationCriteria.Makespan:
-            env_name = f'corridor_switch_makespan'
-        if optimization_criteria == OptimizationCriteria.SoC:
-            env_name = f'corridor_switch_soc'
-        # Just nicer to view
-        if prev_env_name != env_name:
-            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            print(f'\n{now_str} env:{env_name}')
-        prev_env_name = env_name
-
-        result = test_corridor_switch_no_clash_possible(solver_describer, optimization_criteria)
-        if result != RESULT_OK:
-            bad_results.append((solver_describer.short_description, env_name, result))
-    print('')
-
-    # All other envs
     prev_env_name = None
     for env_func, env_name, solver_describer, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
         # Just nicer to view

@@ -15,7 +15,7 @@ from solvers.vi import prioritized_value_iteration
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
 
 MDR_EPSILON = 0.1
-MIN_SUCCESS_RATE = 50
+MIN_SUCCESS_RATE = 0.5
 
 
 class RtdpPolicy(ValueFunctionPolicy):
@@ -379,7 +379,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     policy.in_train = True
     info['last_MDR'] = eval_info['MDR']
 
-    if eval_info['success_rate'] < MIN_SUCCESS_RATE:
+    if eval_info['success_rate'] < 100 * MIN_SUCCESS_RATE:
         return False
 
     if not hasattr(policy, 'last_eval'):
@@ -403,8 +403,6 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
     max_eval_steps = 1000
     n_episodes_eval = 100
 
-    # initialize V to an upper bound
-    start = time.time()
     info['total_evaluation_time'] = 0
 
     # Run RTDP iterations
@@ -421,7 +419,6 @@ def _stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[
         # Update information
         info['total_evaluation_time'] += time.time() - eval_start
         info['n_iterations'] = iter_count
-        info['total_time'] = time.time() - start
         info['n_visited_states'] = len(policy.v_partial_table)
 
         if no_improvement or iter_count >= max_iterations:
@@ -441,14 +438,18 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
     info['initialization_time'] = round(time.time() - start, 1)
     iterations_generator = rtdp_iterations_generator(policy, greedy_action, bellman_update, info)
-    return _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
-                                                          gamma,
-                                                          iterations_batch_size,
-                                                          max_iterations,
-                                                          env,
-                                                          policy,
-                                                          iterations_generator,
-                                                          info)
+
+    policy = _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
+                                                            gamma,
+                                                            iterations_batch_size,
+                                                            max_iterations,
+                                                            env,
+                                                            policy,
+                                                            iterations_generator,
+                                                            info)
+    info['total_time'] = time.time() - start
+
+    return policy
 
 
 def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],

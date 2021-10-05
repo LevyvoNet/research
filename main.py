@@ -474,6 +474,8 @@ def restore_weird_stuff():
             policy = solver(env, info)
         except stopit.utils.TimeoutException:
             print('got timeout!!!')
+            import ipdb
+            ipdb.set_trace()
             return
 
     # import ipdb

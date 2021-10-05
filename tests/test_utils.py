@@ -2,10 +2,11 @@ import unittest
 from functools import partial
 
 from solvers.utils import (CrossedPolicy,
-                           detect_conflict,
+                           detect_conflict_old,
                            solve_independently_and_cross,
                            Policy,
-                           couple_detect_conflict)
+                           couple_detect_conflict,
+                           get_shared_states)
 from solvers.vi import value_iteration
 from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
@@ -67,19 +68,20 @@ class SolversUtilsTests(unittest.TestCase):
 
         aux_local_env = get_local_view(env, [0])
 
-        self.assertEqual(detect_conflict(env, joint_policy),
-                         (
-                             (
-                                 0,
-                                 aux_local_env.locations_to_state(((0, 0),)),
-                                 aux_local_env.locations_to_state(((0, 1),))
-                             ),
-                             (
-                                 1,
-                                 aux_local_env.locations_to_state(((0, 2),)),
-                                 aux_local_env.locations_to_state(((0, 1),))
-                             )
-                         ))
+        self.assertEqual(detect_conflict_old(env, joint_policy, {}),
+                         (0,
+                          1,
+                          ((
+                               0,
+                               aux_local_env.locations_to_state(((0, 0),)),
+                               aux_local_env.locations_to_state(((0, 1),))
+                           ),
+                           (
+                               1,
+                               aux_local_env.locations_to_state(((0, 2),)),
+                               aux_local_env.locations_to_state(((0, 1),))
+                           ))
+                          ))
 
     def test_detect_conflict_return_none_when_no_conflict(self):
         grid = MapfGrid(['...',
@@ -119,7 +121,7 @@ class SolversUtilsTests(unittest.TestCase):
                                            DictPolicy(get_local_view(env, [1]), 1.0, policy2)],
                                      [[0], [1]])
 
-        self.assertEqual(detect_conflict(env, joint_policy), None)
+        self.assertEqual(detect_conflict_old(env, joint_policy, {}), None)
 
     def test_roni_scenario_with_id(self):
         # TODO: this test only pass when the first action in the ACTIONS array is STAY,
@@ -140,7 +142,7 @@ class SolversUtilsTests(unittest.TestCase):
         self.assertEqual(independent_joiont_policy.act(interesting_state), vector_action_to_integer((DOWN, DOWN)))
 
         # Assert no conflict
-        self.assertEqual(detect_conflict(env, independent_joiont_policy), None)
+        self.assertEqual(detect_conflict_old(env, independent_joiont_policy, {}), None)
 
     def test_conflict_detected_for_room_scenario_with_crossed_policy(self):
         env = create_mapf_env('room-32-32-4', 1, 2, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
@@ -153,7 +155,7 @@ class SolversUtilsTests(unittest.TestCase):
                                               get_local_view(env, [1]), {})
         crossed_policy = CrossedPolicy(env, [policy1, policy2], [[0], [1]])
 
-        self.assertIsNot(detect_conflict(env, crossed_policy), None)
+        self.assertIsNot(detect_conflict_old(env, crossed_policy, {}), None)
 
     def test_policy_crossing_for_continuous_agent_range(self):
         """
@@ -161,7 +163,7 @@ class SolversUtilsTests(unittest.TestCase):
         * Cross the policies
         * Make sure the crossed policy behaves right
         """
-        env = create_mapf_env('room-32-32-4', 15, 3,  0, -1000, 0, -1, OptimizationCriteria.Makespan)
+        env = create_mapf_env('room-32-32-4', 15, 3, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
         plan_func = partial(fixed_iterations_count_rtdp,
@@ -229,7 +231,7 @@ class SolversUtilsTests(unittest.TestCase):
                                                [[0], [1]],
                                                low_level_plan_func,
                                                {})
-        conflict = detect_conflict(env, policy)
+        conflict = detect_conflict_old(env, policy, {})
         # Assert a conflict detected
         self.assertIsNotNone(conflict)
 
@@ -238,8 +240,8 @@ class SolversUtilsTests(unittest.TestCase):
         agent_0_state = aux_local_env.locations_to_state(((21, 19),))
 
         possible_conflicts = [
-            ((1, agent_1_state, agent_0_state), (0, agent_0_state, agent_1_state)),
-            ((0, agent_0_state, agent_1_state), (1, agent_1_state, agent_0_state))
+            (0, 1, ((1, agent_1_state, agent_0_state), (0, agent_0_state, agent_1_state))),
+            (0, 1, ((0, agent_0_state, agent_1_state), (1, agent_1_state, agent_0_state)))
         ]
 
         # Assert the conflict parameters are right
@@ -311,7 +313,7 @@ class SolversUtilsTests(unittest.TestCase):
         aux_local_env = get_local_view(env, [0])
 
         # Assert a conflict is found for agents 1 and 2
-        self.assertEqual(couple_detect_conflict(env, joint_policy, 1, 2),
+        self.assertEqual(couple_detect_conflict(env, joint_policy, 1, 2, {}),
                          (
                              (
                                  1,
@@ -326,10 +328,10 @@ class SolversUtilsTests(unittest.TestCase):
                          ))
 
         # Assert no conflict is found for agents 0 and 1
-        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 1))
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 1, {}))
 
         # Assert no conflict is found for agents 0 and 2
-        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 2))
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 2, {}))
 
     def test_couple_detect_conflict_3_agents_multiple_agents_in_group(self):
         """This test may sometime be used to test detecting a conflict for only a couple of agents.
@@ -412,7 +414,7 @@ class SolversUtilsTests(unittest.TestCase):
         aux_local_env = get_local_view(env, [0])
 
         # Assert a conflict is found for agents 1 and 2
-        self.assertEqual(couple_detect_conflict(env, joint_policy, 2, 1),
+        self.assertEqual(couple_detect_conflict(env, joint_policy, 2, 1, {}),
                          (
                              (
                                  2,
@@ -427,10 +429,31 @@ class SolversUtilsTests(unittest.TestCase):
                          ))
 
         # Assert no conflict is found for agents 0 and 1
-        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 1))
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 1, {}))
 
         # Assert no conflict is found for agents 0 and 2
-        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 2))
+        self.assertIsNone(couple_detect_conflict(env, joint_policy, 0, 2, {}))
+
+    def test_shared_states(self):
+        env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
+
+        low_level_plan_func = partial(fixed_iterations_count_rtdp,
+                                      partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
+                                      100)
+
+        policy = solve_independently_and_cross(env,
+                                               [[0], [1]],
+                                               low_level_plan_func,
+                                               {})
+        shared_states, n0, n1 = get_shared_states(env, policy, 0, 1, {})
+
+        # The agents are switching between this two states and therefore these states are shared.
+        s1 = env.loc_to_int[(21, 20)]
+        s2 = env.loc_to_int[(21, 19)]
+
+        # Assert the conflict parameters are right
+        self.assertIn(s1, shared_states)
+        self.assertIn(s2, shared_states)
 
 
 if __name__ == '__main__':
