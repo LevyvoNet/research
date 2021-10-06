@@ -18,6 +18,7 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
                  agents_groups: List,
                  i: int,
                  j: int,
+                 conflict_details: tuple,
                  joint_policy: CrossedPolicy,
                  info):
     # merge groups of i and j
@@ -111,6 +112,7 @@ def id(
                                          agents_groups,
                                          i,
                                          j,
+                                         conflict_details,
                                          curr_joint_policy,
                                          curr_iter_info['joint_policy'])
 
