@@ -418,3 +418,27 @@ def group_of_agent(agents_groups, agent_idx):
 def merge_agent_groups(agents_groups, g1, g2):
     return [agents_groups[i] for i in range(len(agents_groups)) if i not in [g1, g2]] + [
         sorted(agents_groups[g1] + agents_groups[g2])]
+
+
+def dijkstra_distance_single_env(env):
+    goal_state = env.locations_to_state(env.agents_goals)
+    distance = np.full((env.nS,), math.inf)
+    visited = np.full((env.nS,), False)
+
+    # Initialize the distance from goal state to 0
+    distance[goal_state] = 0
+
+    while not visited.all():
+        # Fetch the cheapest unvisited state
+        masked_distance = np.ma.masked_array(distance, mask=visited)
+        current_state = masked_distance.argmin()
+        current_distance = distance[current_state]
+
+        # Update the distance for each of the neighbors
+        for n in env.predecessors(current_state):
+            distance[n] = min(distance[n], current_distance + 1)
+
+        # Mark the current state as visited
+        visited[current_state] = True
+
+    return distance

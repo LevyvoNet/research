@@ -72,7 +72,6 @@ def id(
         info: Dict, **kwargs
 ) -> Policy:
     """Solve MAPF gym environment with ID algorithm.
-
     Args:
         low_level_merger: (MapfEnv, List, int, int, Policy, Policy, info): curried function which merges two groups
             and return a new joint policy where the the received groups are planned together.
@@ -80,7 +79,6 @@ def id(
         env (MapfEnv): mapf env
         info (dict): information about the run. For ID it will return information about conflicts
             detected during the solving.
-
     Returns:
           function int->int. The optimal policy, function from state to action.
     """

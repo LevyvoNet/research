@@ -8,11 +8,9 @@ from collections import defaultdict
 
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     function_to_get_item_of_object,
-                                    vector_action_to_integer,
-                                    STAY,
                                     ALL_STAY_JOINT_ACTION)
 from solvers.vi import prioritized_value_iteration
-from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy
+from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy, dijkstra_distance_single_env
 
 MDR_EPSILON = 0.1
 MIN_SUCCESS_RATE = 0.5
@@ -129,33 +127,9 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
     return heuristic_function
 
 
-def _dijkstra_distance_single_env(env):
-    goal_state = env.locations_to_state(env.agents_goals)
-    distance = np.full((env.nS,), math.inf)
-    visited = np.full((env.nS,), False)
-
-    # Initialize the distance from goal state to 0
-    distance[goal_state] = 0
-
-    while not visited.all():
-        # Fetch the cheapest unvisited state
-        masked_distance = np.ma.masked_array(distance, mask=visited)
-        current_state = masked_distance.argmin()
-        current_distance = distance[current_state]
-
-        # Update the distance for each of the neighbors
-        for n in env.predecessors(current_state):
-            distance[n] = min(distance[n], current_distance + 1)
-
-        # Mark the current state as visited
-        visited[current_state] = True
-
-    return distance
-
-
 def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_distance = [(_dijkstra_distance_single_env(local_env)) for local_env in local_envs]
+    local_distance = [(dijkstra_distance_single_env(local_env)) for local_env in local_envs]
 
     def f(s):
         locations = env.state_to_locations(s)
@@ -177,7 +151,7 @@ def dijkstra_min_heuristic(env: MapfEnv, *args, **kwargs):
 
 def dijkstra_sum_heuristic(env: MapfEnv, *args, **kwargs):
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_distance = [_dijkstra_distance_single_env(local_env) for local_env in local_envs]
+    local_distance = [dijkstra_distance_single_env(local_env) for local_env in local_envs]
 
     def f(s):
         locations = env.state_to_locations(s)
