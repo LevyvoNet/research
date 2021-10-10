@@ -75,13 +75,4 @@ def test_sanity_8_ma_rtdp():
 
     assert result == RESULT_OK
 
-
-def test_smart_id():
-    solver = id_ma_rtdp_pvi_sum_describer
-    env = symmetrical_bottleneck(0.2, 100, OptimizationCriteria.Makespan)
-
-    policy = solver.func(env, info)
-
-    # TODO: assert that the conflict structure inside policy is as expected
-
 # TODO: add conflict between pair and single on large map
