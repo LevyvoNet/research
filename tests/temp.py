@@ -13,7 +13,7 @@ def main():
     for scen_id in range(1):
         start = time.time()
         # Define the env and low level solver
-        env = create_mapf_env('empty-48-48', 1, 4, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
+        env = create_mapf_env('empty-48-48', 1, 20, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
         solver = long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer
 
         # Split and solve for each agent
