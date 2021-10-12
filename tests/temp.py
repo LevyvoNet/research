@@ -12,7 +12,7 @@ from solvers.utils import (solve_independently_and_cross,
 
 
 def main():
-    for scen_id in range(1, 27):
+    for scen_id in range(26, 27):
         start = time.time()
         # Define the env and low level solver
         env = create_mapf_env('empty-48-48', 1, 20, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
