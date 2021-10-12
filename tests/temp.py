@@ -48,7 +48,11 @@ def main():
         max_group_size = len(max(groups, key=lambda g: len(g)))
 
         # Calculate conflicts statistics
-        print(f'scen {scen_id}, max group size: {max_group_size}, took {round(time.time() - start)} seconds,  groups are:')
+        print(f'scen {scen_id}, '
+              f'max group size: {max_group_size}, '
+              f'took {round(time.time() - start)} seconds,  '
+              f'There are {len(groups)} groups,  '
+              f'groups are:')
         for group in groups:
             print(group)
 
