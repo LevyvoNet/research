@@ -65,14 +65,3 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     assert not eval_info['clashed']
 
     assert eval_info['success_rate'] > 0
-
-
-def test_sanity_8_ma_rtdp():
-    result = benchmark_solver_on_env(partial(sanity_independent, 8, 8),
-                                     'sanity-independent-8X8-8-agents_makespan',
-                                     long_ma_rtdp_pvi_sum_describer,
-                                     OptimizationCriteria.Makespan)
-
-    assert result == RESULT_OK
-
-# TODO: add conflict between pair and single on large map

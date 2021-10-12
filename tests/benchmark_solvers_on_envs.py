@@ -112,30 +112,30 @@ lvl_to_solvers = {
         ma_rtdp_pvi_min_describer,
     ],
     1: [
-        # id_ma_rtdp_pvi_min_describer,
-        # id_ma_rtdp_pvi_sum_describer,
-        # id_rtdp_pvi_min_describer,
-        # id_rtdp_pvi_sum_describer,
+        id_ma_rtdp_pvi_min_describer,
+        id_ma_rtdp_pvi_sum_describer,
+        id_rtdp_pvi_min_describer,
+        id_rtdp_pvi_sum_describer,
+        long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
     ],
     2: [
-        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
-        # long_ma_rtdp_pvi_min_describer,
-        # long_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_dijkstra_describer,
-        # long_id_ma_rtdp_min_pvi_describer,
-        # long_id_ma_rtdp_min_rtdp_dijkstra_describer,
-        # long_ma_rtdp_min_rtdp_dijkstra_describer,
-        # long_ma_rtdp_pvi_sum_describer,
-        # long_ma_rtdp_sum_dijkstra_describer,
-        # long_ma_rtdp_sum_rtdp_dijkstra_describer,
-        # long_id_rtdp_sum_pvi_describer,
-        # long_id_ma_rtdp_sum_pvi_describer,
+        long_ma_rtdp_pvi_min_describer,
+        long_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_dijkstra_describer,
+        long_id_ma_rtdp_min_pvi_describer,
+        long_id_ma_rtdp_min_rtdp_dijkstra_describer,
+        long_ma_rtdp_min_rtdp_dijkstra_describer,
+        long_ma_rtdp_pvi_sum_describer,
+        long_ma_rtdp_sum_dijkstra_describer,
+        long_ma_rtdp_sum_rtdp_dijkstra_describer,
+        long_id_rtdp_sum_pvi_describer,
+        long_id_ma_rtdp_sum_pvi_describer,
     ],
     3: [
-        # long_id_ma_rtdp_sum_dijkstra_describer,
-        # long_id_ma_rtdp_sum_rtdp_dijkstra_describer
+        long_id_ma_rtdp_sum_dijkstra_describer,
+        long_id_ma_rtdp_sum_rtdp_dijkstra_describer
     ]
 }
 
@@ -202,7 +202,6 @@ def generate_solver_env_combinations(max_env_lvl):
                                              solver_describer,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan
     return all_makespan + all_soc
 
 
