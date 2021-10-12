@@ -422,7 +422,7 @@ def stop_when_no_improvement_between_batches_rtdp(heuristic_function: Callable[[
                                                             policy,
                                                             iterations_generator,
                                                             info)
-    info['total_time'] = time.time() - start
+    info['total_time'] = round(time.time() - start)
 
     return policy
 
