@@ -12,11 +12,11 @@ from solvers.utils import (solve_independently_and_cross,
 
 
 def main():
-    for scen_id in range(26, 27):
+    for scen_id in range(1, 27):
         start = time.time()
         # Define the env and low level solver
-        env = create_mapf_env('empty-48-48', 1, 20, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
-        solver = long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer
+        env = create_mapf_env('empty-48-48', scen_id, 1, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
+        solver = long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer
 
         # Split and solve for each agent
         agents_groups = [[i] for i in range(env.n_agents)]
@@ -28,6 +28,9 @@ def main():
                                                      info['independent_policies'])
 
         print(f'solving took {round(time.time() - start)}')
+
+        import ipdb
+        ipdb.set_trace()
 
         # Print soft conflicts data
         print('--soft conflicts--------------------------------------------------------------------------')

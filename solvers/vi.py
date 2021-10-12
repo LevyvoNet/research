@@ -43,10 +43,8 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFu
     max_iterations = 1000
     eps = 1e-2
     s_count = 0
-    real_start = time.time()
     for i in range(max_iterations):
         prev_v = np.copy(v)
-        start = time.time()
         for s in range(env.nS):
             q_sa = []
             for a in range(env.nA):
@@ -102,7 +100,6 @@ def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs
     layers = get_layers(env)
     for i in range(max_iterations):
         prev_v = np.copy(v)
-        start = time.time()
         for layer in layers:
             for s in layer:
                 q_sa = []
