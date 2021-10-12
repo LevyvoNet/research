@@ -98,87 +98,92 @@ def sanity_general(n_rooms, room_size, n_agents, optimization_criteria):
     return create_mapf_env(f'sanity-{n_rooms}-{room_size}', None, n_agents, 0.2, -1000, 0, -1, optimization_criteria)
 
 
+def empty_grid(grid_size, n_agents, optimization_criteria):
+    return create_mapf_env(f'empty-{grid_size}-{grid_size}', 1, n_agents, 0.2, -1000, 0, -1, optimization_criteria)
+
+
 lvl_to_solvers = {
     0: [
-        value_iteration_describer,
-        policy_iteration_describer,
-        prioritized_value_iteration_describer,
-        id_vi_describer,
-        fixed_iter_rtdp_min_describer,
-        rtdp_stop_no_improvement_min_heuristic_describer,
-        ma_rtdp_pvi_sum_describer,
-        ma_rtdp_dijkstra_min_describer,
-        ma_rtdp_dijkstra_sum_describer,
-        ma_rtdp_pvi_min_describer,
+        # value_iteration_describer,
+        # policy_iteration_describer,
+        # prioritized_value_iteration_describer,
+        # id_vi_describer,
+        # fixed_iter_rtdp_min_describer,
+        # rtdp_stop_no_improvement_min_heuristic_describer,
+        # ma_rtdp_pvi_sum_describer,
+        # ma_rtdp_dijkstra_min_describer,
+        # ma_rtdp_dijkstra_sum_describer,
+        # ma_rtdp_pvi_min_describer,
     ],
     1: [
-        id_ma_rtdp_pvi_min_describer,
-        id_ma_rtdp_pvi_sum_describer,
-        id_rtdp_pvi_min_describer,
-        id_rtdp_pvi_sum_describer,
-        long_rtdp_stop_no_improvement_sum_heuristic_describer,
-        long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
-        long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
+        # id_ma_rtdp_pvi_min_describer,
+        # id_ma_rtdp_pvi_sum_describer,
+        # id_rtdp_pvi_min_describer,
+        # id_rtdp_pvi_sum_describer,
+        # long_rtdp_stop_no_improvement_sum_heuristic_describer,
+        # long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer,
+        # long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer,
     ],
     2: [
         long_ma_rtdp_pvi_min_describer,
         long_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_dijkstra_describer,
-        long_id_ma_rtdp_min_pvi_describer,
-        long_id_ma_rtdp_min_rtdp_dijkstra_describer,
+        # long_id_ma_rtdp_min_dijkstra_describer,
+        # long_id_ma_rtdp_min_pvi_describer,
+        # long_id_ma_rtdp_min_rtdp_dijkstra_describer,
         long_ma_rtdp_min_rtdp_dijkstra_describer,
         long_ma_rtdp_pvi_sum_describer,
         long_ma_rtdp_sum_dijkstra_describer,
         long_ma_rtdp_sum_rtdp_dijkstra_describer,
-        long_id_rtdp_sum_pvi_describer,
-        long_id_ma_rtdp_sum_pvi_describer,
+        # long_id_rtdp_sum_pvi_describer,
+        # long_id_ma_rtdp_sum_pvi_describer,
     ],
     3: [
-        long_id_ma_rtdp_sum_dijkstra_describer,
-        long_id_ma_rtdp_sum_rtdp_dijkstra_describer
+        # long_id_ma_rtdp_sum_dijkstra_describer,
+        # long_id_ma_rtdp_sum_rtdp_dijkstra_describer
     ]
 }
 
 lvl_to_env = {
     0: [
-        (empty_grid_single_agent, 'empty_grid_single_agent'),
-        (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
-        (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
-        (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
-        (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
-        (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
-        (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
+        # (empty_grid_single_agent, 'empty_grid_single_agent'),
+        # (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
+        # (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
+        # (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
+        # (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
+        # (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
+        # (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
     ],
     1: [
-        (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
-        (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        (long_bottleneck, 'long_bottleneck_deterministic'),
-        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
-        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
-        (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
+        # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
+        # (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
+        # (long_bottleneck, 'long_bottleneck_deterministic'),
+        # (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
+        # (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
+        # (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
     ],
     2: [
-        (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
-        (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
-        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
-        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+        # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
+        # (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
+        # (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        # (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+        (partial(empty_grid, 32, 8), 'empty-32X32-8-agents')
     ],
     3: [
-        (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
-        (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
-        (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
-        (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
-        (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
-        (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
-        (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
-        (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
-        (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
-        (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
-        (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
+        # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
+        # (sanity_2_32_3_agents, 'conflict_between_pair_and_single_large_map'),
+        # (partial(sanity_independent, 16, 8), 'sanity-independent-8X8-16-agents'),
+        # (partial(sanity_independent, 32, 8), 'sanity-independent-8X8-32-agents'),
+        # (partial(sanity_independent, 16, 16), 'sanity-independent-16X16-16-agents'),
+        # (partial(sanity_independent, 32, 16), 'sanity-independent-16X16-32-agents'),
+        # (partial(sanity_independent, 16, 32), 'sanity-independent-32X32-16-agents'),
+        # (partial(sanity_independent, 32, 32), 'sanity-independent-32X32-32-agents'),
+        # (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
+        # (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
+        # (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
 
     ]
 }
