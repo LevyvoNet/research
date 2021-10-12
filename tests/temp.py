@@ -12,10 +12,10 @@ from solvers.utils import (solve_independently_and_cross,
 
 
 def main():
-    for scen_id in range(1, 27):
+    for scen_id in range(25, 26):
         start = time.time()
         # Define the env and low level solver
-        env = create_mapf_env('empty-48-48', scen_id, 1, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
+        env = create_mapf_env('empty-48-48', scen_id, 2, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
         solver = long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer
 
         # Split and solve for each agent
@@ -28,9 +28,6 @@ def main():
                                                      info['independent_policies'])
 
         print(f'solving took {round(time.time() - start)}')
-
-        import ipdb
-        ipdb.set_trace()
 
         # Print soft conflicts data
         print('--soft conflicts--------------------------------------------------------------------------')
@@ -56,6 +53,7 @@ def main():
 
         # Find the largest group
         max_group_size = len(max(groups, key=lambda g: len(g)))
+        interesting_states = {s: states[s] for s in states if len(states[s]) > 1}
 
         # Calculate conflicts statistics
         print(f'scen {scen_id}, '
@@ -103,6 +101,9 @@ def main():
         print('groups are:')
         for group in groups:
             print(group)
+
+        import ipdb
+        ipdb.set_trace()
 
 
 if __name__ == '__main__':
