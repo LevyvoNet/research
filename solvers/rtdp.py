@@ -352,6 +352,7 @@ def no_improvement_from_last_batch(policy: RtdpPolicy, iter_count: int, iteratio
     eval_info = evaluate_policy(policy, n_episodes, max_eval_steps, min_success_rate=MIN_SUCCESS_RATE)
     policy.in_train = True
     info['last_MDR'] = eval_info['MDR']
+    info['last_success_rate'] = eval_info['success_rate']
 
     if eval_info['success_rate'] < 100 * MIN_SUCCESS_RATE:
         return False
