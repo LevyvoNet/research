@@ -27,10 +27,11 @@ def main():
                                                      solver.func,
                                                      info['independent_policies'])
 
-        # print(info)
+        print(f'solving took {round(time.time() - start)}')
 
         # Print soft conflicts data
         print('--soft conflicts--------------------------------------------------------------------------')
+        start = time.time()
         # For each reachable state, calculate the agents which can reach it.
         groups = []
         states = collections.defaultdict(set)
@@ -64,6 +65,7 @@ def main():
 
         # Print hard conflicts
         print('--hard conflicts--------------------------------------------------------------------------')
+        start = time.time()
         couples = []
         for (a1, a2) in itertools.combinations(range(env.n_agents), 2):
             info[f'{a1}_{a2}'] = {}
@@ -88,7 +90,8 @@ def main():
         print(f'scen {scen_id}: '
               f'There are {len(couples)} couples, '
               f'There are {len(groups)} groups,'
-              f'Max group size: {max_group_size}')
+              f'Max group size: {max_group_size}'
+              f'conflicts took {round(time.time() - start)}')
 
         # print('coules are:')
         # for couple in couples:
