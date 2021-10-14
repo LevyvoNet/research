@@ -3,16 +3,18 @@ import time
 import itertools
 
 from gym_mapf.envs.utils import create_mapf_env
-from gym_mapf.envs.mapf_env import OptimizationCriteria
+from gym_mapf.envs.mapf_env import OptimizationCriteria, MapfEnv
 
 from available_solvers import *
 from solvers.utils import (solve_independently_and_cross,
                            get_reachable_states,
-                           couple_detect_conflict)
+                           couple_detect_conflict,
+                           Policy,
+                           CrossedPolicy)
 
 
 def main():
-    for scen_id in range(25, 26):
+    for scen_id in range(1, 26):
         start = time.time()
         # Define the env and low level solver
         env = create_mapf_env('empty-48-48', scen_id, 2, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
@@ -101,9 +103,6 @@ def main():
         print('groups are:')
         for group in groups:
             print(group)
-
-        import ipdb
-        ipdb.set_trace()
 
 
 if __name__ == '__main__':

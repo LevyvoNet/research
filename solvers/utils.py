@@ -1,5 +1,7 @@
 import itertools
 import time
+import collections
+from functools import partial
 import math
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Callable
@@ -337,11 +339,19 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
     all_stay_action = vector_action_to_integer((STAY,) * policy.env.n_agents)
     stats = {
         'episodes_rewards': [],
+        'episodes_time': [],
         'clashed': False,
         'MDR': 0,
+        'mean_time':0,
+        'n_replans':0,
     }
 
     for i in range(n_episodes):
+        if hasattr(policy, 'replans'):
+            policy.replans = collections.defaultdict(partial(collections.defaultdict, dict))
+        episode_start_time = time.time()
+        if debug:
+            print(f'----start evaluation {i + 1}-------------------------------------------------------------------')
         policy.env.reset()
         steps = 0
         episode_reward = 0
@@ -364,10 +374,17 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
             if done:
                 if not info['collision']:
                     stats['episodes_rewards'].append(episode_reward)
+                    stats['episodes_time'].append(round(time.time() - episode_start_time, 1))
                     stats['MDR'] += episode_reward
+                    stats['mean_time'] += stats['episodes_time'][-1]
                 else:
                     stats['clashed'] = True
                 break
+
+        if debug:
+            if len(policy.replans) > 0:
+                stats['n_replans'] += 1
+            print(f'----done evaluation {i + 1}-------------------------------------------------------------------')
 
         # If we don't have a chance to be in the minimum success rate, just give up
         if (n_episodes - i - 1) + len(stats['episodes_rewards']) < n_episodes * min_success_rate:
@@ -376,8 +393,10 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
     # Calculate MDR
     if len(stats['episodes_rewards']) == 0:
         stats['MDR'] = -math.inf
+        stats['mean_time'] = -math.inf
     else:
         stats['MDR'] = round(stats['MDR'] / len(stats['episodes_rewards']), 1)
+        stats['mean_time'] += round(stats['mean_time'] / len(stats['episodes_time']), 1)
 
     # Calculate success rate
     stats['success_rate'] = round((len(stats['episodes_rewards']) / n_episodes) * 100)
