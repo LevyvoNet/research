@@ -194,7 +194,7 @@ def generate_solver_env_combinations(max_env_lvl):
                                              policy,
                                              OptimizationCriteria.Makespan))
 
-    return all_makespan
+    return all_soc
     return all_makespan + all_soc
 
 
