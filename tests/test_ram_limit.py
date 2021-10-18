@@ -4,13 +4,11 @@ from typing import Dict, Callable
 from gym_mapf.envs.mapf_env import MapfEnv
 from gym_mapf.envs.utils import create_mapf_env
 from solvers.utils import Policy
-from solvers import (value_iteration,
-                              prioritized_value_iteration,
-                              policy_iteration)
+from solvers import (ValueIterationPolicy, PrioritizedValueIterationPolicy, PolicyIterationPolicy)
 
 
 class RamLimitTest(unittest.TestCase):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
+    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
         """Return the concrete planner"""
         raise unittest.SkipTest("This is an abstract test case")
 
@@ -19,27 +17,25 @@ class RamLimitTest(unittest.TestCase):
         # Note the large number of agents
         env = create_mapf_env('room-32-32-4', 12, 6, 0.1, 0.1, -1000, -1, -1)
 
-        info = {}
-        plan_func = self.get_plan_func()
-        policy = plan_func(env, info)
+        policy = self.solve(env)
 
-        self.assertIs(policy, None)
-        self.assertEqual(info['end_reason'], 'out_of_memory')
+        self.assertIs(policy.v, None)
+        self.assertEqual(policy.info['end_reason'], 'out_of_memory')
 
 
 class ValueIterationRamLimitTest(RamLimitTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(value_iteration, 1.0)
+    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
+        return ValueIterationPolicy().attach_env(env, 1.0).train()
 
 
 class PrioritizedValueIterationRamLimitTest(RamLimitTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(prioritized_value_iteration, 1.0)
+    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
+        return PrioritizedValueIterationPolicy().attach_env(env, 1.0).train()
 
 
 class PolicyIterationRamLimitTest(RamLimitTest):
-    def get_plan_func(self) -> Callable[[MapfEnv, Dict], Policy]:
-        return partial(policy_iteration, 1.0)
+    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
+        return PolicyIterationPolicy().attach_env(env, 1.0).train()
 
 
 if __name__ == '__main__':

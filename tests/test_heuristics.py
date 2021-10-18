@@ -2,7 +2,7 @@ import unittest
 
 from gym_mapf.envs.utils import MapfGrid, create_mapf_env, get_local_view
 from gym_mapf.envs.mapf_env import MapfEnv, OptimizationCriteria
-from solvers.vi import value_iteration, prioritized_value_iteration
+from solvers.vi import ValueIterationPolicy, PrioritizedValueIterationPolicy
 from solvers.rtdp import (dijkstra_min_heuristic,
                           dijkstra_sum_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
@@ -24,7 +24,7 @@ class HeuristicsTest(unittest.TestCase):
         env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
-        vi_policy = value_iteration(1.0, env, {})
+        vi_policy = ValueIterationPolicy().attach_env(env, 1.0).train()
 
         for s in range(env.nS):
             self.assertEqual(dijkstra_func(s), vi_policy.v[s])
@@ -34,7 +34,7 @@ class HeuristicsTest(unittest.TestCase):
         env = create_mapf_env('room-32-32-4', 1, 1, 0, -1000, -1, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
-        vi_policy = value_iteration(1.0, env, {})
+        vi_policy = ValueIterationPolicy().attach_env(env, 1.0).train()
 
         for i in range(env.nS):
             self.assertEqual(dijkstra_func(i), vi_policy.v[i])
@@ -52,7 +52,7 @@ class HeuristicsTest(unittest.TestCase):
         env = MapfEnv(grid, 1, agents_starts, agents_goals, 0, -1000, 100, -1, OptimizationCriteria.Makespan)
 
         dijkstra_func = dijkstra_min_heuristic(env)
-        vi_policy = value_iteration(1.0, env, {})
+        vi_policy = ValueIterationPolicy().attach_env(env, 1.0).train()
 
         for i in range(env.nS):
             self.assertEqual(dijkstra_func(i), vi_policy.v[i])
@@ -63,8 +63,8 @@ class HeuristicsTest(unittest.TestCase):
         env1 = get_local_view(env, [1])
 
         dijkstra_func = dijkstra_sum_heuristic(env)
-        vi_policy0 = prioritized_value_iteration(1.0, env0, {})
-        vi_policy1 = prioritized_value_iteration(1.0, env1, {})
+        vi_policy0 = PrioritizedValueIterationPolicy().attach_env(env0, 1.0).train()
+        vi_policy1 = PrioritizedValueIterationPolicy().attach_env(env1, 1.0).train()
 
         for s in range(env.nS):
             expected_reward = 0
@@ -93,8 +93,8 @@ class HeuristicsTest(unittest.TestCase):
         env1 = get_local_view(env, [1])
 
         heuristic_func = local_views_prioritized_value_iteration_sum_heuristic(1.0, env)
-        vi_policy0 = prioritized_value_iteration(1.0, env0, {})
-        vi_policy1 = prioritized_value_iteration(1.0, env1, {})
+        vi_policy0 = PrioritizedValueIterationPolicy().attach_env(env0, 1.0).train()
+        vi_policy1 = PrioritizedValueIterationPolicy().attach_env(env1, 1.0).train()
 
         for s in range(env.nS):
             expected_reward = 0
@@ -122,7 +122,7 @@ class HeuristicsTest(unittest.TestCase):
         envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
 
         heuristic_func = local_views_prioritized_value_iteration_min_heuristic(1.0, env)
-        vi_policy = [prioritized_value_iteration(1.0, envs[i], {}) for i in range(env.n_agents)]
+        vi_policy = [PrioritizedValueIterationPolicy().attach_env(envs[i], 1.0).train() for i in range(env.n_agents)]
 
         for s in range(env.nS):
             locations = env.state_to_locations(s)

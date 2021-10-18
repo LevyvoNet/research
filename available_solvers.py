@@ -183,6 +183,8 @@ ma_rtdp_rtdp_dijkstra_sum_policy = MultiagentRtdpPolicy(rtdp_dijkstra_sum_h, 100
 id_vi_policy = IdPolicy(vi_policy, None, 'id_vi')
 id_rtdp_dijkstra_sum_policy = IdPolicy(rtdp_dijkstra_sum_policy, rtdp_sum_merger, 'id_rtdp_dijsktra_sum')
 id_ma_rtdp_dijkstra_sum_policy = IdPolicy(ma_rtdp_dijkstra_sum_policy, ma_rtdp_sum_merger, 'id_ma_rtdp_dijsktra_sum')
+id_rtdp_pvi_sum_policy = IdPolicy(rtdp_pvi_sum_policy, rtdp_sum_merger, 'id_rtdp_pvi_sum')
+id_ma_rtdp_pvi_sum_policy = IdPolicy(ma_rtdp_pvi_sum_policy, ma_rtdp_sum_merger, 'id_ma_rtdp_pvi_sum')
 
 # prioritized_value_iteration_describer = SolverDescriber(
 #     description='prioritized_value_iteration(gamma=1.0)',

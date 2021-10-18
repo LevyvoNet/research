@@ -9,7 +9,7 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     STAY,
                                     UP,
                                     DOWN)
-from solvers.utils import evaluate_policy
+from solvers.utils import Policy
 from tests.benchmark_solvers_on_envs import (lvl_to_solvers,
                                              benchmark_solver_on_env,
                                              sanity_independent,
@@ -19,13 +19,13 @@ from tests.benchmark_solvers_on_envs import (lvl_to_solvers,
 
 def generate_all_solvers():
     all_makespan = [
-        (solver_describer, OptimizationCriteria.Makespan)
-        for solver_describer in itertools.chain(*lvl_to_solvers.values())
+        (policy, OptimizationCriteria.Makespan)
+        for policy in itertools.chain(*lvl_to_solvers.values())
     ]
 
     all_soc = [
-        (solver_describer, OptimizationCriteria.SoC)
-        for solver_describer in itertools.chain(*lvl_to_solvers.values())
+        (policy, OptimizationCriteria.SoC)
+        for policy in itertools.chain(*lvl_to_solvers.values())
     ]
 
     return all_makespan + all_soc
@@ -34,8 +34,8 @@ def generate_all_solvers():
 all_tested_solvers = generate_all_solvers()
 
 
-@pytest.mark.parametrize('solver_describer, optimization_criteria', all_tested_solvers)
-def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
+@pytest.mark.parametrize('policy, optimization_criteria', all_tested_solvers)
+def test_corridor_switch_no_clash_possible(policy: Policy,
                                            optimization_criteria: OptimizationCriteria):
     eval_max_steps = 200
     eval_n_episodes = 100
@@ -48,8 +48,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
     # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
     env = MapfEnv(grid, 2, start_locations, goal_locations, 0.2, -0.001, 0, -1, optimization_criteria)
 
-    train_info = {}
-    policy = solver_describer.func(env, train_info)
+    policy.attach_env(env, 1.0).train()
 
     # Assert no conflict is possible
     interesting_locations = ((1, 1), (0, 1))
@@ -60,7 +59,7 @@ def test_corridor_switch_no_clash_possible(solver_describer: SolverDescriber,
 
     assert policy.act(interesting_state) in expected_possible_actions
 
-    eval_info = evaluate_policy(policy, eval_n_episodes, eval_max_steps)
+    eval_info = policy.evaluate(eval_n_episodes, eval_max_steps)
 
     assert not eval_info['clashed']
 
