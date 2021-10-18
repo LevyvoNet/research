@@ -1,7 +1,7 @@
 import functools
 import time
 import math
-from typing import Dict, Callable
+from typing import Dict, Callable, List
 from collections import defaultdict
 import numpy as np
 
@@ -21,10 +21,35 @@ from solvers.rtdp import (RtdpPolicy,
 
 
 class MultiagentRtdpPolicy(RtdpPolicy):
-    def __init__(self, env, gamma, heuristic):
-        super(MultiagentRtdpPolicy, self).__init__(env, gamma, heuristic)
+    def __init__(self, heuristic, batch_size, max_iters, name: str = ''):
+        super(MultiagentRtdpPolicy, self).__init__(heuristic, batch_size, max_iters, name)
+        self.q_partial_table = None
+        self.local_env_aux = None
+
+    def train(self, *args, **kwargs):
+        start = time.time()
+        self.heuristic = self.heuristic_function(self.env)
+        self.info['initialization_time'] = round(time.time() - start, 1)
+        iterations_generator = multi_agent_turn_based_rtdp_iterations_generator(self, self.info)
+
+        _stop_when_no_improvement_between_batches_rtdp(self.heuristic,
+                                                       self.gamma,
+                                                       self.batch_size,
+                                                       self.max_iters,
+                                                       self.env,
+                                                       self,
+                                                       iterations_generator,
+                                                       self.info)
+        self.info['total_time'] = round(time.time() - start)
+
+        return self
+
+    def attach_env(self, env: MapfEnv, gamma: float):
+        super(MultiagentRtdpPolicy, self).attach_env(env, gamma)
         self.q_partial_table = {i: defaultdict(dict) for i in range(env.n_agents)}
         self.local_env_aux = get_local_view(self.env, [0])
+
+        return self
 
     def get_q(self, agent, joint_state, local_action):
         if joint_state in self.q_partial_table[agent]:
@@ -224,7 +249,7 @@ def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
 
 
 def ma_rtdp_merge(
-        heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],
+        heuristic_function: Callable[[Policy, Policy,List,int,int, MapfEnv], Callable[[int], float]],
         gamma,
         iterations_batch_size,
         max_iterations,
@@ -233,16 +258,13 @@ def ma_rtdp_merge(
         old_group_i_idx,
         old_group_j_idx,
         policy_i,
-        policy_j,
-        info):
-    return ma_rtdp(functools.partial(heuristic_function,
-                                     policy_i,
-                                     policy_j,
-                                     old_groups,
-                                     old_group_i_idx,
-                                     old_group_j_idx),
-                   gamma,
-                   iterations_batch_size,
-                   max_iterations,
-                   env,
-                   info)
+        policy_j):
+    heursitic_func = functools.partial(heuristic_function,
+                                       policy_i,
+                                       policy_j,
+                                       old_groups,
+                                       old_group_i_idx,
+                                       old_group_j_idx)
+
+    policy = MultiagentRtdpPolicy(heursitic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
+    return policy

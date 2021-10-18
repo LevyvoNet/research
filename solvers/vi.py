@@ -9,6 +9,18 @@ from solvers.utils import safe_actions, ValueFunctionPolicy, Policy
 from gym_mapf.envs.mapf_env import MapfEnv
 
 
+class ValueIterationPolicy(ValueFunctionPolicy):
+    def train(self, *args, **kwargs) -> Policy:
+        self.v = value_iteration(self.gamma, self.env, self.info)
+        return self
+
+
+class PrioritizedValueIterationPolicy(ValueFunctionPolicy):
+    def train(self, *args, **kwargs) -> Policy:
+        self.v = prioritized_value_iteration(self.gamma, self.env, self.info)
+        return self
+
+
 def get_layers(env):
     layers = []
     visited_states = set()
@@ -28,13 +40,12 @@ def get_layers(env):
     return layers
 
 
-def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFunctionPolicy:
+def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
     """ Value-iteration algorithm"""
     info['converged'] = False
     info['n_iterations'] = 0
     info['initialization_time'] = 0
     start = time.time()  # TODO: use a decorator for updating info with time measurement
-    gamma = kwargs.get('gamma', 1.0)
     if V_TYPE_SIZE * env.nS > MAXIMUM_RAM:
         info['end_reason'] = "out_of_memory"
         return None
@@ -74,16 +85,12 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFu
             info['converged'] = True
             break
 
-    policy = ValueFunctionPolicy(env, gamma)
-    policy.v = v
+    info['train_time'] = round(time.time() - start, 2)
 
-    end = time.time()
-    info['VI_time'] = round(end - start, 2)
-
-    return policy
+    return v
 
 
-def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> ValueFunctionPolicy:
+def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
     info['converged'] = False
     info['n_iterations'] = 0
     start = time.time()  # TODO: use a decorator for updating info with time measurement
@@ -128,9 +135,6 @@ def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs
             info['converged'] = True
             break
 
-    policy = ValueFunctionPolicy(env, gamma)
-    policy.v = v
+    info['train_time'] = round(time.time() - start, 2)
 
-    end = time.time()
-    info['prioritized_VI_time'] = round(end - start, 2)
-    return policy
+    return v

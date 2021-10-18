@@ -8,6 +8,12 @@ from gym_mapf.envs.mapf_env import MapfEnv
 from solvers.utils import Policy, ValueFunctionPolicy
 
 
+class PolicyIterationPolicy(ValueFunctionPolicy):
+    def train(self, *args, **kwargs):
+        self.v = policy_iteration(self.gamma, self.env, self.info)
+
+        return self
+
 def one_step_lookahead(env, state, V, discount_factor=1.0):
     """
     Helper function to  calculate state-value function
@@ -81,7 +87,7 @@ def policy_eval(env, policy, V, discount_factor):
     return policy_value
 
 
-def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> Policy:
+def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
     gamma = kwargs.get('gamma', 1.0)
     max_iteration = 1000
 
@@ -90,7 +96,7 @@ def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> Policy
         info['end_reason'] = "out_of_memory"
         return None
 
-    V = np.zeros(env.nS, dtype=V_TYPE)
+    v = np.zeros(env.nS, dtype=V_TYPE)
 
     # intialize a random policy
     policy_curr = np.random.randint(0, env.nA, env.nS)
@@ -99,10 +105,10 @@ def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> Policy
     for i in range(max_iteration):
         # evaluate given policy
         start = time.time()
-        V = policy_eval(env, policy_curr, V, gamma)
+        v = policy_eval(env, policy_curr, v, gamma)
 
         # improve policy
-        policy_curr = update_policy(env, policy_curr, V, gamma)
+        policy_curr = update_policy(env, policy_curr, v, gamma)
 
         # if policy not changed over 10 iterations it converged.
         if i % 10 == 0:
@@ -113,7 +119,4 @@ def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs) -> Policy
 
         # print(f'PI: iteration {i + 1} took {time.time() - start} seconds')
 
-    policy = ValueFunctionPolicy(env, 1.0)
-    policy.v = policy_eval(env, policy_curr, V, gamma)
-
-    return policy
+    return v

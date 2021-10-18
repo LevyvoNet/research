@@ -1,5 +1,6 @@
 import itertools
 import time
+import copy
 import collections
 from functools import partial
 import math
@@ -16,11 +17,24 @@ from gym_mapf.envs.utils import get_local_view
 
 
 class Policy(metaclass=ABCMeta):
-    def __init__(self, env: MapfEnv, gamma: float):
+    def __init__(self, name: str = ''):
         # TODO: deep copy env, don't just copy the reference
+        self.env = None
+        self.gamma = None
+        self.policy_cache = {}
+        self.info = {}
+        self.name = name
+
+    def attach_env(self, env: MapfEnv, gamma: float):
         self.env = env
         self.gamma = gamma
+        self.info = {}
         self.policy_cache = {}
+
+        return self
+
+    def reset(self):
+        self.env.reset()
 
     @abstractmethod
     def _act_in_unfamiliar_state(self, s: int):
@@ -40,10 +54,21 @@ class Policy(metaclass=ABCMeta):
 
         return self._act_in_unfamiliar_state(s)
 
+    @abstractmethod
+    def train(self, *args, **kwargs):
+        pass
+
+    def evaluate(self, n_episodes, max_steps, min_success_rate=0):
+        return evaluate_policy(self, n_episodes, max_steps, min_success_rate)
+
+    def train_info(self):
+        return self.info
+
 
 class CrossedPolicy(Policy):
     def __init__(self, env, policies, agents_groups):
-        super().__init__(env, 1.0)  # This does not matter
+        super().__init__()  # This does not matter
+        self.env = env
         self.policies = policies
         self.envs = [policy.env for policy in self.policies]
         self.agents_groups = agents_groups
@@ -72,6 +97,9 @@ class CrossedPolicy(Policy):
         joint_action = vector_action_to_integer(joint_action_vector)
 
         return joint_action
+
+    def train(self, *args, **kwargs):
+        pass
 
 
 def print_path_to_state(path: dict, state: int, env: MapfEnv):
@@ -296,7 +324,8 @@ def safe_actions(env: MapfEnv, s):
 
 def solve_independently_and_cross(env,
                                   agent_groups,
-                                  low_level_planner: Callable[[MapfEnv, Dict], Policy],
+                                  low_level_policy: Policy,
+                                  gamma,
                                   info: Dict):
     """Solve the MDP MAPF for the local views of the given agent groups
 
@@ -313,9 +342,10 @@ def solve_independently_and_cross(env,
 
     policies = []
     for group, local_env in zip(agent_groups, local_envs):
-        info[f'{group}'] = {}
-        policy = low_level_planner(local_env, info[f'{group}'])
-        policies.append(policy)
+        low_level_policy.attach_env(local_env, gamma)
+        low_level_policy.train()
+        info[f'{group}'] = low_level_policy.info
+        policies.append(copy.copy(low_level_policy))
 
     joint_policy = CrossedPolicy(env, policies, agent_groups)
 
@@ -335,33 +365,23 @@ def render_states(env, states):
     env.s = s_initial
 
 
-def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success_rate=0, debug=False):
+def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success_rate=0):
     all_stay_action = vector_action_to_integer((STAY,) * policy.env.n_agents)
     stats = {
         'episodes_rewards': [],
         'episodes_time': [],
         'clashed': False,
         'MDR': 0,
-        'mean_time':0,
-        'n_replans':0,
+        'mean_time': 0
     }
 
     for i in range(n_episodes):
-        if hasattr(policy, 'replans'):
-            policy.replans = collections.defaultdict(partial(collections.defaultdict, dict))
         episode_start_time = time.time()
-        if debug:
-            print(f'----start evaluation {i + 1}-------------------------------------------------------------------')
-        policy.env.reset()
+        policy.reset()
         steps = 0
         episode_reward = 0
 
         while steps < max_steps:
-            # debug print
-            # if debug:
-            #     print(f'steps={steps}')
-            #     policy.env.render()
-            #     time.sleep(0.1)
             a = policy.act(policy.env.s)
             if a == all_stay_action:
                 break
@@ -380,11 +400,6 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
                 else:
                     stats['clashed'] = True
                 break
-
-        if debug:
-            if len(policy.replans) > 0:
-                stats['n_replans'] += 1
-            print(f'----done evaluation {i + 1}-------------------------------------------------------------------')
 
         # If we don't have a chance to be in the minimum success rate, just give up
         if (n_episodes - i - 1) + len(stats['episodes_rewards']) < n_episodes * min_success_rate:
@@ -407,8 +422,8 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
 
 
 class ValueFunctionPolicy(Policy):
-    def __init__(self, env, gamma):
-        super().__init__(env, gamma)
+    def __init__(self, name: str = ''):
+        super().__init__(name)
         self.v = []
 
     def _act_in_unfamiliar_state(self, s: int):

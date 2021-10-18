@@ -30,7 +30,7 @@ jobs:
           PYTHONPATH: "."
 
   temp:
-    name: temp - Guy's task
+    name: temp - online replan
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
@@ -38,6 +38,6 @@ jobs:
         with:
           python-version: '3.6'
       - run: pip install stopit gym gym-mapf numpy colorama pandas scipy
-      - run: python tests/temp.py
+      - run: python solvers/online_replan.py
         env:
           PYTHONPATH: "."

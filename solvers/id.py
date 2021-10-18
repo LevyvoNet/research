@@ -1,6 +1,7 @@
 """Independence Detection Algorithm"""
 import functools
 import time
+import copy
 from typing import Dict, Callable, List
 
 from gym_mapf.envs.mapf_env import MapfEnv
@@ -13,7 +14,43 @@ from solvers.utils import (detect_conflict,
                            CrossedPolicy)
 
 
-def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Policy, Dict], Policy],
+class IdPolicy(Policy):
+    def __init__(self, low_level_policy: Policy, low_level_merger, name: str = ''):
+        super(IdPolicy, self).__init__(name)
+        self.low_level_policy = low_level_policy
+        self.low_level_merger = low_level_merger
+        self.joint_policy = None
+
+    def train(self, *args, **kwargs):
+        self.joint_policy = id(self.low_level_policy, self.low_level_merger, self.env, self.gamma, self.info)
+        return self
+
+    def _act_in_unfamiliar_state(self, s: int):
+        return self.joint_policy._act_in_unfamiliar_state(s)
+
+    def train_info(self):
+        ret = {}
+
+        # Number of found conflicts
+        ret['n_conflicts'] = len(self.info['iterations']) - 1
+
+        # Total time for conflicts detection,
+        # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
+        ret['conflict_detection_time'] = round(sum([self.info['iterations'][i].get('detect_conflict_time', 0)
+                                                    for i in range(len(self.info['iterations']))]), 1)
+
+        # This time mostly matters for heuristics calculation (on RTDP for example)
+        ret['solver_init_time'] = round(sum(
+            [sum([self.info['iterations'][j]['joint_policy'][key]['initialization_time']
+                  for key in self.info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['),
+                                                                                       key.endswith(']')])
+                  ])
+             for j in range(len(self.info['iterations']))]), 1)
+
+        return ret
+
+
+def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Policy], Policy],
                  env: MapfEnv,
                  agents_groups: List,
                  i: int,
@@ -44,31 +81,33 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
                                       old_group_i_idx,
                                       old_group_j_idx,
                                       joint_policy.policies[old_group_i_idx],
-                                      joint_policy.policies[old_group_j_idx],
-                                      info[f'{group}'])
+                                      joint_policy.policies[old_group_j_idx])
+            info[f'{group}'] = policy.info
 
         policies.append(policy)
 
     return CrossedPolicy(env, policies, new_agents_groups)
 
 
-def _default_low_level_merger_abstract(low_level_planner,
+def _default_low_level_merger_abstract(low_level_policy,
                                        env,
                                        agents_groups,
                                        group1,
                                        group2,
                                        policy1,
-                                       policy2,
-                                       info):
+                                       policy2):
     """This will casue ID to behave the old way - just solve from the beginning"""
-
-    return low_level_planner(env, info)
+    policy = copy.copy(low_level_policy)
+    policy.attach_env(env, low_level_policy.gamma)
+    policy.train()
+    return policy
 
 
 def id(
-        low_level_planner: Callable[[MapfEnv], Policy],
+        low_level_policy: Policy,
         low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Policy, Dict], Policy],
         env: MapfEnv,
+        gamma,
         info: Dict, **kwargs
 ) -> Policy:
     """Solve MAPF gym environment with ID algorithm.
@@ -84,7 +123,7 @@ def id(
     """
     # TODO: delete eventually
     low_level_merger = functools.partial(_default_low_level_merger_abstract,
-                                         low_level_planner) if low_level_merger is None else low_level_merger
+                                         low_level_policy) if low_level_merger is None else low_level_merger
 
     start = time.time()  # TODO: use a decorator for updating info with time measurement
     agents_groups = [[i] for i in range(env.n_agents)]
@@ -95,7 +134,8 @@ def id(
     curr_iter_info['joint_policy'] = {}
     curr_joint_policy = solve_independently_and_cross(env,
                                                       agents_groups,
-                                                      low_level_planner,
+                                                      low_level_policy,
+                                                      gamma,
                                                       curr_iter_info['joint_policy'])
 
     conflict = detect_conflict(env, curr_joint_policy, curr_iter_info)

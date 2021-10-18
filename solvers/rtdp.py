@@ -3,13 +3,13 @@ import functools
 import numpy as np
 import time
 import math
-from typing import Callable, Dict, Iterable
+from typing import Callable, Dict, Iterable, List
 from collections import defaultdict
 
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     function_to_get_item_of_object,
                                     ALL_STAY_JOINT_ACTION)
-from solvers.vi import prioritized_value_iteration
+from solvers.vi import PrioritizedValueIterationPolicy
 from solvers.utils import Policy, ValueFunctionPolicy, get_local_view, evaluate_policy, dijkstra_distance_single_env
 
 MDR_EPSILON = 0.1
@@ -17,14 +17,17 @@ MIN_SUCCESS_RATE = 0.5
 
 
 class RtdpPolicy(ValueFunctionPolicy):
-    def __init__(self, env, gamma, heuristic):
-        super().__init__(env, gamma)
+    def __init__(self, heuristic, batch_size, max_iters, name: str = ''):
+        super().__init__(name)
         self.v_partial_table = {}
         # Now this v behaves like a full numpy array
         self.v = function_to_get_item_of_object(self._get_value)
-        self.heuristic = heuristic
+        self.heuristic_function = heuristic
+        self.heuristic = None
         self.visited_states = defaultdict(lambda: 0)
         self.in_train = True
+        self.max_iters = max_iters
+        self.batch_size = batch_size
 
     def _get_value(self, s):
         if s in self.v_partial_table:
@@ -48,6 +51,54 @@ class RtdpPolicy(ValueFunctionPolicy):
         # all_stay_action_vector = (STAY,) * self.env.n_agents
         # return vector_action_to_integer(all_stay_action_vector)
 
+    def attach_env(self, env: MapfEnv, gamma: float):
+        super().attach_env(env, gamma)
+        self.heuristic = None
+        self.v_partial_table = {}
+        self.v = function_to_get_item_of_object(self._get_value)
+        self.visited_states = defaultdict(lambda: 0)
+        self.in_train = True
+
+        return self
+
+    def train(self, *args, **kwargs):
+        start = time.time()
+        self.heuristic = self.heuristic_function(self.env)
+        self.info['initialization_time'] = round(time.time() - start, 1)
+        iterations_generator = rtdp_iterations_generator(self, greedy_action, bellman_update, self.info)
+
+        _stop_when_no_improvement_between_batches_rtdp(self.heuristic,
+                                                       self.gamma,
+                                                       self.batch_size,
+                                                       self.max_iters,
+                                                       self.env,
+                                                       self,
+                                                       iterations_generator,
+                                                       self.info)
+        self.info['total_time'] = round(time.time() - start)
+
+        return self
+
+    def train_info(self):
+        train_info_dict = {}
+
+        # Set initialization time
+        train_info_dict['solver_init_time'] = round(self.info['initialization_time'], 1)
+
+        # Set evaluation time
+        train_info_dict['total_evaluation_time'] = round(self.info['total_evaluation_time'], 1)
+
+        # Set number of iterations
+        train_info_dict['n_visited_states'] = self.info['n_visited_states']
+
+        # Set visited states
+        train_info_dict['n_iterations'] = self.info['n_iterations']
+
+        # Set last MDR
+        train_info_dict['last_MDR'] = self.info['last_MDR']
+
+        return train_info_dict
+
 
 def greedy_action(policy: RtdpPolicy, s):
     q_s_a = calc_q_s_no_clash_possible(policy, s)
@@ -65,7 +116,7 @@ def greedy_action(policy: RtdpPolicy, s):
 
 def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
+    local_v = [(PrioritizedValueIterationPolicy().attach_env(local_env, gamma).train()).v for local_env in local_envs]
 
     def heuristic_function(s):
         locations = env.state_to_locations(s)
@@ -87,7 +138,7 @@ def local_views_prioritized_value_iteration_min_heuristic(gamma: float, env: Map
 
 def local_views_prioritized_value_iteration_sum_heuristic(gamma: float, env: MapfEnv) -> Callable[[int], float]:
     local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    local_v = [(prioritized_value_iteration(gamma, local_env, {})).v for local_env in local_envs]
+    local_v = [(PrioritizedValueIterationPolicy().attach_env(local_env, gamma).train()).v for local_env in local_envs]
 
     def heuristic_function(s):
         locations = env.state_to_locations(s)
@@ -119,7 +170,7 @@ def deterministic_relaxation_prioritized_value_iteration_heuristic(gamma: float,
                                 env.reward_of_living,
                                 env.optimization_criteria)
     # TODO: consider using RTDP instead of PVI here, this is theoretically bad but practically may give better results
-    policy = prioritized_value_iteration(gamma, deterministic_env, {})
+    policy = PrioritizedValueIterationPolicy().attach_env(deterministic_env, gamma).train()
 
     def heuristic_function(s):
         return policy.v[s]
@@ -177,13 +228,9 @@ def rtdp_dijkstra_sum_heuristic(gamma, max_iters, env: MapfEnv):
         for agent in range(env.n_agents)
     }
 
+
     local_policies = {
-        agent: stop_when_no_improvement_between_batches_rtdp(dijkstra_sum_heuristic,
-                                                             gamma,
-                                                             100,
-                                                             max_iters,
-                                                             local_envs[agent],
-                                                             {})
+        agent: RtdpPolicy(dijkstra_sum_heuristic, 100, max_iters).attach_env(local_envs[agent], gamma).train()
         for agent in range(env.n_agents)
     }
 
@@ -449,7 +496,7 @@ def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, Ma
 
 
 def stop_when_no_improvement_between_batches_rtdp_merge(
-        heuristic_function: Callable[[Policy, Policy, MapfEnv], Callable[[int], float]],
+        heuristic_function: Callable[[Policy, Policy,List,int,int, MapfEnv], Callable[[int], float]],
         gamma,
         iterations_batch_size,
         max_iterations,
@@ -458,19 +505,16 @@ def stop_when_no_improvement_between_batches_rtdp_merge(
         old_group_i_idx,
         old_group_j_idx,
         policy_i,
-        policy_j,
-        info):
-    return stop_when_no_improvement_between_batches_rtdp(functools.partial(heuristic_function,
-                                                                           policy_i,
-                                                                           policy_j,
-                                                                           old_groups,
-                                                                           old_group_i_idx,
-                                                                           old_group_j_idx),
-                                                         gamma,
-                                                         iterations_batch_size,
-                                                         max_iterations,
-                                                         env,
-                                                         info)
+        policy_j):
+    heursitic_func = functools.partial(heuristic_function,
+                                       policy_i,
+                                       policy_j,
+                                       old_groups,
+                                       old_group_i_idx,
+                                       old_group_j_idx)
+
+    policy = RtdpPolicy(heursitic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
+    return policy
 
 
 def solution_heuristic_sum(policy1: ValueFunctionPolicy,

@@ -1,13 +1,12 @@
 from collections import namedtuple
 from functools import partial
 
-from solvers import (value_iteration,
-                     stop_when_no_improvement_between_batches_rtdp,
-                     fixed_iterations_count_rtdp,
-                     ma_rtdp,
-                     policy_iteration,
-                     id,
-                     prioritized_value_iteration)
+from solvers import (ValueIterationPolicy,
+                     PrioritizedValueIterationPolicy,
+                     PolicyIterationPolicy,
+                     RtdpPolicy,
+                     MultiagentRtdpPolicy,
+                     IdPolicy)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
                           deterministic_relaxation_prioritized_value_iteration_heuristic,
@@ -22,737 +21,630 @@ from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
 
 from solvers.ma_rtdp import ma_rtdp_merge
 
-SolverDescriber = namedtuple('SolverDescriber', [
-    'description',
-    'func',
-    'extra_info',
-    'short_description',
-])
-
-SolverExtraInfo = namedtuple('SolverExtraInfo', [
-    'n_conflicts',
-    'conflict_detection_time',
-    'solver_init_time',
-    'total_evaluation_time',
-    'n_iterations',
-    'n_visited_states',
-    'last_MDR'
-])
-
-
-def default_extra_info(info):
-    return SolverExtraInfo('-', '-', '-', '-', '-', '-', '-')
-
-
-def rtdp_extra_info(info):
-    extra_info = default_extra_info(info)
-    extra_info_dict = dict(extra_info._asdict())
-
-    # Set initialization time
-    extra_info_dict['solver_init_time'] = round(info['initialization_time'], 1)
-
-    # Set evaluation time
-    extra_info_dict['total_evaluation_time'] = round(info['total_evaluation_time'], 1)
-
-    # Set number of iterations
-    extra_info_dict['n_visited_states'] = info['n_visited_states']
-
-    # Set visited states
-    extra_info_dict['n_iterations'] = info['n_iterations']
-
-    # Set last MDR
-    extra_info_dict['last_MDR'] = info['last_MDR']
-
-    return SolverExtraInfo(**extra_info_dict)
-
-
-def ma_rtdp_extra_info(info):
-    return rtdp_extra_info(info)
-
-
-def id_extra_info(info):
-    extra_info = default_extra_info(info)
-    extra_info_dict = dict(extra_info._asdict())
-
-    # Number of found conflicts
-    extra_info_dict['n_conflicts'] = len(info['iterations']) - 1
-
-    # Total time for conflicts detection,
-    # In case of all agents merged, the last iteration might not have a detect_conflict_time and therefore the 'get'.
-    extra_info_dict['conflict_detection_time'] = round(sum([info['iterations'][i].get('detect_conflict_time', 0)
-                                                            for i in range(len(info['iterations']))]), 1)
-
-    # This time mostly matters for heuristics calculation (on RTDP for example)
-    extra_info_dict['solver_init_time'] = round(sum(
-        [sum([info['iterations'][j]['joint_policy'][key]['initialization_time']
-              for key in info['iterations'][j]['joint_policy'].keys() if all([key.startswith('['),
-                                                                              key.endswith(']')])
-              ])
-         for j in range(len(info['iterations']))]), 1)
-
-    return SolverExtraInfo(**extra_info_dict)
-
-
 # Heuristics ##########################################################################################################
-
-local_min_pvi_heuristic_describer = SolverDescriber(
-    description='local_view_pvi_min_heuristic(gamma=1.0)',
-    func=partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
-    extra_info=default_extra_info,
-    short_description='pvi'
-)
-
-# The sum heuristic is not admissible, do not use it for now
-local_sum_pvi_heuristic_describer = SolverDescriber(
-    description='local_view_pvi_sum_heuristic(gamma=1.0)',
-    func=partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0),
-    extra_info=default_extra_info,
-    short_description='sum_pvi'
-)
-
-local_min_dijkstra_heuristic_describer = SolverDescriber(
-    description='min_dijkstra_heuristic',
-    func=dijkstra_min_heuristic,
-    extra_info=default_extra_info,
-    short_description='dijkstra'
-)
-
-local_sum_dijkstra_heuristic_describer = SolverDescriber(
-    description='sum_dijkstra_heuristic',
-    func=dijkstra_sum_heuristic,
-    extra_info=default_extra_info,
-    short_description='dijkstra'
-)
-
-deterministic_relaxation_pvi_heuristic_describer = SolverDescriber(
-    description="deterministic_pvi_heuristic(gamma=1.0)",
-    func=deterministic_relaxation_prioritized_value_iteration_heuristic,
-    extra_info=default_extra_info,
-    short_description='deter_pvi'
-)
-
-local_sum_rtdp_dijkstra_heuristic_describer = SolverDescriber(
-    description='sum_rtdp_dijkstra_heuristic',
-    func=partial(rtdp_dijkstra_sum_heuristic, 1.0, 500),
-    extra_info=default_extra_info,
-    short_description='sum_rtdp_dijkstra'
-)
-
-local_min_rtdp_dijkstra_heuristic_describer = SolverDescriber(
-    description='min_rtdp_dijkstra_heuristic',
-    func=partial(rtdp_dijkstra_min_heuristic, 1.0, 500),
-    extra_info=default_extra_info,
-    short_description='min_rtdp_dijkstra'
-)
-
-solution_heuristic_min_describer = SolverDescriber(
-    description='sol_min_heuristic',
-    func=solution_heuristic_min,
-    extra_info=default_extra_info,
-    short_description='sol_min_heuristic'
-)
-
-solution_heuristic_sum_describer = SolverDescriber(
-    description='sol_sum_heuristic',
-    func=solution_heuristic_sum,
-    extra_info=default_extra_info,
-    short_description='sol_sum_heuristic'
-)
+pvi_min_h = partial(local_views_prioritized_value_iteration_min_heuristic, 1.0)
+pvi_sum_h = partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0)
+dijkstra_min_h = dijkstra_min_heuristic
+dijkstra_sum_h = dijkstra_sum_heuristic
+rtdp_dijkstra_min_h = partial(rtdp_dijkstra_min_heuristic, 1.0, 500)
+rtdp_dijkstra_sum_h = partial(rtdp_dijkstra_sum_heuristic, 1.0, 500)
+solution_heuristic_min_h = solution_heuristic_min
+solution_heuristic_sum_h = solution_heuristic_sum
 
 # ID Low Level Mergers ################################################################################################
 
 DEFAULT_LOW_LEVEL_MERGER = None
+rtdp_sum_merger = partial(stop_when_no_improvement_between_batches_rtdp_merge,
+                          solution_heuristic_sum_h,
+                          1.0,
+                          100,
+                          10000)
 
-rtdp_stop_no_improvement_min_merger_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp_merge('
-                f'{solution_heuristic_min_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
-                 solution_heuristic_min_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=default_extra_info,
-    short_description='rtdp_min_merger'
-)
+ma_rtdp_sum_merger = partial(ma_rtdp_merge,
+                             solution_heuristic_sum_h,
+                             1.0,
+                             100,
+                             10000)
 
-long_rtdp_stop_no_improvement_min_merger_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp_merge('
-                f'{solution_heuristic_min_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
-                 solution_heuristic_min_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=default_extra_info,
-    short_description='long_rtdp_min_merger'
-)
-
-rtdp_stop_no_improvement_sum_merger_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp_merge('
-                f'{solution_heuristic_sum_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
-                 solution_heuristic_sum_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=default_extra_info,
-    short_description='rtdp_sum_merger'
-)
-
-long_rtdp_stop_no_improvement_sum_merger_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp_merge('
-                f'{solution_heuristic_sum_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
-                 solution_heuristic_sum_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=default_extra_info,
-    short_description='long_rtdp_sum_merger'
-)
-
-ma_rtdp_min_merger_describer = SolverDescriber(
-    description=f'ma_rtdp_merge('
-                f'{solution_heuristic_min_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(ma_rtdp_merge,
-                 solution_heuristic_min_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=default_extra_info,
-    short_description='ma_rtdp_min_merger'
-)
-
-long_ma_rtdp_min_merger_describer = SolverDescriber(
-    description=f'ma_rtdp_merge('
-                f'{solution_heuristic_min_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(ma_rtdp_merge,
-                 solution_heuristic_min_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=default_extra_info,
-    short_description='long_ma_rtdp_min_merger'
-)
-
-ma_rtdp_sum_merger_describer = SolverDescriber(
-    description=f'ma_rtdp_merge('
-                f'{solution_heuristic_sum_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(ma_rtdp_merge,
-                 solution_heuristic_sum_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=default_extra_info,
-    short_description='ma_rtdp_sum_merger'
-)
-
-long_ma_rtdp_sum_merger_describer = SolverDescriber(
-    description=f'ma_rtdp_merge('
-                f'{solution_heuristic_sum_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(ma_rtdp_merge,
-                 solution_heuristic_sum_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=default_extra_info,
-    short_description='long_ma_rtdp_sum_merger'
-)
+# rtdp_stop_no_improvement_min_merger_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp_merge('
+#                 f'{solution_heuristic_min_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
+#                  solution_heuristic_min_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=default_extra_info,
+#     short_description='rtdp_min_merger'
+# )
+#
+# long_rtdp_stop_no_improvement_min_merger_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp_merge('
+#                 f'{solution_heuristic_min_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
+#                  solution_heuristic_min_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=default_extra_info,
+#     short_description='long_rtdp_min_merger'
+# )
+#
+# rtdp_stop_no_improvement_sum_merger_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp_merge('
+#                 f'{solution_heuristic_sum_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
+#                  solution_heuristic_sum_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=default_extra_info,
+#     short_description='rtdp_sum_merger'
+# )
+#
+# long_rtdp_stop_no_improvement_sum_merger_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp_merge('
+#                 f'{solution_heuristic_sum_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp_merge,
+#                  solution_heuristic_sum_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=default_extra_info,
+#     short_description='long_rtdp_sum_merger'
+# )
+#
+# ma_rtdp_min_merger_describer = SolverDescriber(
+#     description=f'ma_rtdp_merge('
+#                 f'{solution_heuristic_min_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(ma_rtdp_merge,
+#                  solution_heuristic_min_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=default_extra_info,
+#     short_description='ma_rtdp_min_merger'
+# )
+#
+# long_ma_rtdp_min_merger_describer = SolverDescriber(
+#     description=f'ma_rtdp_merge('
+#                 f'{solution_heuristic_min_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(ma_rtdp_merge,
+#                  solution_heuristic_min_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=default_extra_info,
+#     short_description='long_ma_rtdp_min_merger'
+# )
+#
+# ma_rtdp_sum_merger_describer = SolverDescriber(
+#     description=f'ma_rtdp_merge('
+#                 f'{solution_heuristic_sum_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(ma_rtdp_merge,
+#                  solution_heuristic_sum_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=default_extra_info,
+#     short_description='ma_rtdp_sum_merger'
+# )
+#
+# long_ma_rtdp_sum_merger_describer = SolverDescriber(
+#     description=f'ma_rtdp_merge('
+#                 f'{solution_heuristic_sum_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(ma_rtdp_merge,
+#                  solution_heuristic_sum_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=default_extra_info,
+#     short_description='long_ma_rtdp_sum_merger'
+# )
 
 # Solvers #############################################################################################################
 
-value_iteration_describer = SolverDescriber(
-    description='value_iteration(gamma=1.0)',
-    func=partial(value_iteration, 1.0),
-    extra_info=default_extra_info,
-    short_description='vi'
-)
+vi_policy = ValueIterationPolicy('vi')
+pvi_policy = PrioritizedValueIterationPolicy('pvi')
+pi_policy = PolicyIterationPolicy('pi')
 
-prioritized_value_iteration_describer = SolverDescriber(
-    description='prioritized_value_iteration(gamma=1.0)',
-    func=partial(prioritized_value_iteration, 1.0),
-    extra_info=default_extra_info,
-    short_description='pvi'
-)
+rtdp_pvi_sum_policy = RtdpPolicy(pvi_sum_h, 100, 10000, 'rtdp_pvi_sum')
+rtdp_dijkstra_sum_policy = RtdpPolicy(dijkstra_sum_h, 100, 10000, 'rtdp_dijkstra_sum')
+rtdp_rtdp_dijkstra_sum_policy = RtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'rtdp_rtdp_dijkstra_sum')
 
-policy_iteration_describer = SolverDescriber(
-    description='policy_iteration(gamma=1.0)',
-    func=partial(policy_iteration, 1.0),
-    extra_info=default_extra_info,
-    short_description='pi'
-)
+ma_rtdp_pvi_sum_policy = MultiagentRtdpPolicy(pvi_sum_h, 100, 10000, 'ma_rtdp_pvi_sum')
+ma_rtdp_dijkstra_sum_policy = MultiagentRtdpPolicy(dijkstra_sum_h, 100, 10000, 'ma_rtdp_dijkstra_sum')
+ma_rtdp_rtdp_dijkstra_sum_policy = MultiagentRtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'ma_rtdp_rtdp_dijkstra_sum')
 
-rtdp_stop_no_improvement_min_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=rtdp_extra_info,
-    short_description='rtdp_pvi_min'
-)
+id_vi_policy = IdPolicy(vi_policy, None, 'id_vi')
+id_rtdp_dijkstra_sum_policy = IdPolicy(rtdp_dijkstra_sum_policy, rtdp_sum_merger, 'id_rtdp_dijsktra_sum')
+id_ma_rtdp_dijkstra_sum_policy = IdPolicy(ma_rtdp_dijkstra_sum_policy, ma_rtdp_sum_merger, 'id_ma_rtdp_dijsktra_sum')
 
-long_rtdp_stop_no_improvement_min_pvi_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_pvi_min'
-)
-
-long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_pvi_sum'
-)
-
-long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_min_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_min_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_dijkstra_min'
-)
-
-long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_sum_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_sum_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_dijkstra_sum'
-)
-
-rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=rtdp_extra_info,
-    short_description='rtdp_pvi_sum'
-)
-
-long_rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
-    description=f'stop_no_improvement_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_pvi_sum'
-)
-
-long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer = SolverDescriber(
-    description=f'rtdp('
-                f'{local_sum_rtdp_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_sum_rtdp_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_rtdp_dijkstra_sum'
-)
-
-long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer = SolverDescriber(
-    description=f'rtdp('
-                f'{local_min_rtdp_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000)',
-    func=partial(stop_when_no_improvement_between_batches_rtdp,
-                 local_min_rtdp_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=rtdp_extra_info,
-    short_description='long_rtdp_rtdp_dijkstra_min'
-)
-
-ma_rtdp_pvi_sum_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description,}'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000',
-    func=partial(ma_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp_pvi_sum'
-)
-
-ma_rtdp_pvi_min_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000,',
-    func=partial(ma_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp_pvi_min'
-)
-
-ma_rtdp_dijkstra_min_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_min_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000,',
-    func=partial(ma_rtdp,
-                 local_min_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp_dijkstra_min'
-)
-
-ma_rtdp_dijkstra_sum_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=1000,',
-    func=partial(ma_rtdp,
-                 local_sum_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 1000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='ma_rtdp_dijkstra_sum'
-)
-
-long_ma_rtdp_pvi_min_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_min_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_pvi_min'
-)
-
-long_ma_rtdp_pvi_sum_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_pvi_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_sum_pvi_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_pvi_sum'
-)
-
-long_ma_rtdp_min_dijkstra_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_min_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_min_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_dijkstra_min'
-)
-
-long_ma_rtdp_sum_dijkstra_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_sum_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_dijkstra_sum'
-)
-
-long_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_sum_rtdp_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_sum_rtdp_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_rtdp_dijkstra_sum'
-)
-
-long_ma_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ma_rtdp('
-                f'{local_min_rtdp_dijkstra_heuristic_describer.description},'
-                f'gamma=1.0,'
-                f'batch_size=100,'
-                f'max_iters=10000,',
-    func=partial(ma_rtdp,
-                 local_min_rtdp_dijkstra_heuristic_describer.func,
-                 1.0,
-                 100,
-                 10000),
-    extra_info=ma_rtdp_extra_info,
-    short_description='long_ma_rtdp_rtdp_dijkstra_min'
-)
-
-fixed_iter_rtdp_min_describer = SolverDescriber(
-    description=f'fixed_iters_rtdp('
-                f'{local_min_pvi_heuristic_describer.description}'
-                f'gamma=1.0'
-                f'iters=400',
-    func=partial(fixed_iterations_count_rtdp,
-                 local_min_pvi_heuristic_describer.func,
-                 1.0,
-                 400),
-    extra_info=default_extra_info,
-    short_description='fixed_rtdp'
-)
-
-id_vi_describer = SolverDescriber(
-    description=f'ID({value_iteration_describer.description})',
-    func=partial(id,
-                 value_iteration_describer.func,
-                 DEFAULT_LOW_LEVEL_MERGER),
-    extra_info=id_extra_info,
-    short_description='id_vi'
-)
-
-id_rtdp_pvi_min_describer = SolverDescriber(
-    description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
-    func=partial(id,
-                 rtdp_stop_no_improvement_min_heuristic_describer.func,
-                 rtdp_stop_no_improvement_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='id_rtdp_pvi_min'
-)
-
-id_rtdp_pvi_sum_describer = SolverDescriber(
-    description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
-    func=partial(id,
-                 rtdp_stop_no_improvement_sum_heuristic_describer.func,
-                 rtdp_stop_no_improvement_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='id_rtdp_pvi_sum'
-)
-
-long_id_rtdp_min_pvi_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_min_pvi_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_min_pvi_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_pvi_min'
-)
-
-long_id_rtdp_sum_pvi_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_pvi_sum'
-)
-
-long_id_rtdp_min_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_dijkstra_min'
-)
-
-long_id_rtdp_sum_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_dijkstra_sum'
-)
-
-long_id_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_rtdp_dijkstra_sum'
-)
-
-long_id_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer.description})',
-    func=partial(id,
-                 long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer.func,
-                 long_rtdp_stop_no_improvement_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_rtdp_rtdp_dijkstra_min'
-)
-
-id_ma_rtdp_pvi_min_describer = SolverDescriber(
-    description=f'ID({ma_rtdp_pvi_min_describer.description})',
-    func=partial(id,
-                 ma_rtdp_pvi_min_describer.func,
-                 ma_rtdp_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='id_ma_rtdp_pvi_min'
-)
-
-id_ma_rtdp_pvi_sum_describer = SolverDescriber(
-    description=f'ID({ma_rtdp_pvi_sum_describer.description})',
-    func=partial(id,
-                 ma_rtdp_pvi_sum_describer.func,
-                 ma_rtdp_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='id_ma_rtdp_pvi_sum'
-)
-
-long_id_ma_rtdp_min_pvi_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_pvi_min_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_pvi_min_describer.func,
-                 long_ma_rtdp_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_pvi_min'
-)
-
-long_id_ma_rtdp_sum_pvi_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_pvi_sum_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_pvi_sum_describer.func,
-                 long_ma_rtdp_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_pvi_sum'
-)
-
-long_id_ma_rtdp_min_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_min_dijkstra_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_min_dijkstra_describer.func,
-                 long_ma_rtdp_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_dijkstra_min'
-)
-
-long_id_ma_rtdp_sum_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_sum_dijkstra_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_sum_dijkstra_describer.func,
-                 long_ma_rtdp_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_dijkstra_sum'
-)
-
-long_id_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_sum_rtdp_dijkstra_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_sum_rtdp_dijkstra_describer.func,
-                 long_ma_rtdp_sum_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_rtdp_dijkstra_sum'
-)
-
-long_id_ma_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
-    description=f'ID({long_ma_rtdp_min_rtdp_dijkstra_describer.description})',
-    func=partial(id,
-                 long_ma_rtdp_min_rtdp_dijkstra_describer.func,
-                 long_ma_rtdp_min_merger_describer.func),
-    extra_info=id_extra_info,
-    short_description='long_id_ma_rtdp_rtdp_dijkstra_min'
-)
+# prioritized_value_iteration_describer = SolverDescriber(
+#     description='prioritized_value_iteration(gamma=1.0)',
+#     func=partial(prioritized_value_iteration, 1.0),
+#     extra_info=default_extra_info,
+#     short_description='pvi'
+# )
+#
+# policy_iteration_describer = SolverDescriber(
+#     description='policy_iteration(gamma=1.0)',
+#     func=partial(policy_iteration, 1.0),
+#     extra_info=default_extra_info,
+#     short_description='pi'
+# )
+#
+# rtdp_stop_no_improvement_min_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_min_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_min_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=rtdp_extra_info,
+#     short_description='rtdp_pvi_min'
+# )
+#
+# long_rtdp_stop_no_improvement_min_pvi_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_min_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_min_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_pvi_min'
+# )
+#
+# long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_sum_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_sum_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_pvi_sum'
+# )
+#
+# long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_min_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_min_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_dijkstra_min'
+# )
+#
+# long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_sum_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_sum_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_dijkstra_sum'
+# )
+#
+# rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_sum_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_sum_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=rtdp_extra_info,
+#     short_description='rtdp_pvi_sum'
+# )
+#
+# long_rtdp_stop_no_improvement_sum_heuristic_describer = SolverDescriber(
+#     description=f'stop_no_improvement_rtdp('
+#                 f'{local_sum_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_sum_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_pvi_sum'
+# )
+#
+# long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer = SolverDescriber(
+#     description=f'rtdp('
+#                 f'{local_sum_rtdp_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_sum_rtdp_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_rtdp_dijkstra_sum'
+# )
+#
+# long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer = SolverDescriber(
+#     description=f'rtdp('
+#                 f'{local_min_rtdp_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000)',
+#     func=partial(stop_when_no_improvement_between_batches_rtdp,
+#                  local_min_rtdp_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=rtdp_extra_info,
+#     short_description='long_rtdp_rtdp_dijkstra_min'
+# )
+#
+# ma_rtdp_pvi_sum_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_sum_pvi_heuristic_describer.description,}'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000',
+#     func=partial(ma_rtdp,
+#                  local_sum_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='ma_rtdp_pvi_sum'
+# )
+#
+# ma_rtdp_pvi_min_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_min_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000,',
+#     func=partial(ma_rtdp,
+#                  local_min_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='ma_rtdp_pvi_min'
+# )
+#
+# ma_rtdp_dijkstra_min_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_min_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000,',
+#     func=partial(ma_rtdp,
+#                  local_min_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='ma_rtdp_dijkstra_min'
+# )
+#
+# ma_rtdp_dijkstra_sum_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_sum_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=1000,',
+#     func=partial(ma_rtdp,
+#                  local_sum_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  1000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='ma_rtdp_dijkstra_sum'
+# )
+#
+# long_ma_rtdp_pvi_min_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_min_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_min_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_pvi_min'
+# )
+#
+# long_ma_rtdp_pvi_sum_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_sum_pvi_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_sum_pvi_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_pvi_sum'
+# )
+#
+# long_ma_rtdp_min_dijkstra_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_min_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_min_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_dijkstra_min'
+# )
+#
+# long_ma_rtdp_sum_dijkstra_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_sum_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_sum_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_dijkstra_sum'
+# )
+#
+# long_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_sum_rtdp_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_sum_rtdp_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_rtdp_dijkstra_sum'
+# )
+#
+# long_ma_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ma_rtdp('
+#                 f'{local_min_rtdp_dijkstra_heuristic_describer.description},'
+#                 f'gamma=1.0,'
+#                 f'batch_size=100,'
+#                 f'max_iters=10000,',
+#     func=partial(ma_rtdp,
+#                  local_min_rtdp_dijkstra_heuristic_describer.func,
+#                  1.0,
+#                  100,
+#                  10000),
+#     extra_info=ma_rtdp_extra_info,
+#     short_description='long_ma_rtdp_rtdp_dijkstra_min'
+# )
+#
+# fixed_iter_rtdp_min_describer = SolverDescriber(
+#     description=f'fixed_iters_rtdp('
+#                 f'{local_min_pvi_heuristic_describer.description}'
+#                 f'gamma=1.0'
+#                 f'iters=400',
+#     func=partial(fixed_iterations_count_rtdp,
+#                  local_min_pvi_heuristic_describer.func,
+#                  1.0,
+#                  400),
+#     extra_info=default_extra_info,
+#     short_description='fixed_rtdp'
+# )
+#
+# id_vi_describer = SolverDescriber(
+#     description=f'ID({value_iteration_describer.description})',
+#     func=partial(id,
+#                  value_iteration_describer.func,
+#                  DEFAULT_LOW_LEVEL_MERGER),
+#     extra_info=id_extra_info,
+#     short_description='id_vi'
+# )
+#
+# id_rtdp_pvi_min_describer = SolverDescriber(
+#     description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
+#     func=partial(id,
+#                  rtdp_stop_no_improvement_min_heuristic_describer.func,
+#                  rtdp_stop_no_improvement_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='id_rtdp_pvi_min'
+# )
+#
+# id_rtdp_pvi_sum_describer = SolverDescriber(
+#     description=f'ID({rtdp_stop_no_improvement_min_heuristic_describer.description})',
+#     func=partial(id,
+#                  rtdp_stop_no_improvement_sum_heuristic_describer.func,
+#                  rtdp_stop_no_improvement_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='id_rtdp_pvi_sum'
+# )
+#
+# long_id_rtdp_min_pvi_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_min_pvi_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_min_pvi_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_pvi_min'
+# )
+#
+# long_id_rtdp_sum_pvi_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_sum_pvi_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_pvi_sum'
+# )
+#
+# long_id_rtdp_min_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_min_dijkstra_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_dijkstra_min'
+# )
+#
+# long_id_rtdp_sum_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_sum_dijkstra_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_dijkstra_sum'
+# )
+#
+# long_id_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_rtdp_dijkstra_sum'
+# )
+#
+# long_id_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer.description})',
+#     func=partial(id,
+#                  long_rtdp_stop_no_improvement_min_rtdp_dijkstra_heuristic_describer.func,
+#                  long_rtdp_stop_no_improvement_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_rtdp_rtdp_dijkstra_min'
+# )
+#
+# id_ma_rtdp_pvi_min_describer = SolverDescriber(
+#     description=f'ID({ma_rtdp_pvi_min_describer.description})',
+#     func=partial(id,
+#                  ma_rtdp_pvi_min_describer.func,
+#                  ma_rtdp_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='id_ma_rtdp_pvi_min'
+# )
+#
+# id_ma_rtdp_pvi_sum_describer = SolverDescriber(
+#     description=f'ID({ma_rtdp_pvi_sum_describer.description})',
+#     func=partial(id,
+#                  ma_rtdp_pvi_sum_describer.func,
+#                  ma_rtdp_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='id_ma_rtdp_pvi_sum'
+# )
+#
+# long_id_ma_rtdp_min_pvi_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_pvi_min_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_pvi_min_describer.func,
+#                  long_ma_rtdp_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_pvi_min'
+# )
+#
+# long_id_ma_rtdp_sum_pvi_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_pvi_sum_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_pvi_sum_describer.func,
+#                  long_ma_rtdp_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_pvi_sum'
+# )
+#
+# long_id_ma_rtdp_min_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_min_dijkstra_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_min_dijkstra_describer.func,
+#                  long_ma_rtdp_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_dijkstra_min'
+# )
+#
+# long_id_ma_rtdp_sum_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_sum_dijkstra_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_sum_dijkstra_describer.func,
+#                  long_ma_rtdp_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_dijkstra_sum'
+# )
+#
+# long_id_ma_rtdp_sum_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_sum_rtdp_dijkstra_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_sum_rtdp_dijkstra_describer.func,
+#                  long_ma_rtdp_sum_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_rtdp_dijkstra_sum'
+# )
+#
+# long_id_ma_rtdp_min_rtdp_dijkstra_describer = SolverDescriber(
+#     description=f'ID({long_ma_rtdp_min_rtdp_dijkstra_describer.description})',
+#     func=partial(id,
+#                  long_ma_rtdp_min_rtdp_dijkstra_describer.func,
+#                  long_ma_rtdp_min_merger_describer.func),
+#     extra_info=id_extra_info,
+#     short_description='long_id_ma_rtdp_rtdp_dijkstra_min'
+# )
