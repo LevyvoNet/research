@@ -228,7 +228,6 @@ def rtdp_dijkstra_sum_heuristic(gamma, max_iters, env: MapfEnv):
         for agent in range(env.n_agents)
     }
 
-
     local_policies = {
         agent: RtdpPolicy(dijkstra_sum_heuristic, 100, max_iters).attach_env(local_envs[agent], gamma).train()
         for agent in range(env.n_agents)
@@ -375,16 +374,20 @@ def fixed_iterations_count_rtdp(heuristic_function: Callable[[MapfEnv], Callable
                                 n_iterations: int,
                                 env: MapfEnv,
                                 info: Dict) -> Policy:
-    # initialize V to an upper bound
     start = time.time()
     policy = RtdpPolicy(env, gamma, heuristic_function(env))
     info['initialization_time'] = round(time.time() - start, 1)
-    info['total_evaluation_time'] = 0
+    iterations_generator = rtdp_iterations_generator(policy, greedy_action, bellman_update, info)
 
-    for iter_count, reward in enumerate(rtdp_iterations_generator(policy, greedy_action, bellman_update, info),
-                                        start=1):
-        if iter_count >= n_iterations:
-            break
+    policy = _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
+                                                            gamma,
+                                                            n_iterations,
+                                                            n_iterations,
+                                                            env,
+                                                            policy,
+                                                            iterations_generator,
+                                                            info)
+    info['total_time'] = round(time.time() - start)
 
     return policy
 
@@ -484,19 +487,19 @@ def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, Ma
                                 policy_i,
                                 policy_j,
                                 info: Dict):
-    return fixed_iterations_count_rtdp(functools.partial(heuristic_function,
-                                                         policy_i,
-                                                         policy_j,
-                                                         old_groups,
-                                                         old_group_i_idx,
-                                                         old_group_j_idx),
-                                       gamma,
-                                       n_iterations,
-                                       env, info)
+    heursitic_func = functools.partial(heuristic_function,
+                                       policy_i,
+                                       policy_j,
+                                       old_groups,
+                                       old_group_i_idx,
+                                       old_group_j_idx)
+
+    policy = RtdpPolicy(heursitic_func, n_iterations, n_iterations).attach_env(env, gamma).train()
+    return policy
 
 
 def stop_when_no_improvement_between_batches_rtdp_merge(
-        heuristic_function: Callable[[Policy, Policy,List,int,int, MapfEnv], Callable[[int], float]],
+        heuristic_function: Callable[[Policy, Policy, List, int, int, MapfEnv], Callable[[int], float]],
         gamma,
         iterations_batch_size,
         max_iterations,
