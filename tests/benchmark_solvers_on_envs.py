@@ -115,7 +115,6 @@ lvl_to_solvers = {
 
     ],
     3: [
-        id_vi_policy,
         id_rtdp_dijkstra_sum_policy,
         id_ma_rtdp_dijkstra_sum_policy,
         id_rtdp_pvi_sum_policy,
