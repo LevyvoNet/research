@@ -247,7 +247,7 @@ def benchmark_solver_on_env(policy: Policy):
 
         return RESULT_OK
 
-    except None as e:
+    except Exception as e:
         print(repr(e))
         return RESULT_EXCEPTION
 
