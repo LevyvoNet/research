@@ -509,14 +509,14 @@ def stop_when_no_improvement_between_batches_rtdp_merge(
         old_group_j_idx,
         policy_i,
         policy_j):
-    heursitic_func = functools.partial(heuristic_function,
+    heuristic_func = functools.partial(heuristic_function,
                                        policy_i,
                                        policy_j,
                                        old_groups,
                                        old_group_i_idx,
                                        old_group_j_idx)
 
-    policy = RtdpPolicy(heursitic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
+    policy = RtdpPolicy(heuristic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
     return policy
 
 

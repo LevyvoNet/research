@@ -224,28 +224,28 @@ def multi_agent_turn_based_rtdp_iterations_generator(policy,
         yield iter_reward
 
 
-def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
-            gamma: float,
-            iterations_batch_size: int,
-            max_iterations: int,
-            env: MapfEnv,
-            info: Dict):
-    start = time.time()
-    policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
-    info['initialization_time'] = round(time.time() - start, 1)
-    iterations_generator = multi_agent_turn_based_rtdp_iterations_generator(policy, info)
-
-    policy = _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
-                                                            gamma,
-                                                            iterations_batch_size,
-                                                            max_iterations,
-                                                            env,
-                                                            policy,
-                                                            iterations_generator,
-                                                            info)
-    info['total_time'] = time.time() - start
-
-    return policy
+# def ma_rtdp(heuristic_function: Callable[[MapfEnv], Callable[[int], float]],
+#             gamma: float,
+#             iterations_batch_size: int,
+#             max_iterations: int,
+#             env: MapfEnv,
+#             info: Dict):
+#     start = time.time()
+#     policy = MultiagentRtdpPolicy(env, gamma, heuristic_function(env))
+#     info['initialization_time'] = round(time.time() - start, 1)
+#     iterations_generator = multi_agent_turn_based_rtdp_iterations_generator(policy, info)
+#
+#     policy = _stop_when_no_improvement_between_batches_rtdp(heuristic_function,
+#                                                             gamma,
+#                                                             iterations_batch_size,
+#                                                             max_iterations,
+#                                                             env,
+#                                                             policy,
+#                                                             iterations_generator,
+#                                                             info)
+#     info['total_time'] = time.time() - start
+#
+#     return policy
 
 
 def ma_rtdp_merge(
@@ -259,12 +259,16 @@ def ma_rtdp_merge(
         old_group_j_idx,
         policy_i,
         policy_j):
-    heursitic_func = functools.partial(heuristic_function,
+    heuristic_func = functools.partial(heuristic_function,
                                        policy_i,
                                        policy_j,
                                        old_groups,
                                        old_group_i_idx,
                                        old_group_j_idx)
 
-    policy = MultiagentRtdpPolicy(heursitic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
+    # TODO: delete these lines
+    from solvers.rtdp import local_views_prioritized_value_iteration_sum_heuristic
+    heuristic_func = functools.partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0)
+    
+    policy = MultiagentRtdpPolicy(heuristic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
     return policy

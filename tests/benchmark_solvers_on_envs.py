@@ -101,6 +101,7 @@ def sanity_general(n_rooms, room_size, n_agents, optimization_criteria):
 def empty_grid(grid_size, n_agents, optimization_criteria):
     return create_mapf_env(f'empty-{grid_size}-{grid_size}', 1, n_agents, 0.2, -1000, 0, -1, optimization_criteria)
 
+
 lvl_to_solvers = {
     0: [
         vi_policy,
@@ -115,19 +116,18 @@ lvl_to_solvers = {
 
     ],
     3: [
-        id_rtdp_dijkstra_sum_policy,
-        id_ma_rtdp_dijkstra_sum_policy,
-        id_rtdp_pvi_sum_policy,
+        # id_rtdp_dijkstra_sum_policy,
+        # id_ma_rtdp_dijkstra_sum_policy,
+        # id_rtdp_pvi_sum_policy,
         id_ma_rtdp_pvi_sum_policy,
-        ma_rtdp_pvi_sum_policy,
-        ma_rtdp_dijkstra_sum_policy,
-        ma_rtdp_rtdp_dijkstra_sum_policy,
-        rtdp_pvi_sum_policy,
-        rtdp_dijkstra_sum_policy,
-        rtdp_rtdp_dijkstra_sum_policy,
+        # ma_rtdp_pvi_sum_policy,
+        # ma_rtdp_dijkstra_sum_policy,
+        # ma_rtdp_rtdp_dijkstra_sum_policy,
+        # rtdp_pvi_sum_policy,
+        # rtdp_dijkstra_sum_policy,
+        # rtdp_rtdp_dijkstra_sum_policy,
     ]
 }
-
 
 lvl_to_env = {
     0: [
@@ -227,12 +227,12 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         start = time.time()
 
         # Try to solve with a time limit
-        with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
-            try:
-                policy.attach_env(env, 1.0)
-                policy.train()
-            except stopit.utils.TimeoutException:
-                return RESULT_TIMEOUT
+        # with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
+        #     try:
+        policy.attach_env(env, 1.0)
+        policy.train()
+            # except stopit.utils.TimeoutException:
+            #     return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
 
