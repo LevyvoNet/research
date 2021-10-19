@@ -256,18 +256,5 @@ def ma_rtdp_merge(
                                        old_group_i_idx,
                                        old_group_j_idx)
 
-    # # TODO: delete these lines
-    # h_bad = heuristic_func(env)
-    # from solvers.rtdp import local_views_prioritized_value_iteration_sum_heuristic
-    # from solvers import PrioritizedValueIterationPolicy
-    # h_good = functools.partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0)(env)
-    #
-    # local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
-    # local_v = [(PrioritizedValueIterationPolicy(local_env, gamma).train()).v for local_env in local_envs]
-    # locations = env.state_to_locations(env.s)
-    # local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
-    # import ipdb
-    # ipdb.set_trace()
-
     policy = MultiagentRtdpPolicy(env, gamma, heuristic_func, iterations_batch_size, max_iterations).train()
     return policy
