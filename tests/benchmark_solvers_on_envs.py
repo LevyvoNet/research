@@ -1,5 +1,4 @@
 import datetime
-import math
 import os
 import sys
 import time
@@ -104,10 +103,10 @@ def empty_grid(grid_size, n_agents, optimization_criteria):
 
 lvl_to_solvers = {
     0: [
-        vi_policy,
-        pvi_policy,
-        pi_policy,
-        id_vi_policy,
+        vi_creator,
+        pvi_creator,
+        pi_creator,
+        id_vi_creator,
     ],
     1: [
 
@@ -116,16 +115,16 @@ lvl_to_solvers = {
 
     ],
     3: [
-        # id_rtdp_dijkstra_sum_policy,
-        # id_ma_rtdp_dijkstra_sum_policy,
-        # id_rtdp_pvi_sum_policy,
-        id_ma_rtdp_pvi_sum_policy,
-        # ma_rtdp_pvi_sum_policy,
-        # ma_rtdp_dijkstra_sum_policy,
-        # ma_rtdp_rtdp_dijkstra_sum_policy,
-        # rtdp_pvi_sum_policy,
-        # rtdp_dijkstra_sum_policy,
-        # rtdp_rtdp_dijkstra_sum_policy,
+        # id_rtdp_dijkstra_sum_creator,
+        # id_ma_rtdp_dijkstra_sum_creator,
+        # id_rtdp_pvi_sum_creator,
+        id_ma_rtdp_pvi_sum_creator,
+        # ma_rtdp_pvi_sum_creator,
+        # ma_rtdp_dijkstra_sum_creator,
+        # ma_rtdp_rtdp_dijkstra_sum_creator,
+        # rtdp_pvi_sum_creator,
+        # rtdp_dijkstra_sum_creator,
+        # rtdp_rtdp_dijkstra_sum_creator,
     ]
 }
 
@@ -194,7 +193,7 @@ def generate_solver_env_combinations(max_env_lvl):
                                              OptimizationCriteria.Makespan))
 
     return all_soc
-    return all_makespan + all_soc
+    # return all_makespan + all_soc
 
 
 def print_status(reward, solve_time, solver_description, success_rate, train_info: Dict = None):
@@ -213,13 +212,9 @@ def print_status(reward, solve_time, solver_description, success_rate, train_inf
     print(status_str + train_info_str)
 
 
-def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
-                            env_name: str,
-                            policy: Policy,
-                            optimization_criteria: OptimizationCriteria):
+def benchmark_solver_on_env(policy: Policy):
     try:
         # Parameters and Constants
-        env = env_func(optimization_criteria)
         eval_max_steps = 1000
         eval_n_episodes = 100
 
@@ -227,12 +222,11 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         start = time.time()
 
         # Try to solve with a time limit
-        # with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
-        #     try:
-        policy.attach_env(env, 1.0)
-        policy.train()
-            # except stopit.utils.TimeoutException:
-            #     return RESULT_TIMEOUT
+        with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
+            try:
+                policy.train()
+            except stopit.utils.TimeoutException:
+                return RESULT_TIMEOUT
 
         solve_time = round(time.time() - start, 2)
 
@@ -254,8 +248,6 @@ def benchmark_solver_on_env(env_func: Callable[[OptimizationCriteria], MapfEnv],
         return RESULT_OK
 
     except None as e:
-        import ipdb
-        ipdb.set_trace()
         print(repr(e))
         return RESULT_EXCEPTION
 
@@ -268,12 +260,15 @@ def main():
     bad_results = []
 
     prev_env_name = None
-    for env_func, env_name, policy, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+    for env_func, env_name, policy_creator, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
         # Just nicer to view
         if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             print(f'\n{now_str} env:{env_name}')
         prev_env_name = env_name
+
+        env = env_func(optimization_criteria)
+        policy = policy_creator(env, gamma=1.0)
 
         # This is a hack for not dealing with some memory leak somewhere inside benchmark_solver_on_env function.
         read_fd, write_fd = os.pipe()
@@ -281,7 +276,7 @@ def main():
         pid = os.fork()
         if pid == 0:
             os.close(read_fd)
-            result = benchmark_solver_on_env(env_func, env_name, policy, optimization_criteria)
+            result = benchmark_solver_on_env(policy)
             write_file = os.fdopen(write_fd, 'w')
             write_file.write(result)
             write_file.close()

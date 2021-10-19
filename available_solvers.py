@@ -36,15 +36,14 @@ solution_heuristic_sum_h = solution_heuristic_sum
 DEFAULT_LOW_LEVEL_MERGER = None
 rtdp_sum_merger = partial(stop_when_no_improvement_between_batches_rtdp_merge,
                           solution_heuristic_sum_h,
-                          1.0,
                           100,
                           10000)
 
 ma_rtdp_sum_merger = partial(ma_rtdp_merge,
                              solution_heuristic_sum_h,
-                             1.0,
                              100,
                              10000)
+
 
 # rtdp_stop_no_improvement_min_merger_describer = SolverDescriber(
 #     description=f'stop_no_improvement_rtdp_merge('
@@ -167,24 +166,60 @@ ma_rtdp_sum_merger = partial(ma_rtdp_merge,
 # )
 
 # Solvers #############################################################################################################
+def vi_creator(env, gamma):
+    return ValueIterationPolicy(env, gamma, 'vi')
 
-vi_policy = ValueIterationPolicy('vi')
-pvi_policy = PrioritizedValueIterationPolicy('pvi')
-pi_policy = PolicyIterationPolicy('pi')
 
-rtdp_pvi_sum_policy = RtdpPolicy(pvi_sum_h, 100, 10000, 'rtdp_pvi_sum')
-rtdp_dijkstra_sum_policy = RtdpPolicy(dijkstra_sum_h, 100, 10000, 'rtdp_dijkstra_sum')
-rtdp_rtdp_dijkstra_sum_policy = RtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'rtdp_rtdp_dijkstra_sum')
+def pvi_creator(env, gamma):
+    PrioritizedValueIterationPolicy(env, gamma, 'pvi')
 
-ma_rtdp_pvi_sum_policy = MultiagentRtdpPolicy(pvi_sum_h, 100, 10000, 'ma_rtdp_pvi_sum')
-ma_rtdp_dijkstra_sum_policy = MultiagentRtdpPolicy(dijkstra_sum_h, 100, 10000, 'ma_rtdp_dijkstra_sum')
-ma_rtdp_rtdp_dijkstra_sum_policy = MultiagentRtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'ma_rtdp_rtdp_dijkstra_sum')
 
-id_vi_policy = IdPolicy(vi_policy, None, 'id_vi')
-id_rtdp_dijkstra_sum_policy = IdPolicy(rtdp_dijkstra_sum_policy, rtdp_sum_merger, 'id_rtdp_dijsktra_sum')
-id_ma_rtdp_dijkstra_sum_policy = IdPolicy(ma_rtdp_dijkstra_sum_policy, ma_rtdp_sum_merger, 'id_ma_rtdp_dijsktra_sum')
-id_rtdp_pvi_sum_policy = IdPolicy(rtdp_pvi_sum_policy, rtdp_sum_merger, 'id_rtdp_pvi_sum')
-id_ma_rtdp_pvi_sum_policy = IdPolicy(ma_rtdp_pvi_sum_policy, ma_rtdp_sum_merger, 'id_ma_rtdp_pvi_sum')
+def pi_creator(env, gamma):
+    PolicyIterationPolicy(env, gamma, 'pi')
+
+
+def rtdp_pvi_sum_creator(env, gamma):
+    return RtdpPolicy(env, gamma, pvi_sum_h, 100, 10000, 'rtdp_pvi_sum')
+
+
+def rtdp_dijkstra_sum_creator(env, gamma):
+    return RtdpPolicy(env, gamma, dijkstra_sum_h, 100, 10000, 'rtdp_dijkstra_sum')
+
+
+def rtdp_rtdp_dijkstra_sum_creator(env, gamma):
+    return RtdpPolicy(env, gamma, rtdp_dijkstra_sum_h, 100, 10000, 'rtdp_rtdp_dijkstra_sum')
+
+
+def ma_rtdp_pvi_sum_creator(env, gamma):
+    return MultiagentRtdpPolicy(env, gamma, pvi_sum_h, 100, 10000, 'ma_rtdp_pvi_sum')
+
+
+def ma_rtdp_dijkstra_sum_creator(env, gamma):
+    return MultiagentRtdpPolicy(env, gamma, dijkstra_sum_h, 100, 10000, 'ma_rtdp_dijkstra_sum')
+
+
+def ma_rtdp_rtdp_dijkstra_sum_creator(env, gamma):
+    return MultiagentRtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'ma_rtdp_rtdp_dijkstra_sum')
+
+
+def id_vi_creator(env, gamma):
+    return IdPolicy(env, gamma, vi_creator, None, 'id_vi')
+
+
+def id_rtdp_dijkstra_sum_creator(env, gamma):
+    return IdPolicy(env, gamma, rtdp_dijkstra_sum_creator, rtdp_sum_merger, 'id_rtdp_dijsktra_sum')
+
+
+def id_ma_rtdp_dijkstra_sum_creator(env, gamma):
+    return IdPolicy(env, gamma, ma_rtdp_dijkstra_sum_creator, ma_rtdp_sum_merger, 'id_ma_rtdp_dijsktra_sum')
+
+
+def id_rtdp_pvi_sum_creator(env, gamma):
+    return IdPolicy(env, gamma, rtdp_pvi_sum_creator, rtdp_sum_merger, 'id_rtdp_pvi_sum')
+
+
+def id_ma_rtdp_pvi_sum_creator(env, gamma):
+    return IdPolicy(env, gamma, ma_rtdp_pvi_sum_creator, ma_rtdp_sum_merger, 'id_ma_rtdp_pvi_sum')
 
 # prioritized_value_iteration_describer = SolverDescriber(
 #     description='prioritized_value_iteration(gamma=1.0)',

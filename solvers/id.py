@@ -15,14 +15,15 @@ from solvers.utils import (detect_conflict,
 
 
 class IdPolicy(Policy):
-    def __init__(self, low_level_policy: Policy, low_level_merger, name: str = ''):
-        super(IdPolicy, self).__init__(name)
-        self.low_level_policy = low_level_policy
+    def __init__(self, env, gamma, low_level_policy_creator: Callable[[MapfEnv, float], Policy], low_level_merger,
+                 name: str = ''):
+        super(IdPolicy, self).__init__(env, gamma, name)
+        self.low_level_policy_creator = low_level_policy_creator
         self.low_level_merger = low_level_merger
         self.joint_policy = None
 
     def train(self, *args, **kwargs):
-        self.joint_policy = id(self.low_level_policy, self.low_level_merger, self.env, self.gamma, self.info)
+        self.joint_policy = id(self.low_level_policy_creator, self.low_level_merger, self.env, self.gamma, self.info)
         return self
 
     def _act_in_unfamiliar_state(self, s: int):
@@ -50,8 +51,9 @@ class IdPolicy(Policy):
         return ret
 
 
-def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Policy], Policy],
+def merge_agents(low_level_merger: Callable[[MapfEnv, float, List, int, int, Policy, Policy], Policy],
                  env: MapfEnv,
+                 gamma: float,
                  agents_groups: List,
                  i: int,
                  j: int,
@@ -77,6 +79,7 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
             old_group_i_idx = group_of_agent(old_groups, i)
             old_group_j_idx = group_of_agent(old_groups, j)
             policy = low_level_merger(get_local_view(env, group),
+                                      gamma,
                                       old_groups,
                                       old_group_i_idx,
                                       old_group_j_idx,
@@ -86,28 +89,29 @@ def merge_agents(low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Po
 
         policies.append(policy)
 
-    return CrossedPolicy(env, policies, new_agents_groups)
+    return CrossedPolicy(env, gamma, policies, new_agents_groups)
 
 
-def _default_low_level_merger_abstract(low_level_policy,
+def _default_low_level_merger_abstract(low_level_policy_creator,
                                        env,
+                                       gamma,
                                        agents_groups,
                                        group1,
                                        group2,
                                        policy1,
                                        policy2):
     """This will casue ID to behave the old way - just solve from the beginning"""
-    policy = copy.copy(low_level_policy)
-    policy.attach_env(env, low_level_policy.gamma)
+    policy = copy.copy(low_level_policy_creator)
+    policy = low_level_policy_creator(env, gamma)
     policy.train()
     return policy
 
 
 def id(
-        low_level_policy: Policy,
-        low_level_merger: Callable[[MapfEnv, List, int, int, Policy, Policy, Dict], Policy],
+        low_level_policy_creator: Callable[[MapfEnv, float], Policy],
+        low_level_merger: Callable[[MapfEnv, float, List, int, int, Policy, Policy, Dict], Policy],
         env: MapfEnv,
-        gamma,
+        gamma: float,
         info: Dict, **kwargs
 ) -> Policy:
     """Solve MAPF gym environment with ID algorithm.
@@ -123,7 +127,7 @@ def id(
     """
     # TODO: delete eventually
     low_level_merger = functools.partial(_default_low_level_merger_abstract,
-                                         low_level_policy) if low_level_merger is None else low_level_merger
+                                         low_level_policy_creator) if low_level_merger is None else low_level_merger
 
     start = time.time()  # TODO: use a decorator for updating info with time measurement
     agents_groups = [[i] for i in range(env.n_agents)]
@@ -134,7 +138,7 @@ def id(
     curr_iter_info['joint_policy'] = {}
     curr_joint_policy = solve_independently_and_cross(env,
                                                       agents_groups,
-                                                      low_level_policy,
+                                                      low_level_policy_creator,
                                                       gamma,
                                                       curr_iter_info['joint_policy'])
 
@@ -147,6 +151,7 @@ def id(
         curr_iter_info['joint_policy'] = {}
         curr_joint_policy = merge_agents(low_level_merger,
                                          env,
+                                         gamma,
                                          agents_groups,
                                          i,
                                          j,

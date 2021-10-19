@@ -1,6 +1,5 @@
 import itertools
 import time
-import copy
 import collections
 from functools import partial
 import math
@@ -17,21 +16,13 @@ from gym_mapf.envs.utils import get_local_view
 
 
 class Policy(metaclass=ABCMeta):
-    def __init__(self, name: str = ''):
+    def __init__(self, env, gamma, name: str = ''):
         # TODO: deep copy env, don't just copy the reference
-        self.env = None
-        self.gamma = None
+        self.env = env
+        self.gamma = gamma
         self.policy_cache = {}
         self.info = {}
         self.name = name
-
-    def attach_env(self, env: MapfEnv, gamma: float):
-        self.env = env
-        self.gamma = gamma
-        self.info = {}
-        self.policy_cache = {}
-
-        return self
 
     def reset(self):
         self.env.reset()
@@ -66,9 +57,8 @@ class Policy(metaclass=ABCMeta):
 
 
 class CrossedPolicy(Policy):
-    def __init__(self, env, policies, agents_groups):
-        super().__init__()  # This does not matter
-        self.env = env
+    def __init__(self, env, gamma, policies, agents_groups, name:str=''):
+        super().__init__(env, gamma, name)
         self.policies = policies
         self.envs = [policy.env for policy in self.policies]
         self.agents_groups = agents_groups
@@ -324,7 +314,7 @@ def safe_actions(env: MapfEnv, s):
 
 def solve_independently_and_cross(env,
                                   agent_groups,
-                                  low_level_policy: Policy,
+                                  low_level_policy_creator: Callable[[MapfEnv, float], Policy],
                                   gamma,
                                   info: Dict):
     """Solve the MDP MAPF for the local views of the given agent groups
@@ -342,12 +332,12 @@ def solve_independently_and_cross(env,
 
     policies = []
     for group, local_env in zip(agent_groups, local_envs):
-        low_level_policy.attach_env(local_env, gamma)
-        low_level_policy.train()
-        info[f'{group}'] = low_level_policy.info
-        policies.append(copy.copy(low_level_policy))
+        policy = low_level_policy_creator(local_env, gamma)
+        policy.train()
+        info[f'{group}'] = policy.info
+        policies.append(policy)
 
-    joint_policy = CrossedPolicy(env, policies, agent_groups)
+    joint_policy = CrossedPolicy(env, gamma, policies, agent_groups)
 
     end = time.time()
     info['best_joint_policy_time'] = round(end - start, 2)
@@ -422,8 +412,8 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
 
 
 class ValueFunctionPolicy(Policy):
-    def __init__(self, name: str = ''):
-        super().__init__(name)
+    def __init__(self, env, gamma, name: str = ''):
+        super().__init__(env, gamma, name)
         self.v = []
 
     def _act_in_unfamiliar_state(self, s: int):

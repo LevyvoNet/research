@@ -1,30 +1,27 @@
 import functools
-import time
 import math
+import time
 from typing import Dict, Callable, List
 from collections import defaultdict
+
 import numpy as np
 
 from gym_mapf.envs.mapf_env import (MapfEnv,
-                                    function_to_get_item_of_object,
                                     STAY,
                                     ACTIONS,
                                     vector_action_to_integer,
-                                    integer_action_to_vector,
                                     ALL_STAY_JOINT_ACTION)
 from gym_mapf.envs.utils import get_local_view
-
-from solvers.utils import evaluate_policy, Policy
 from solvers.rtdp import (RtdpPolicy,
-                          no_improvement_from_last_batch,
                           _stop_when_no_improvement_between_batches_rtdp)
+from solvers.utils import Policy
 
 
 class MultiagentRtdpPolicy(RtdpPolicy):
-    def __init__(self, heuristic, batch_size, max_iters, name: str = ''):
-        super(MultiagentRtdpPolicy, self).__init__(heuristic, batch_size, max_iters, name)
-        self.q_partial_table = None
-        self.local_env_aux = None
+    def __init__(self, env, gamma, heuristic, batch_size, max_iters, name: str = ''):
+        super(MultiagentRtdpPolicy, self).__init__(env, gamma, heuristic, batch_size, max_iters, name)
+        self.q_partial_table = {i: defaultdict(dict) for i in range(env.n_agents)}
+        self.local_env_aux = get_local_view(self.env, [0])
 
     def train(self, *args, **kwargs):
         start = time.time()
@@ -41,13 +38,6 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                        iterations_generator,
                                                        self.info)
         self.info['total_time'] = round(time.time() - start)
-
-        return self
-
-    def attach_env(self, env: MapfEnv, gamma: float):
-        super(MultiagentRtdpPolicy, self).attach_env(env, gamma)
-        self.q_partial_table = {i: defaultdict(dict) for i in range(env.n_agents)}
-        self.local_env_aux = get_local_view(self.env, [0])
 
         return self
 
@@ -249,11 +239,11 @@ def multi_agent_turn_based_rtdp_iterations_generator(policy,
 
 
 def ma_rtdp_merge(
-        heuristic_function: Callable[[Policy, Policy,List,int,int, MapfEnv], Callable[[int], float]],
-        gamma,
+        heuristic_function: Callable[[Policy, Policy, List, int, int, MapfEnv], Callable[[int], float]],
         iterations_batch_size,
         max_iterations,
         env,
+        gamma,
         old_groups,
         old_group_i_idx,
         old_group_j_idx,
@@ -266,9 +256,18 @@ def ma_rtdp_merge(
                                        old_group_i_idx,
                                        old_group_j_idx)
 
-    # TODO: delete these lines
-    from solvers.rtdp import local_views_prioritized_value_iteration_sum_heuristic
-    heuristic_func = functools.partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0)
-    
-    policy = MultiagentRtdpPolicy(heuristic_func, iterations_batch_size, max_iterations).attach_env(env, gamma).train()
+    # # TODO: delete these lines
+    # h_bad = heuristic_func(env)
+    # from solvers.rtdp import local_views_prioritized_value_iteration_sum_heuristic
+    # from solvers import PrioritizedValueIterationPolicy
+    # h_good = functools.partial(local_views_prioritized_value_iteration_sum_heuristic, 1.0)(env)
+    #
+    # local_envs = [get_local_view(env, [i]) for i in range(env.n_agents)]
+    # local_v = [(PrioritizedValueIterationPolicy(local_env, gamma).train()).v for local_env in local_envs]
+    # locations = env.state_to_locations(env.s)
+    # local_states = [local_envs[i].locations_to_state((locations[i],)) for i in range(env.n_agents)]
+    # import ipdb
+    # ipdb.set_trace()
+
+    policy = MultiagentRtdpPolicy(env, gamma, heuristic_func, iterations_batch_size, max_iterations).train()
     return policy

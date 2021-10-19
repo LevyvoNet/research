@@ -16,7 +16,7 @@ class ValueIterationPolicy(ValueFunctionPolicy):
 
 
 class PrioritizedValueIterationPolicy(ValueFunctionPolicy):
-    def train(self, *args, **kwargs) -> Policy:
+    def train(self, *args, **kwargs) -> ValueFunctionPolicy:
         self.v = prioritized_value_iteration(self.gamma, self.env, self.info)
         return self
 

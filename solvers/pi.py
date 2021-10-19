@@ -1,18 +1,21 @@
-import time
-import numpy as np
 import math
+import time
 from typing import Dict
 
-from solvers import V_TYPE_SIZE, V_TYPE, MAXIMUM_RAM
+import numpy as np
+
 from gym_mapf.envs.mapf_env import MapfEnv
-from solvers.utils import Policy, ValueFunctionPolicy
+from solvers import V_TYPE_SIZE, V_TYPE, MAXIMUM_RAM
+from solvers.utils import ValueFunctionPolicy
 
 
 class PolicyIterationPolicy(ValueFunctionPolicy):
-    def train(self, *args, **kwargs):
+    def train(self, env, gamma, name: str = ''):
+        super().__init__(env, gamma, name)
         self.v = policy_iteration(self.gamma, self.env, self.info)
 
         return self
+
 
 def one_step_lookahead(env, state, V, discount_factor=1.0):
     """
