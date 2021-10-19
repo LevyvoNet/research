@@ -51,11 +51,11 @@ def vi_creator(env, gamma):
 
 
 def pvi_creator(env, gamma):
-    PrioritizedValueIterationPolicy(env, gamma, 'pvi')
+    return PrioritizedValueIterationPolicy(env, gamma, 'pvi')
 
 
 def pi_creator(env, gamma):
-    PolicyIterationPolicy(env, gamma, 'pi')
+    return PolicyIterationPolicy(env, gamma, 'pi')
 
 
 def rtdp_pvi_sum_creator(env, gamma):
