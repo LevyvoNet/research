@@ -175,14 +175,14 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
         s, r, done, _ = policy.env.step(joint_action)
         total_reward += r
 
-    # Backward update
-    while path:
-        s, joint_action = path.pop()
-        policy.v_update(s)
-        joint_action_vector = integer_action_to_vector(joint_action, policy.env.n_agents)
-        for agent in reversed(range(policy.env.n_agents)):
-            local_action = vector_action_to_integer((joint_action_vector[agent],))
-            policy.q_update(agent, s, local_action, joint_action)
+    # # Backward update
+    # while path:
+    #     s, joint_action = path.pop()
+    #     policy.v_update(s)
+    #     joint_action_vector = integer_action_to_vector(joint_action, policy.env.n_agents)
+    #     for agent in reversed(range(policy.env.n_agents)):
+    #         local_action = vector_action_to_integer((joint_action_vector[agent],))
+    #         policy.q_update(agent, s, local_action, joint_action)
 
     return total_reward
 
