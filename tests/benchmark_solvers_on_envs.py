@@ -109,14 +109,13 @@ lvl_to_solvers = {
         id_vi_creator,
     ],
     1: [
-
+        ma_rtdp_dijkstra_sum_creator,
+        rtdp_dijkstra_sum_creator,
     ],
     2: [
         ma_rtdp_pvi_sum_creator,
-        ma_rtdp_dijkstra_sum_creator,
         ma_rtdp_rtdp_dijkstra_sum_creator,
         rtdp_pvi_sum_creator,
-        rtdp_dijkstra_sum_creator,
         rtdp_rtdp_dijkstra_sum_creator,
 
     ],
@@ -155,9 +154,7 @@ lvl_to_env = {
         (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
         (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
         (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
-        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
-        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
-        (partial(empty_grid, 32, 8), 'empty-32X32-8-agents')
+
     ],
     3: [
         (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_4_agents_stochastic'),
@@ -171,6 +168,9 @@ lvl_to_env = {
         (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
         (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
         (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
+        (partial(empty_grid, 32, 8), 'empty-32X32-8-agents'),
+        (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
+        (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ]
 }
 
