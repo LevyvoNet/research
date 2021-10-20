@@ -2,20 +2,23 @@ import functools
 import unittest
 from functools import partial
 
-from gym_mapf.envs.utils import MapfGrid, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     UP, DOWN, RIGHT, LEFT, STAY,
                                     OptimizationCriteria)
-
-from solvers import (value_iteration,
-                     id,
-                     fixed_iterations_count_rtdp)
+from gym_mapf.envs.utils import MapfGrid, create_mapf_env
+from solvers import (ValueIterationPolicy,
+                     IdPolicy,
+                     RtdpPolicy)
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           fixed_iterations_rtdp_merge,
-                          solution_heuristic_min,
-                          solution_heuristic_sum)
-from solvers.utils import solve_independently_and_cross, evaluate_policy
+                          solution_heuristic_min)
+from solvers.utils import solve_independently_and_cross
+
+
+def rtdp_policy_creator(env, gamma):
+    return RtdpPolicy(env, gamma, partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
+                      100, 100)
 
 
 class IdTests(unittest.TestCase):
@@ -27,9 +30,8 @@ class IdTests(unittest.TestCase):
 
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.2, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
-        vi_plan_func = partial(value_iteration, 1.0)
-        independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], vi_plan_func, {})
-        merged_joint_policy = solve_independently_and_cross(env, [[0, 1]], vi_plan_func, {})
+        independent_joint_policy = solve_independently_and_cross(env, [[0], [1]], ValueIterationPolicy, 1.0, {})
+        merged_joint_policy = solve_independently_and_cross(env, [[0, 1]], ValueIterationPolicy, 1.0, {})
 
         interesting_state = env.locations_to_state(((1, 1), (0, 1)))
 
@@ -37,7 +39,7 @@ class IdTests(unittest.TestCase):
                                      vector_action_to_integer((DOWN, UP))]
 
         # Assert independent_joint_policy just choose the most efficient action
-        self.assertEqual(independent_joiont_policy.act(interesting_state), vector_action_to_integer((UP, LEFT)))
+        self.assertEqual(independent_joint_policy.act(interesting_state), vector_action_to_integer((UP, LEFT)))
 
         # Assert merged_joint_policy avoids collision
         self.assertIn(merged_joint_policy.act(interesting_state), expected_possible_actions)
@@ -51,9 +53,8 @@ class IdTests(unittest.TestCase):
 
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.1, OptimizationCriteria.Makespan)
 
-        vi_plan_func = partial(value_iteration, 1.0)
-        independent_joint_policy = solve_independently_and_cross(env, [[0], [1]], vi_plan_func, {})
-        merged_joint_policy = solve_independently_and_cross(env, [[0, 1]], vi_plan_func, {})
+        independent_joint_policy = solve_independently_and_cross(env, [[0], [1]], ValueIterationPolicy, 1.0, {})
+        merged_joint_policy = solve_independently_and_cross(env, [[0, 1]], ValueIterationPolicy, 1.0, {})
 
         interesting_state = env.locations_to_state(((0, 0), (0, 1)))
 
@@ -73,24 +74,17 @@ class IdTests(unittest.TestCase):
 
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.01, OptimizationCriteria.Makespan)
 
-        vi_plan_func = partial(value_iteration, 1.0)
-        joint_policy = id(vi_plan_func, None, env, {})
+        joint_policy = IdPolicy(env, 1.0, ValueIterationPolicy, None).train()
 
         self.assertEqual(joint_policy.act(env.s), vector_action_to_integer((LEFT, RIGHT)))
 
     def test_env_with_switch_conflict_solved_properly(self):
         env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
-        gamma = 1.0
-        n_iterations = 100
 
-        rtdp_plan_func = partial(fixed_iterations_count_rtdp,
-                                 partial(local_views_prioritized_value_iteration_min_heuristic, gamma),
-                                 gamma,
-                                 n_iterations)
-        rtdp_merge_func = functools.partial(fixed_iterations_rtdp_merge, solution_heuristic_min, gamma, n_iterations)
-        policy = id(rtdp_plan_func, rtdp_merge_func, env, {})
+        rtdp_merge_func = functools.partial(fixed_iterations_rtdp_merge, solution_heuristic_min, 100)
+        policy = IdPolicy(env, 1.0, rtdp_policy_creator, rtdp_merge_func).train()
 
-        info = evaluate_policy(policy, 1, 1000)
+        info = policy.evaluate(1, 1000)
 
         self.assertFalse(info['clashed'])
 

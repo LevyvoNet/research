@@ -1,22 +1,27 @@
 import unittest
 from functools import partial
 
-from solvers.utils import (CrossedPolicy,
-                           detect_conflict_old,
-                           solve_independently_and_cross,
-                           Policy,
-                           couple_detect_conflict,
-                           get_shared_states)
-from solvers.vi import value_iteration
-from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
 from gym_mapf.envs.mapf_env import (MapfEnv,
                                     vector_action_to_integer,
                                     integer_action_to_vector,
                                     DOWN, RIGHT, LEFT, STAY,
                                     ACTIONS,
                                     OptimizationCriteria)
+from gym_mapf.envs.utils import MapfGrid, get_local_view, create_mapf_env
+from solvers import ValueIterationPolicy
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
-                          fixed_iterations_count_rtdp)
+                          RtdpPolicy)
+from solvers.utils import (CrossedPolicy,
+                           detect_conflict_old,
+                           solve_independently_and_cross,
+                           Policy,
+                           couple_detect_conflict,
+                           get_shared_states)
+
+
+def rtdp_policy_creator(env, gamma):
+    return RtdpPolicy(env, gamma, partial(local_views_prioritized_value_iteration_min_heuristic, 1.0),
+                      100, 100)
 
 
 class DictPolicy(Policy):
@@ -29,6 +34,9 @@ class DictPolicy(Policy):
 
     def act(self, s):
         return self.dict_policy[s]
+
+    def train(self, *args, **kwargs):
+        pass
 
 
 class SolversUtilsTests(unittest.TestCase):
@@ -62,8 +70,8 @@ class SolversUtilsTests(unittest.TestCase):
             6: ACTIONS.index(STAY),
         }
 
-        joint_policy = CrossedPolicy(env, [DictPolicy(get_local_view(env, [0]), 1.0, policy1),
-                                           DictPolicy(get_local_view(env, [1]), 1.0, policy2)],
+        joint_policy = CrossedPolicy(env, 1.0, [DictPolicy(get_local_view(env, [0]), 1.0, policy1),
+                                                DictPolicy(get_local_view(env, [1]), 1.0, policy2)],
                                      [[0], [1]])
 
         aux_local_env = get_local_view(env, [0])
@@ -117,8 +125,8 @@ class SolversUtilsTests(unittest.TestCase):
             8: ACTIONS.index(DOWN),
         }
 
-        joint_policy = CrossedPolicy(env, [DictPolicy(get_local_view(env, [0]), 1.0, policy1),
-                                           DictPolicy(get_local_view(env, [1]), 1.0, policy2)],
+        joint_policy = CrossedPolicy(env, 1.0, [DictPolicy(get_local_view(env, [0]), 1.0, policy1),
+                                                DictPolicy(get_local_view(env, [1]), 1.0, policy2)],
                                      [[0], [1]])
 
         self.assertEqual(detect_conflict_old(env, joint_policy, {}), None)
@@ -134,7 +142,8 @@ class SolversUtilsTests(unittest.TestCase):
 
         env = MapfEnv(grid, 2, agents_starts, agents_goals, 0.1, -1, 1, -0.1, OptimizationCriteria.Makespan)
 
-        independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], partial(value_iteration, 1.0), {})
+        independent_joiont_policy = solve_independently_and_cross(env, [[0], [1]], ValueIterationPolicy, 1.0,
+                                                                  {})
 
         interesting_state = env.locations_to_state(((0, 0), (0, 2)))
 
@@ -146,14 +155,11 @@ class SolversUtilsTests(unittest.TestCase):
 
     def test_conflict_detected_for_room_scenario_with_crossed_policy(self):
         env = create_mapf_env('room-32-32-4', 1, 2, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
-
-        policy1 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                                              100,
-                                              get_local_view(env, [0]), {})
-        policy2 = fixed_iterations_count_rtdp(partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                                              100,
-                                              get_local_view(env, [1]), {})
-        crossed_policy = CrossedPolicy(env, [policy1, policy2], [[0], [1]])
+        policy1 = RtdpPolicy(get_local_view(env, [0]), 1.0,
+                             partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 100, 100).train()
+        policy2 = RtdpPolicy(get_local_view(env, [1]), 1.0,
+                             partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 100, 100).train()
+        crossed_policy = CrossedPolicy(env, 1.0, [policy1, policy2], [[0], [1]])
 
         self.assertIsNot(detect_conflict_old(env, crossed_policy, {}), None)
 
@@ -166,14 +172,10 @@ class SolversUtilsTests(unittest.TestCase):
         env = create_mapf_env('room-32-32-4', 15, 3, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
-        plan_func = partial(fixed_iterations_count_rtdp,
-                            partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                            100)
+        crossed_policy = solve_independently_and_cross(env, [[0, 1], [2]], rtdp_policy_creator, 1.0, {})
 
-        crossed_policy = solve_independently_and_cross(env, [[0, 1], [2]], plan_func, {})
-
-        policy0 = plan_func(get_local_view(env, [0, 1]), {})
-        policy1 = plan_func(get_local_view(env, [2]), {})
+        policy0 = rtdp_policy_creator(get_local_view(env, [0, 1]), 1.0).train()
+        policy1 = rtdp_policy_creator(get_local_view(env, [2]), 1.0).train()
 
         action0 = policy0.act(policy0.env.locations_to_state(interesting_locations[0:2]))
         action1 = policy1.act(policy1.env.locations_to_state((interesting_locations[2],)))
@@ -194,13 +196,10 @@ class SolversUtilsTests(unittest.TestCase):
         env = create_mapf_env('room-32-32-4', 15, 3, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
         interesting_locations = ((19, 22), (18, 24), (17, 22))
 
-        plan_func = partial(fixed_iterations_count_rtdp,
-                            partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                            100)
-        crossed_policy = solve_independently_and_cross(env, [[1], [0, 2]], plan_func, {})
+        crossed_policy = solve_independently_and_cross(env, [[1], [0, 2]], rtdp_policy_creator, 1.0, {})
 
-        policy0 = plan_func(get_local_view(env, [1]), {})
-        policy1 = plan_func(get_local_view(env, [0, 2]), {})
+        policy0 = rtdp_policy_creator(get_local_view(env, [1]), 1.0).train()
+        policy1 = rtdp_policy_creator(get_local_view(env, [0, 2]), 1.0).train()
 
         action0 = policy0.act(policy0.env.locations_to_state((interesting_locations[1],)))
         action1 = policy1.act(
@@ -223,14 +222,7 @@ class SolversUtilsTests(unittest.TestCase):
         """
         env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
 
-        low_level_plan_func = partial(fixed_iterations_count_rtdp,
-                                      partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                                      100)
-
-        policy = solve_independently_and_cross(env,
-                                               [[0], [1]],
-                                               low_level_plan_func,
-                                               {})
+        policy = solve_independently_and_cross(env, [[0], [1]], rtdp_policy_creator, 1.0, {})
         conflict = detect_conflict_old(env, policy, {})
         # Assert a conflict detected
         self.assertIsNotNone(conflict)
@@ -305,9 +297,9 @@ class SolversUtilsTests(unittest.TestCase):
             8: ACTIONS.index(LEFT),
         }
 
-        joint_policy = CrossedPolicy(env, [DictPolicy(get_local_view(env, [0]), 1.0, policy0),
-                                           DictPolicy(get_local_view(env, [1]), 1.0, policy1),
-                                           DictPolicy(get_local_view(env, [2]), 1.0, policy2)],
+        joint_policy = CrossedPolicy(env, 1.0, [DictPolicy(get_local_view(env, [0]), 1.0, policy0),
+                                                DictPolicy(get_local_view(env, [1]), 1.0, policy1),
+                                                DictPolicy(get_local_view(env, [2]), 1.0, policy2)],
                                      [[0], [1], [2]])
 
         aux_local_env = get_local_view(env, [0])
@@ -407,8 +399,8 @@ class SolversUtilsTests(unittest.TestCase):
             8: ACTIONS.index(LEFT),
         }
 
-        joint_policy = CrossedPolicy(env, [DictPolicy(env01, 1.0, policy01),
-                                           DictPolicy(get_local_view(env, [2]), 1.0, policy2)],
+        joint_policy = CrossedPolicy(env, 1.0, [DictPolicy(env01, 1.0, policy01),
+                                                DictPolicy(get_local_view(env, [2]), 1.0, policy2)],
                                      [[0, 1], [2]])
 
         aux_local_env = get_local_view(env, [0])
@@ -437,14 +429,7 @@ class SolversUtilsTests(unittest.TestCase):
     def test_shared_states(self):
         env = create_mapf_env('room-32-32-4', 9, 2, 0, -1000, 0, -1, OptimizationCriteria.Makespan)
 
-        low_level_plan_func = partial(fixed_iterations_count_rtdp,
-                                      partial(local_views_prioritized_value_iteration_min_heuristic, 1.0), 1.0,
-                                      100)
-
-        policy = solve_independently_and_cross(env,
-                                               [[0], [1]],
-                                               low_level_plan_func,
-                                               {})
+        policy = solve_independently_and_cross(env, [[0], [1]], rtdp_policy_creator, 1.0, {})
         shared_states, n0, n1 = get_shared_states(env, policy, 0, 1, {})
 
         # The agents are switching between this two states and therefore these states are shared.

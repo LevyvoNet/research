@@ -57,7 +57,7 @@ class Policy(metaclass=ABCMeta):
 
 
 class CrossedPolicy(Policy):
-    def __init__(self, env, gamma, policies, agents_groups, name:str=''):
+    def __init__(self, env, gamma, policies, agents_groups, name: str = ''):
         super().__init__(env, gamma, name)
         self.policies = policies
         self.envs = [policy.env for policy in self.policies]

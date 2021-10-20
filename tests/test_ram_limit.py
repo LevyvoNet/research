@@ -3,12 +3,12 @@ from functools import partial
 from typing import Dict, Callable
 from gym_mapf.envs.mapf_env import MapfEnv
 from gym_mapf.envs.utils import create_mapf_env
-from solvers.utils import Policy
+from solvers.utils import ValueFunctionPolicy
 from solvers import (ValueIterationPolicy, PrioritizedValueIterationPolicy, PolicyIterationPolicy)
 
 
 class RamLimitTest(unittest.TestCase):
-    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
+    def solve(self, env) -> Callable[[MapfEnv, Dict], ValueFunctionPolicy]:
         """Return the concrete planner"""
         raise unittest.SkipTest("This is an abstract test case")
 
@@ -24,18 +24,18 @@ class RamLimitTest(unittest.TestCase):
 
 
 class ValueIterationRamLimitTest(RamLimitTest):
-    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
-        return ValueIterationPolicy().attach_env(env, 1.0).train()
+    def solve(self, env) -> ValueFunctionPolicy:
+        return ValueIterationPolicy(env, 1.0).train()
 
 
 class PrioritizedValueIterationRamLimitTest(RamLimitTest):
-    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
-        return PrioritizedValueIterationPolicy().attach_env(env, 1.0).train()
+    def solve(self, env) -> ValueFunctionPolicy:
+        return PrioritizedValueIterationPolicy(env, 1.0).train()
 
 
 class PolicyIterationRamLimitTest(RamLimitTest):
-    def solve(self, env) -> Callable[[MapfEnv, Dict], Policy]:
-        return PolicyIterationPolicy().attach_env(env, 1.0).train()
+    def solve(self, env) -> ValueFunctionPolicy:
+        return PolicyIterationPolicy(env, 1.0).train()
 
 
 if __name__ == '__main__':

@@ -423,8 +423,7 @@ def fixed_iterations_rtdp_merge(heuristic_function: Callable[[Policy, Policy, Ma
                                 old_group_i_idx,
                                 old_group_j_idx,
                                 policy_i,
-                                policy_j,
-                                info: Dict):
+                                policy_j):
     heursitic_func = functools.partial(heuristic_function,
                                        policy_i,
                                        policy_j,
