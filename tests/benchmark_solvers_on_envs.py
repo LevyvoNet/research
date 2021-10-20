@@ -112,6 +112,12 @@ lvl_to_solvers = {
 
     ],
     2: [
+        ma_rtdp_pvi_sum_creator,
+        ma_rtdp_dijkstra_sum_creator,
+        ma_rtdp_rtdp_dijkstra_sum_creator,
+        rtdp_pvi_sum_creator,
+        rtdp_dijkstra_sum_creator,
+        rtdp_rtdp_dijkstra_sum_creator,
 
     ],
     3: [
@@ -119,12 +125,6 @@ lvl_to_solvers = {
         id_ma_rtdp_dijkstra_sum_creator,
         id_rtdp_pvi_sum_creator,
         id_ma_rtdp_pvi_sum_creator,
-        ma_rtdp_pvi_sum_creator,
-        ma_rtdp_dijkstra_sum_creator,
-        ma_rtdp_rtdp_dijkstra_sum_creator,
-        rtdp_pvi_sum_creator,
-        rtdp_dijkstra_sum_creator,
-        rtdp_rtdp_dijkstra_sum_creator,
     ]
 }
 
@@ -300,6 +300,7 @@ def main():
         exit(1)
     else:
         print('----------Success----------------')
+
 
 if __name__ == '__main__':
     main()
