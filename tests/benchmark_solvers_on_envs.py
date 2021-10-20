@@ -125,6 +125,8 @@ lvl_to_solvers = {
         id_ma_rtdp_dijkstra_sum_creator,
         id_rtdp_pvi_sum_creator,
         id_ma_rtdp_pvi_sum_creator,
+        online_replan_rtdp_rtdp_dijkstra_sum_creator,
+        online_replan_ma_rtdp_rtdp_dijkstra_sum_creator
     ]
 }
 
@@ -169,7 +171,6 @@ lvl_to_env = {
         (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
         (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
         (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
-
     ]
 }
 
@@ -196,20 +197,27 @@ def generate_solver_env_combinations(max_env_lvl):
     # return all_makespan + all_soc
 
 
-def print_status(reward, solve_time, solver_description, success_rate, train_info: Dict = None):
-    status_str = ', '.join([
-        f'reward:{reward}',
-        f'rate:{success_rate}',
-        f'time:{solve_time}',
-        f'solver:{solver_description}, ',
+def print_status(eval_info, train_info, policy_name):
+    total_time = eval_info['mean_exec_time'] + train_info['train_time']
+
+    standard_info_str = ', '.join([
+        f'MDR:{eval_info["MDR"]}',
+        f'rate:{eval_info["success_rate"]}',
+        f'time:{total_time}',
+        f'exec_time:{eval_info["mean_exec_time"]}',
+        f'train_time:{train_info["train_time"]}',
+        f'solver:{policy_name}, ',
     ])
 
-    if train_info is None:
-        train_info_str = ''
-    else:
-        train_info_str = ', '.join([f'{key}:{value}' for key, value in train_info.items()])
+    del train_info['train_time']
+    del eval_info['MDR']
+    del eval_info['mean_exec_time']
 
-    print(status_str + train_info_str)
+    extra_info_str = ', '.join([f'{key}:{value}' for key, value in train_info.items()])
+    extra_info_str += ', '.join([f'{key}:{value}' for key, value in eval_info.items() if key not in ['success_rate',
+                                                                                                     'clashed']])
+
+    print(standard_info_str + extra_info_str)
 
 
 def benchmark_solver_on_env(policy: Policy):
@@ -218,9 +226,6 @@ def benchmark_solver_on_env(policy: Policy):
         eval_max_steps = 1000
         eval_n_episodes = 100
 
-        # Start the test
-        start = time.time()
-
         # Try to solve with a time limit
         with stopit.SignalTimeout(TEST_SINGLE_SCENARIO_TIMEOUT, swallow_exc=False):
             try:
@@ -228,16 +233,15 @@ def benchmark_solver_on_env(policy: Policy):
             except stopit.utils.TimeoutException:
                 return RESULT_TIMEOUT
 
-        solve_time = round(time.time() - start, 2)
-
-        eval_info = policy.evaluate(eval_n_episodes, eval_max_steps)
+        # Get the train info
         train_info = policy.train_info()
 
-        print_status(eval_info['MDR'],
-                     solve_time,
-                     policy.name,
-                     eval_info['success_rate'],
-                     train_info)
+        # Each episode has a remaining run-time of single_scenario - train_time
+        eval_info = policy.evaluate(eval_n_episodes,
+                                    eval_max_steps,
+                                    TEST_SINGLE_SCENARIO_TIMEOUT - train_info['train_time'])
+
+        print_status(eval_info, train_info, policy.name)
 
         if eval_info['clashed']:
             return RESULT_CLASHED
@@ -247,7 +251,7 @@ def benchmark_solver_on_env(policy: Policy):
 
         return RESULT_OK
 
-    except Exception as e:
+    except None as e:
         print(repr(e))
         return RESULT_EXCEPTION
 

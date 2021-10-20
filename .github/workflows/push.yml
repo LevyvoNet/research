@@ -1,6 +1,6 @@
 name: research CI
 
-on: [push]
+on: [ push ]
 
 jobs:
   UT:
@@ -26,18 +26,5 @@ jobs:
           python-version: '3.6'
       - run: pip install stopit gym gym-mapf numpy colorama pandas scipy
       - run: python tests/benchmark_solvers_on_envs.py
-        env:
-          PYTHONPATH: "."
-
-  temp:
-    name: temp - online replan
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.6'
-      - run: pip install stopit gym gym-mapf numpy colorama pandas scipy
-      - run: python solvers/online_replan.py
         env:
           PYTHONPATH: "."

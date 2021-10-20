@@ -5,7 +5,8 @@ from solvers import (ValueIterationPolicy,
                      PolicyIterationPolicy,
                      RtdpPolicy,
                      MultiagentRtdpPolicy,
-                     IdPolicy)
+                     IdPolicy,
+                     OnlineReplanPolicy)
 from solvers.ma_rtdp import ma_rtdp_merge
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
@@ -96,3 +97,11 @@ def id_rtdp_pvi_sum_creator(env, gamma):
 
 def id_ma_rtdp_pvi_sum_creator(env, gamma):
     return IdPolicy(env, gamma, ma_rtdp_pvi_sum_creator, ma_rtdp_sum_merger, 'id_ma_rtdp_pvi_sum')
+
+
+def online_replan_ma_rtdp_rtdp_dijkstra_sum_creator(env, gamma):
+    return OnlineReplanPolicy(env, gamma, 3, ma_rtdp_rtdp_dijkstra_sum_creator, 'online_ma_rtdp_rtdp_dijkstra_sum')
+
+
+def online_replan_rtdp_rtdp_dijkstra_sum_creator(env, gamma):
+    return OnlineReplanPolicy(env, gamma, 3, rtdp_rtdp_dijkstra_sum_creator, 'online_rtdp_rtdp_dijkstra_sum')

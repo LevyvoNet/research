@@ -1,23 +1,17 @@
 import collections
-import time
-import itertools
 import math
+import time
+from functools import partial
+from typing import Dict
 
 from gym_mapf.envs.grid import MapfGrid, ObstacleCell
-from gym_mapf.envs.utils import create_mapf_env, get_local_view
-from gym_mapf.envs.mapf_env import (OptimizationCriteria,
-                                    MapfEnv,
+from gym_mapf.envs.mapf_env import (MapfEnv,
                                     integer_action_to_vector,
                                     vector_action_to_integer,
                                     ACTIONS)
-
-from available_solvers import *
+from gym_mapf.envs.utils import get_local_view
 from solvers.utils import (solve_independently_and_cross,
-                           get_reachable_states,
-                           couple_detect_conflict,
-                           Policy,
-                           CrossedPolicy,
-                           evaluate_policy)
+                           Policy)
 
 ConflictArea = collections.namedtuple('ConflictArea', ['top_row', 'bottom_row', 'left_col', 'right_col'])
 
@@ -75,19 +69,27 @@ def divide_to_groups(locations, k):
 
 
 class OnlineReplanPolicy(Policy):
-    def __init__(self, env: MapfEnv, gamma: float, k: int, self_policy: CrossedPolicy, low_level_planner, info):
-        super().__init__(env, gamma)
+    def __init__(self, env: MapfEnv, gamma: float, k: int, low_level_policy_creator, name: str = ''):
+        super().__init__(env, gamma, name)
         self.k = k
         self.online_policies = []
-        self.self_policy = self_policy
-        self.single_env = self.self_policy.policies[0].env
-        self.low_level_planner = low_level_planner
-        self.info = info
+        self.self_policy = None
+        self.single_env = get_local_view(env, [0])
+        self.low_level_policy_creator = low_level_policy_creator
+        self.info = {'n_replans': 0}
         self.replans = collections.defaultdict(partial(collections.defaultdict, dict))
 
     def reset(self):
         super().reset()
         self.replans = collections.defaultdict(partial(collections.defaultdict, dict))
+        self.info = {'n_replans': 0}
+
+    def train_info(self):
+        train_info_dict = {}
+
+        train_info_dict['train_time'] = self.info['train_time']
+
+        return train_info_dict
 
     def replan_for_group(self, group, locations, info):
         # Determine the borders
@@ -167,6 +169,7 @@ class OnlineReplanPolicy(Policy):
         joint_policy = self.low_level_planner(env, self.info[f'{group}_{top_left}'])
 
         self.replans[tuple(group)][conflict_area] = joint_policy
+        self.info['n_replans'] += 1
         return conflict_area, joint_policy
 
     def select_action_for_group(self, group, locations):
@@ -212,44 +215,31 @@ class OnlineReplanPolicy(Policy):
 
         return vector_action_to_integer(joint_action_vector)
 
+    def train(self):
+        start = time.time()
+        self_groups = [[i] for i in range(self.env.n_agents)]
+        self.info['independent_policies'] = {}
 
-def online_replan(low_level_planner, k, env, info):
-    self_groups = [[i] for i in range(env.n_agents)]
-    info['independent_policies'] = {}
+        # Plan for each agent independently
+        self.self_policy = solve_independently_and_cross(self.env,
+                                                         self_groups,
+                                                         self.low_level_policy_creator,
+                                                         self.gamma,
+                                                         self.info['independent_policies'])
+        self.info['online_policy'] = {}
+        self.info['train_time'] = round(time.time() - start, 2)
 
-    # Plan for each agent independently
-    self_policy = solve_independently_and_cross(env,
-                                                self_groups,
-                                                low_level_planner,
-                                                info['independent_policies'])
-    info['online_policy'] = {}
-    return OnlineReplanPolicy(env,
-                              self_policy.gamma,
-                              k,
-                              self_policy,
-                              low_level_planner,
-                              info['online_policy'])
+        return self
 
+    def eval_episode_info_update(self, stats: Dict):
+        if 'episodes_n_replans' not in stats:
+            stats['episodes_n_replans'] = []
 
-def main():
-    env = create_mapf_env('empty-48-48', 25, 4, 0.2, -1000, 0, -1, OptimizationCriteria.Makespan)
-    low_level_solver_describer = long_rtdp_stop_no_improvement_sum_rtdp_dijkstra_heuristic_describer
-    info = {}
+        stats['episodes_n_replans'].append(self.info['n_replans'])
 
-    k = 3
-    policy = online_replan(low_level_solver_describer.func, k, env, info)
-
-    # import ipdb
-    # ipdb.set_trace()
-
-    eval_info = evaluate_policy(policy, 100, 100, 0)
-
-    print(f"MDR: {eval_info['MDR']}")
-    print(f"success_rate: {eval_info['success_rate']}")
-    print(f"clashed: {eval_info['clashed']}")
-    print(f"mean time: {eval_info['mean_time']}")
-    print(f"replans: {eval_info['n_replans']}")
-
-
-if __name__ == '__main__':
-    main()
+    def eval_episodes_info_process(self, stats: Dict):
+        if 'episodes_n_replans' not in stats:
+            stats['n_replans'] = 0
+        else:
+            stats['n_replans'] = round(sum(stats['episodes_n_replans']) / len(stats['episodes_n_replans']), 2)
+            del stats['episodes_n_replans']

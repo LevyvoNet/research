@@ -90,6 +90,8 @@ def policy_eval(env, policy, V, discount_factor):
 
 
 def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
+    start = time.time()
+
     gamma = kwargs.get('gamma', 1.0)
     max_iteration = 1000
 
@@ -120,5 +122,7 @@ def policy_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
             policy_prev = np.copy(policy_curr)
 
         # print(f'PI: iteration {i + 1} took {time.time() - start} seconds')
+
+    info['train_time'] = round(time.time() - start, 2)
 
     return v

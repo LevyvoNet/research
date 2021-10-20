@@ -38,7 +38,7 @@ class MultiagentRtdpPolicy(RtdpPolicy):
                                                        self,
                                                        iterations_generator,
                                                        self.info)
-        self.info['total_time'] = round(time.time() - start)
+        self.info['train_time'] = round(time.time() - start)
 
         return self
 

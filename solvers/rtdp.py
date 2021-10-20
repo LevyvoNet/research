@@ -65,7 +65,7 @@ class RtdpPolicy(ValueFunctionPolicy):
                                                        self,
                                                        iterations_generator,
                                                        self.info)
-        self.info['total_time'] = round(time.time() - start)
+        self.info['train_time'] = round(time.time() - start)
 
         return self
 
@@ -86,6 +86,9 @@ class RtdpPolicy(ValueFunctionPolicy):
 
         # Set last MDR
         train_info_dict['last_MDR'] = self.info['last_MDR']
+
+        # Set train time
+        train_info_dict['train_time'] = self.info['train_time']
 
         return train_info_dict
 

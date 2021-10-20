@@ -48,6 +48,9 @@ class IdPolicy(Policy):
                   ])
              for j in range(len(self.info['iterations']))]), 1)
 
+        # Set train time
+        ret['train_time'] = self.info['train_time']
+
         return ret
 
 
@@ -167,5 +170,5 @@ def id(
         conflict = detect_conflict(env, curr_joint_policy, **{'info': curr_iter_info})
 
     end = time.time()
-    info['ID_time'] = round(end - start, 2)
+    info['train_time'] = round(end - start, 2)
     return curr_joint_policy

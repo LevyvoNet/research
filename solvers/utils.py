@@ -3,6 +3,7 @@ import time
 import collections
 from functools import partial
 import math
+import stopit
 from abc import ABCMeta, abstractmethod
 from typing import Dict, Callable
 
@@ -49,11 +50,17 @@ class Policy(metaclass=ABCMeta):
     def train(self, *args, **kwargs):
         pass
 
-    def evaluate(self, n_episodes, max_steps, min_success_rate=0):
-        return evaluate_policy(self, n_episodes, max_steps, min_success_rate)
+    def evaluate(self, n_episodes, max_steps, max_exec_time=None, min_success_rate=0):
+        return evaluate_policy(self, n_episodes, max_steps, max_exec_time, min_success_rate)
 
     def train_info(self):
         return self.info
+
+    def eval_episode_info_update(self, stats: Dict):
+        pass
+
+    def eval_episodes_info_process(self, stats: Dict):
+        pass
 
 
 class CrossedPolicy(Policy):
@@ -355,41 +362,54 @@ def render_states(env, states):
     env.s = s_initial
 
 
-def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success_rate=0):
+def evaluate_policy_single_episode(policy, max_steps, stats):
     all_stay_action = vector_action_to_integer((STAY,) * policy.env.n_agents)
+    episode_start_time = time.time()
+    policy.reset()
+    steps = 0
+    episode_reward = 0
+
+    while steps < max_steps:
+        a = policy.act(policy.env.s)
+        if a == all_stay_action:
+            break
+
+        _, reward, done, info = policy.env.step(a)
+        episode_reward += reward
+        steps += 1
+
+        # Check for goal
+        if done:
+            if not info['collision']:
+                stats['episodes_rewards'].append(episode_reward)
+                stats['episodes_time'].append(round(time.time() - episode_start_time, 1))
+                stats['MDR'] += episode_reward
+                stats['mean_exec_time'] += stats['episodes_time'][-1]
+            else:
+                stats['clashed'] = True
+            break
+
+
+def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, max_exec_time=None, min_success_rate=0):
     stats = {
         'episodes_rewards': [],
         'episodes_time': [],
         'clashed': False,
         'MDR': 0,
-        'mean_time': 0
+        'mean_exec_time': 0,
     }
 
     for i in range(n_episodes):
-        episode_start_time = time.time()
-        policy.reset()
-        steps = 0
-        episode_reward = 0
+        if max_exec_time is None:
+            evaluate_policy_single_episode(policy, max_steps, stats)
+        else:
+            with stopit.SignalTimeout(max_exec_time, swallow_exc=False):
+                try:
+                    evaluate_policy_single_episode(policy, max_steps, stats)
+                except stopit.utils.TimeoutException:
+                    pass
 
-        while steps < max_steps:
-            a = policy.act(policy.env.s)
-            if a == all_stay_action:
-                break
-
-            _, reward, done, info = policy.env.step(a)
-            episode_reward += reward
-            steps += 1
-
-            # Check for goal
-            if done:
-                if not info['collision']:
-                    stats['episodes_rewards'].append(episode_reward)
-                    stats['episodes_time'].append(round(time.time() - episode_start_time, 1))
-                    stats['MDR'] += episode_reward
-                    stats['mean_time'] += stats['episodes_time'][-1]
-                else:
-                    stats['clashed'] = True
-                break
+        policy.eval_episode_info_update(stats)
 
         # If we don't have a chance to be in the minimum success rate, just give up
         if (n_episodes - i - 1) + len(stats['episodes_rewards']) < n_episodes * min_success_rate:
@@ -398,15 +418,20 @@ def evaluate_policy(policy: Policy, n_episodes: int, max_steps: int, min_success
     # Calculate MDR
     if len(stats['episodes_rewards']) == 0:
         stats['MDR'] = -math.inf
-        stats['mean_time'] = -math.inf
+        stats['mean_exec_time'] = -math.inf
     else:
         stats['MDR'] = round(stats['MDR'] / len(stats['episodes_rewards']), 1)
-        stats['mean_time'] += round(stats['mean_time'] / len(stats['episodes_time']), 1)
+        stats['mean_exec_time'] += round(stats['mean_exec_time'] / len(stats['episodes_time']), 1)
 
     # Calculate success rate
     stats['success_rate'] = round((len(stats['episodes_rewards']) / n_episodes) * 100)
 
-    policy.env.reset()
+    policy.eval_episodes_info_process(stats)
+
+    policy.reset()
+
+    del stats['episodes_rewards']
+    del stats['episodes_time']
 
     return stats
 

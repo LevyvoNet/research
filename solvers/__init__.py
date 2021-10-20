@@ -9,4 +9,5 @@ from .vi import ValueIterationPolicy,PrioritizedValueIterationPolicy
 from .pi import PolicyIterationPolicy
 from .rtdp import (RtdpPolicy)
 from .ma_rtdp import MultiagentRtdpPolicy
+from .online_replan import OnlineReplanPolicy
 # from .lrtdp import lrtdp
