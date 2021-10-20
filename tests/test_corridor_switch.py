@@ -1,5 +1,6 @@
 import pytest
 import itertools
+from typing import Callable
 
 from available_solvers import *
 from gym_mapf.envs.grid import MapfGrid
@@ -34,8 +35,8 @@ def generate_all_solvers():
 all_tested_solvers = generate_all_solvers()
 
 
-@pytest.mark.parametrize('policy, optimization_criteria', all_tested_solvers)
-def test_corridor_switch_no_clash_possible(policy: Policy,
+@pytest.mark.parametrize('policy_creator, optimization_criteria', all_tested_solvers)
+def test_corridor_switch_no_clash_possible(policy_creator: Callable[[MapfEnv, float], Policy],
                                            optimization_criteria: OptimizationCriteria):
     eval_max_steps = 200
     eval_n_episodes = 100
@@ -48,7 +49,7 @@ def test_corridor_switch_no_clash_possible(policy: Policy,
     # These parameters are for making sure that the solver avoids collision regardless of reward efficiency
     env = MapfEnv(grid, 2, start_locations, goal_locations, 0.2, -0.001, 0, -1, optimization_criteria)
 
-    policy.attach_env(env, 1.0).train()
+    policy = policy_creator(env, 1.0).train()
 
     # Assert no conflict is possible
     interesting_locations = ((1, 1), (0, 1))
