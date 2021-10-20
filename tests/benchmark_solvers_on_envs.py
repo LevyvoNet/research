@@ -298,7 +298,8 @@ def main():
             print(f'{i}. {solver_name}, {env_name}, {bad_result}')
 
         exit(1)
-
+    else:
+        print('----------Success----------------')
 
 if __name__ == '__main__':
     main()

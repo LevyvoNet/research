@@ -10,8 +10,7 @@ from solvers.utils import ValueFunctionPolicy
 
 
 class PolicyIterationPolicy(ValueFunctionPolicy):
-    def train(self, env, gamma, name: str = ''):
-        super().__init__(env, gamma, name)
+    def train(self, name: str = ''):
         self.v = policy_iteration(self.gamma, self.env, self.info)
 
         return self

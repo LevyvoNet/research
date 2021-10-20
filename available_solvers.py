@@ -1,4 +1,3 @@
-from collections import namedtuple
 from functools import partial
 
 from solvers import (ValueIterationPolicy,
@@ -7,19 +6,16 @@ from solvers import (ValueIterationPolicy,
                      RtdpPolicy,
                      MultiagentRtdpPolicy,
                      IdPolicy)
+from solvers.ma_rtdp import ma_rtdp_merge
 from solvers.rtdp import (local_views_prioritized_value_iteration_min_heuristic,
                           local_views_prioritized_value_iteration_sum_heuristic,
-                          deterministic_relaxation_prioritized_value_iteration_heuristic,
                           dijkstra_min_heuristic,
                           dijkstra_sum_heuristic,
                           solution_heuristic_min,
                           solution_heuristic_sum,
                           rtdp_dijkstra_sum_heuristic,
                           rtdp_dijkstra_min_heuristic,
-                          fixed_iterations_rtdp_merge,
                           stop_when_no_improvement_between_batches_rtdp_merge, )
-
-from solvers.ma_rtdp import ma_rtdp_merge
 
 # Heuristics ##########################################################################################################
 # TODO: the fact that I'm passing gamma here is a hack, perhaps the heuristic functions should receive gamma and env.
@@ -79,7 +75,7 @@ def ma_rtdp_dijkstra_sum_creator(env, gamma):
 
 
 def ma_rtdp_rtdp_dijkstra_sum_creator(env, gamma):
-    return MultiagentRtdpPolicy(rtdp_dijkstra_sum_h, 100, 10000, 'ma_rtdp_rtdp_dijkstra_sum')
+    return MultiagentRtdpPolicy(env, gamma, rtdp_dijkstra_sum_h, 100, 10000, 'ma_rtdp_rtdp_dijkstra_sum')
 
 
 def id_vi_creator(env, gamma):

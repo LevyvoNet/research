@@ -10,7 +10,8 @@ from gym_mapf.envs.mapf_env import (MapfEnv,
                                     STAY,
                                     ACTIONS,
                                     vector_action_to_integer,
-                                    ALL_STAY_JOINT_ACTION)
+                                    ALL_STAY_JOINT_ACTION,
+                                    integer_action_to_vector)
 from gym_mapf.envs.utils import get_local_view
 from solvers.rtdp import (RtdpPolicy,
                           _stop_when_no_improvement_between_batches_rtdp)
@@ -158,11 +159,6 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
             joint_action_vector = joint_action_vector[:agent] + (ACTIONS[local_action],) + joint_action_vector[
                                                                                            agent + 1:]
 
-        # # debug
-        # policy.env.render()
-        # print(f'selected action: {joint_action_vector}')
-        # time.sleep(0.2)
-
         # Compose the joint action
         joint_action = vector_action_to_integer(joint_action_vector)
         path.append((s, joint_action))
@@ -179,23 +175,14 @@ def multi_agent_turn_based_rtdp_single_iteration(policy: MultiagentRtdpPolicy,
         s, r, done, _ = policy.env.step(joint_action)
         total_reward += r
 
-        # # debug
-        # print(f'got reward {r}')
-
-    # # debug
-    # policy.env.render()
-
-    # # Backward update
-    # while path:
-    #     s, joint_action = path.pop()
-    #     policy.v_update(s)
-    #     joint_action_vector = integer_action_to_vector(joint_action, policy.env.n_agents)
-    #     for agent in reversed(range(policy.env.n_agents)):
-    #         local_action = vector_action_to_integer((joint_action_vector[agent],))
-    #         policy.q_update(agent, s, local_action, joint_action)
-
-    # # debug
-    # print('--------end iteration---------------')
+    # Backward update
+    while path:
+        s, joint_action = path.pop()
+        policy.v_update(s)
+        joint_action_vector = integer_action_to_vector(joint_action, policy.env.n_agents)
+        for agent in reversed(range(policy.env.n_agents)):
+            local_action = vector_action_to_integer((joint_action_vector[agent],))
+            policy.q_update(agent, s, local_action, joint_action)
 
     return total_reward
 
