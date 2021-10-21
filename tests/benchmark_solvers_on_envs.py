@@ -102,28 +102,28 @@ def empty_grid(grid_size, n_agents, optimization_criteria):
 
 
 lvl_to_solvers = {
-    0: [
-        vi_creator,
-        pvi_creator,
-        pi_creator,
-        id_vi_creator,
-    ],
-    1: [
-        ma_rtdp_dijkstra_sum_creator,
-        rtdp_dijkstra_sum_creator,
-        rtdp_pvi_sum_creator,
-        rtdp_rtdp_dijkstra_sum_creator,
-    ],
-    2: [
-        ma_rtdp_pvi_sum_creator,
-        ma_rtdp_rtdp_dijkstra_sum_creator,
-    ],
-    3: [
-        id_rtdp_dijkstra_sum_creator,
-        id_ma_rtdp_dijkstra_sum_creator,
-        id_rtdp_pvi_sum_creator,
-        id_ma_rtdp_pvi_sum_creator,
-    ],
+    # 0: [
+    #     vi_creator,
+    #     pvi_creator,
+    #     pi_creator,
+    #     id_vi_creator,
+    # ],
+    # 1: [
+    #     ma_rtdp_dijkstra_sum_creator,
+    #     rtdp_dijkstra_sum_creator,
+    #     rtdp_pvi_sum_creator,
+    #     rtdp_rtdp_dijkstra_sum_creator,
+    # ],
+    # 2: [
+    #     ma_rtdp_pvi_sum_creator,
+    #     ma_rtdp_rtdp_dijkstra_sum_creator,
+    # ],
+    # 3: [
+    #     id_rtdp_dijkstra_sum_creator,
+    #     id_ma_rtdp_dijkstra_sum_creator,
+    #     id_rtdp_pvi_sum_creator,
+    #     id_ma_rtdp_pvi_sum_creator,
+    # ],
     4: [
         online_replan_rtdp_rtdp_dijkstra_sum_creator,
         online_replan_ma_rtdp_rtdp_dijkstra_sum_creator

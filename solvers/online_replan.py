@@ -102,14 +102,17 @@ class OnlineReplanPolicy(Policy):
         extra_rows = max(self.k - (bottom_row - top_row + 1), 0)
         extra_cols = max(self.k - (right_col - left_col + 1), 0)
 
-        top_row = top_row - math.floor(extra_rows / 2)
-        left_col = left_col - math.floor(extra_cols / 2)
-        bottom_row = bottom_row + math.ceil(extra_rows / 2)
-        right_col = right_col + math.ceil(extra_cols / 2)
+        top_row = max(0, top_row - math.floor(extra_rows / 2))
+        left_col = max(0, left_col - math.floor(extra_cols / 2))
+        bottom_row = min(self.env.grid.max_row, bottom_row + math.ceil(extra_rows / 2))
+        right_col = min(self.env.grid.max_col, right_col + math.ceil(extra_cols / 2))
+
+        # Set the conflict area
+        conflict_area = ConflictArea(top_row, bottom_row, left_col, right_col)
 
         # Calculate the conflict area locations
         conflict_area_locations = []
-        for row in range(bottom_row, top_row + 1):
+        for row in range(top_row, bottom_row + 1):
             for col in range(left_col, right_col + 1):
                 conflict_area_locations.append((row, col))
 
@@ -138,21 +141,26 @@ class OnlineReplanPolicy(Policy):
             for row in range(bottom_row, top_row + 1):
                 possible_goal_locations.append((row, right_col + 1))
 
+        # If the goal locations are inside the conflict area, add them
+        for real_goal_loc in self.env.agents_goals:
+            if inside(real_goal_loc, conflict_area):
+                possible_goal_locations.append(real_goal_loc)
+
         top_left = (max(0, top_row - 1), max(0, left_col - 1))
         goal_locs = [max(possible_goal_locations,
                          key=lambda loc: self.self_policy.policies[agent].v[
                              self.single_env.locations_to_state((loc,))])
                      for agent in group]
+
         goal_locs = tuple([cast_location(top_left, goal_loc) for goal_loc in goal_locs])
         start_locs = tuple([cast_location(top_left, locations[agent]) for agent in group])
-        conflict_area = ConflictArea(top_row, bottom_row, left_col, right_col)
 
         # Create the grid map
         grid_map = ['.' * n_cols] * n_rows
         for loc in conflict_area_locations:
             if self.env.grid[loc[0]][loc[1]] is ObstacleCell:
                 casted_loc = cast_location(top_left, loc)
-                grid_map[casted_loc[0]][casted_loc[1]] = '@'
+                grid_map[casted_loc[0]] = grid_map[casted_loc[0]][:casted_loc[1]] + '@' + grid_map[casted_loc[0]][casted_loc[1] + 1:]
 
         grid = MapfGrid(grid_map)
         env = MapfEnv(grid,
@@ -166,9 +174,9 @@ class OnlineReplanPolicy(Policy):
                       self.env.optimization_criteria)
 
         self.info[f'{group}_{top_left}'] = {}
-        low_level_policy = self.low_level_policy_creator(env, self.gamma)
-        low_level_policy.train()
-        self.info[f'{group}_{top_left}'] = low_level_policy.info
+        joint_policy = self.low_level_policy_creator(env, self.gamma)
+        joint_policy.train()
+        self.info[f'{group}_{top_left}'] = joint_policy.info
 
         self.replans[tuple(group)][conflict_area] = joint_policy
         self.info['n_replans'] += 1
