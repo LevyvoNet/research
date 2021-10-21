@@ -111,19 +111,20 @@ lvl_to_solvers = {
     1: [
         ma_rtdp_dijkstra_sum_creator,
         rtdp_dijkstra_sum_creator,
+        rtdp_pvi_sum_creator,
+        rtdp_rtdp_dijkstra_sum_creator,
     ],
     2: [
         ma_rtdp_pvi_sum_creator,
         ma_rtdp_rtdp_dijkstra_sum_creator,
-        rtdp_pvi_sum_creator,
-        rtdp_rtdp_dijkstra_sum_creator,
-
     ],
     3: [
         id_rtdp_dijkstra_sum_creator,
         id_ma_rtdp_dijkstra_sum_creator,
         id_rtdp_pvi_sum_creator,
         id_ma_rtdp_pvi_sum_creator,
+    ],
+    4: [
         online_replan_rtdp_rtdp_dijkstra_sum_creator,
         online_replan_ma_rtdp_rtdp_dijkstra_sum_creator
     ]
@@ -146,14 +147,15 @@ lvl_to_env = {
         (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
-        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
         (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
     ],
     2: [
+        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
         (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
         (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
         (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
+        (partial(empty_grid, 32, 4), 'empty-32X32-4-agents'),
 
     ],
     3: [
@@ -168,17 +170,19 @@ lvl_to_env = {
         (partial(sanity_general, 8, 8, 16), 'sanity-8-rooms-8X8-16-agents'),
         (partial(sanity_general, 8, 16, 16), 'sanity-8-rooms-16X16-16-agents'),
         (partial(sanity_general, 8, 32, 16), 'sanity-8-rooms-32X32-16-agents'),
-        (partial(empty_grid, 32, 8), 'empty-32X32-8-agents'),
         (partial(sanity_independent, 8, 16), 'sanity-independent-16X16-8-agents'),
         (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
+    ],
+    4: [
+        (partial(empty_grid, 32, 8), 'empty-32X32-8-agents'),
     ]
 }
 
 
-def generate_solver_env_combinations(max_env_lvl):
+def generate_solver_env_combinations(min_env_lvl, max_env_lvl):
     all_soc = []
     all_makespan = []
-    for env_lvl in range(max_env_lvl + 1):
+    for env_lvl in range(min_env_lvl, max_env_lvl + 1):
         for (env_func, env_name) in lvl_to_env[env_lvl]:
             for solver_lvl in lvl_to_solvers.keys():
                 if solver_lvl >= env_lvl:
@@ -251,20 +255,23 @@ def benchmark_solver_on_env(policy: Policy):
 
         return RESULT_OK
 
-    except None as e:
+    except Exception as e:
         print(repr(e))
         return RESULT_EXCEPTION
 
 
 def main():
     max_env_lvl = max(lvl_to_env.keys())
+    # min_env_lvl = 0
+    min_env_lvl = 4
 
-    n_items = len(list(generate_solver_env_combinations(max_env_lvl)))
+    n_items = len(list(generate_solver_env_combinations(min_env_lvl, max_env_lvl)))
     print(f'running {n_items} items')
     bad_results = []
 
     prev_env_name = None
-    for env_func, env_name, policy_creator, optimization_criteria in generate_solver_env_combinations(max_env_lvl):
+    for env_func, env_name, policy_creator, optimization_criteria in generate_solver_env_combinations(min_env_lvl,
+                                                                                                      max_env_lvl):
         # Just nicer to view
         if prev_env_name != env_name:
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
