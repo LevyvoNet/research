@@ -166,7 +166,9 @@ class OnlineReplanPolicy(Policy):
                       self.env.optimization_criteria)
 
         self.info[f'{group}_{top_left}'] = {}
-        joint_policy = self.low_level_planner(env, self.info[f'{group}_{top_left}'])
+        low_level_policy = self.low_level_policy_creator(env, self.gamma)
+        low_level_policy.train()
+        self.info[f'{group}_{top_left}'] = low_level_policy.info
 
         self.replans[tuple(group)][conflict_area] = joint_policy
         self.info['n_replans'] += 1
