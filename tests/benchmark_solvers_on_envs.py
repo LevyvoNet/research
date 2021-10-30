@@ -104,9 +104,9 @@ def empty_grid(grid_size, n_agents, optimization_criteria):
 lvl_to_solvers = {
     0: [
         vi_creator,
-    #     pvi_creator,
-    #     pi_creator,
-    #     id_vi_creator,
+        #     pvi_creator,
+        #     pi_creator,
+        #     id_vi_creator,
     ],
     # 1: [
     #     ma_rtdp_dijkstra_sum_creator,
@@ -141,16 +141,13 @@ lvl_to_env = {
         (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
         (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
         (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward'),
-        (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
-        (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
         (long_bottleneck, 'long_bottleneck_deterministic'),
-        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
-        (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
+        (partial(empty_grid, 8, 2), 'empty_grid_2_agents'),
+        (partial(empty_grid, 8, 3), 'empty_grid_3_agents'),
     ],
     1: [
         # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
         # (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
-        # (long_bottleneck, 'long_bottleneck_deterministic'),
         # (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         # (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
 
