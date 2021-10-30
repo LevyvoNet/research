@@ -79,7 +79,7 @@ def value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs):
         # print(f'VI: iteration {i + 1} took {time.time() - start} seconds')
 
         info['n_iterations'] = i + 1
-        if np.sum(np.fabs(prev_v - v)) <= eps:
+        if np.max(np.fabs(prev_v - v)) <= eps:
             # debug print
             # print('value iteration converged at iteration# %d.' % (i + 1))
             info['converged'] = True
@@ -129,7 +129,7 @@ def prioritized_value_iteration(gamma: float, env: MapfEnv, info: Dict, **kwargs
         # print(f'PVI: iteration {i + 1} took {time.time() - start} seconds')
 
         info['n_iterations'] = i + 1
-        if np.sum(np.fabs(prev_v - v)) <= eps:
+        if np.max(np.fabs(prev_v - v)) <= eps:
             # debug print
             # print('prioritized value iteration converged at iteration# %d.' % (i + 1))
             info['converged'] = True

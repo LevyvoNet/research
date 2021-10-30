@@ -102,12 +102,12 @@ def empty_grid(grid_size, n_agents, optimization_criteria):
 
 
 lvl_to_solvers = {
-    # 0: [
-    #     vi_creator,
+    0: [
+        vi_creator,
     #     pvi_creator,
     #     pi_creator,
     #     id_vi_creator,
-    # ],
+    ],
     # 1: [
     #     ma_rtdp_dijkstra_sum_creator,
     #     rtdp_dijkstra_sum_creator,
@@ -124,23 +124,24 @@ lvl_to_solvers = {
     #     id_rtdp_pvi_sum_creator,
     #     id_ma_rtdp_pvi_sum_creator,
     # ],
-    4: [
-        online_replan_rtdp_rtdp_dijkstra_sum_creator,
-        online_replan_ma_rtdp_rtdp_dijkstra_sum_creator
-    ]
+    # 4: [
+    #     online_replan_rtdp_rtdp_dijkstra_sum_creator,
+    #     online_replan_ma_rtdp_rtdp_dijkstra_sum_creator
+    # ]
 }
 
 lvl_to_env = {
     0: [
-        # (empty_grid_single_agent, 'empty_grid_single_agent'),
-        # (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
-        # (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
-        # (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
-        # (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
-        # (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
-        # (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
-        # (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
-        # (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward')
+        (empty_grid_single_agent, 'empty_grid_single_agent'),
+        (partial(symmetrical_bottleneck, 0, 0), 'symmetrical_bottle_neck_deterministic'),
+        (partial(symmetrical_bottleneck, 0, 100), 'symmetrical_bottle_neck_deterministic_large_goal_reward'),
+        (partial(symmetrical_bottleneck, 0.2, 0), 'symmetrical_bottle_neck_stochastic'),
+        (partial(symmetrical_bottleneck, 0.2, 100), 'symmetrical_bottle_neck_stochastic_large_goal_reward'),
+        (partial(asymmetrical_bottleneck, 0, 0), 'Asymmetrical_bottle_neck_deterministic'),
+        (partial(asymmetrical_bottleneck, 0, 100), 'Asymmetrical_bottle_neck_deterministic_large_goal_reward'),
+        (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
+        (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward'),
+        (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
     ],
     1: [
         # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
@@ -172,7 +173,7 @@ lvl_to_env = {
         # (partial(sanity_independent, 8, 32), 'sanity-independent-32X32-8-agents'),
     ],
     4: [
-        (partial(empty_grid, 32, 8), 'empty-32X32-4-agents'),
+        # (partial(empty_grid, 32, 8), 'empty-32X32-4-agents'),
         # (partial(empty_grid, 32, 8), 'empty-32X32-8-agents'),
     ]
 }
@@ -261,8 +262,7 @@ def benchmark_solver_on_env(policy: Policy):
 
 def main():
     max_env_lvl = max(lvl_to_env.keys())
-    # min_env_lvl = 0
-    min_env_lvl = 4
+    min_env_lvl = 0
 
     n_items = len(list(generate_solver_env_combinations(min_env_lvl, max_env_lvl)))
     print(f'running {n_items} items')
