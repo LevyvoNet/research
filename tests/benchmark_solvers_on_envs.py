@@ -144,6 +144,7 @@ lvl_to_env = {
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(empty_grid, 8, 2), 'empty_grid_2_agents'),
         (partial(empty_grid, 8, 3), 'empty_grid_3_agents'),
+        (partial(empty_grid, 32, 1), 'large_grid_single_agent'),
     ],
     1: [
         # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
