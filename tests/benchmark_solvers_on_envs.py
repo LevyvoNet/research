@@ -142,9 +142,9 @@ lvl_to_env = {
         (partial(asymmetrical_bottleneck, 0.2, 0), 'Asymmetrical_bottle-neck_stochastic'),
         (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward'),
         (long_bottleneck, 'long_bottleneck_deterministic'),
-        (partial(empty_grid, 8, 2), 'empty_grid_2_agents'),
-        (partial(empty_grid, 8, 3), 'empty_grid_3_agents'),
-        (partial(empty_grid, 32, 1), 'large_grid_single_agent'),
+        (partial(empty_grid, 8, 2), 'empty_grid_8X8_2_agents'),
+        (partial(empty_grid, 16, 2), 'empty_grid_16X16_2_agents'),
+        (partial(empty_grid, 32, 1), 'empty_grid_32X32_1_agent'),
     ],
     1: [
         # (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
