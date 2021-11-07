@@ -108,12 +108,12 @@ lvl_to_solvers = {
         #     pi_creator,
         #     id_vi_creator,
     ],
-    # 1: [
+    1: [
     #     ma_rtdp_dijkstra_sum_creator,
         rtdp_dijkstra_sum_creator,
     #     rtdp_pvi_sum_creator,
     #     rtdp_rtdp_dijkstra_sum_creator,
-    # ],
+    ],
     # 2: [
     #     ma_rtdp_pvi_sum_creator,
     #     ma_rtdp_rtdp_dijkstra_sum_creator,
