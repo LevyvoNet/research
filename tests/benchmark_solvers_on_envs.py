@@ -143,18 +143,18 @@ lvl_to_env = {
         (partial(asymmetrical_bottleneck, 0.2, 100), 'Asymmetrical_bottle_neck_stochastic_large_goal_reward'),
         (long_bottleneck, 'long_bottleneck_deterministic'),
         (partial(empty_grid, 8, 2), 'empty_grid_8X8_2_agents'),
-        (partial(empty_grid, 16, 2), 'empty_grid_16X16_2_agents'),
-        (partial(empty_grid, 32, 1), 'empty_grid_32X32_1_agent'),
     ],
     1: [
         (partial(room_32_32_4_2_agents, 12, 0), 'room-32-32-4_scen_12_2_agents_deterministic'),
         (partial(room_32_32_4_2_agents, 1, 0), 'room-32-32-4_scen_1_2_agents_deterministic'),
         (partial(room_32_32_4_2_agents, 12, 0.2), 'room-32-32-4_scen_12_2_agents_stochastic'),
         (sanity_3_agents_room_size_8_independent, 'sanity_3_agents_independent_stochastic'),
+        (partial(empty_grid, 16, 2), 'empty_grid_16X16_2_agents'),
+        (partial(empty_grid, 32, 1), 'empty_grid_32X32_1_agent'),
+        (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
 
     ],
     2: [
-        # (partial(room_32_32_4_2_agents, 1, 0.2), 'room-32-32-4_scen_1_2_agents_stochastic'),
         # (partial(room_32_32_4_2_agents, 13, 0), 'room-32-32-4_scen_13_2_agents_1_conflict_deterministic'),
         # (partial(room_32_32_4_2_agents, 13, 0.2), 'room-32-32-4_scen_13_2_agents_1_conflict_stochastic'),
         # (partial(sanity_independent, 8, 8), 'sanity-independent-8X8-8-agents'),
