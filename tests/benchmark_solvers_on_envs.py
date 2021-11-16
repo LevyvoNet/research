@@ -98,7 +98,7 @@ def sanity_general(n_rooms, room_size, n_agents, optimization_criteria):
 
 
 def empty_grid(grid_size, n_agents, optimization_criteria):
-    return create_mapf_env(f'empty-{grid_size}-{grid_size}', 1, n_agents, 0.2, -1000, 100, -1, optimization_criteria)
+    return create_mapf_env(f'empty-{grid_size}-{grid_size}', 1, n_agents, 0.2, -1000, 0, -1, optimization_criteria)
 
 
 lvl_to_solvers = {
