@@ -334,9 +334,9 @@ def rtdp_single_iteration(policy: RtdpPolicy,
         path.append(s)
 
     # Backward update
-    while path:
-        s = path.pop()
-        update(policy, s)
+#     while path:
+#         s = path.pop()
+#         update(policy, s)
 
     # Write measures about that information
     info['time'] = round(time.time() - start, 2)
