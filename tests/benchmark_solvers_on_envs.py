@@ -118,12 +118,12 @@ lvl_to_solvers = {
     #     ma_rtdp_pvi_sum_creator,
     #     ma_rtdp_rtdp_dijkstra_sum_creator,
     # ],
-    # 3: [
+    3: [
         id_rtdp_dijkstra_sum_creator,
     #     id_ma_rtdp_dijkstra_sum_creator,
     #     id_rtdp_pvi_sum_creator,
     #     id_ma_rtdp_pvi_sum_creator,
-    # ],
+    ],
     # 4: [
     #     online_replan_rtdp_rtdp_dijkstra_sum_creator,
     #     online_replan_ma_rtdp_rtdp_dijkstra_sum_creator
